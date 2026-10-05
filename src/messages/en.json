@@ -492,7 +492,8 @@
       "clearSuccess": "All logs cleared",
       "clearFailed": "Failed to clear logs",
       "deleted": "Message deleted from Discord",
-      "loadedToEditor": "Payload loaded into editor"
+      "loadedToEditor": "Payload loaded into editor",
+      "resent": "Message resent to the original webhook"
     },
     "summaryAllTime": "All-time total"
   },
@@ -527,6 +528,10 @@
     "templateSaved": "Template saved!",
     "messageSent": "Message sent!",
     "messageSentDuplicate": "Message sent! (duplicate prevented)",
+    "messageResent": "Message resent!",
+    "logNotFound": "Log not found",
+    "resendNoPayload": "No payload saved for this log",
+    "resendNoTarget": "Original webhook was deleted",
     "testSendFailed": "Failed to send test message",
     "urlInvalid": "Invalid URL",
     "nameTooLong": "Name must be at most 100 characters",

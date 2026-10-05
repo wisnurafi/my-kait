@@ -479,6 +479,106 @@ export async function deleteMessageAction(prevState: unknown, formData: FormData
   return { success: true, message: t("messageDeleted") };
 }
 
+/* --- Resend a failed log to its original webhook --- */
+export async function resendLogAction(logId: string) {
+  const user = await requireAuth();
+  const t = await getActionT("errors");
+
+  // A resend is a send: it consumes the same quota.
+  const rl = await checkRateLimit("send", user.id);
+  if (!rl.success) {
+    return { error: t("rateLimited") };
+  }
+
+  // Fetch the log and verify ownership (never resend another user's log).
+  const rows = await db
+    .select()
+    .from(messageLogs)
+    .where(and(eq(messageLogs.id, logId), eq(messageLogs.userId, user.id)))
+    .limit(1);
+  if (rows.length === 0) {
+    return { error: t("logNotFound") };
+  }
+  const log = rows[0];
+
+  // Without a saved payload there is nothing to resend.
+  const payload = log.payload as Record<string, unknown> | null;
+  if (!payload) {
+    return { error: t("resendNoPayload") };
+  }
+
+  // Resolve the original target: saved webhook first, then manual URL.
+  // (webhookId is set to null when the webhook is deleted.)
+  let url: string | null = null;
+  let webhookRecord: { id: string; name: string } | null = null;
+  if (log.webhookId) {
+    const wh = await db
+      .select()
+      .from(webhooks)
+      .where(and(eq(webhooks.id, log.webhookId), eq(webhooks.userId, user.id)))
+      .limit(1);
+    if (wh.length > 0) {
+      if (wh[0].lastStatus === "invalid") {
+        return { error: t("webhookInvalid") };
+      }
+      webhookRecord = { id: wh[0].id, name: wh[0].name };
+      url = decryptWebhookUrl(wh[0].urlEncrypted, wh[0].keyVersion);
+    }
+  }
+  if (!url && log.manualUrlEncrypted && log.manualUrlKeyVersion) {
+    url = decryptWebhookUrl(log.manualUrlEncrypted, log.manualUrlKeyVersion);
+  }
+  if (!url) {
+    // Original webhook is gone: let the client fall back to the editor
+    // so the user can pick a new target.
+    return { error: t("resendNoTarget"), code: "NO_TARGET" };
+  }
+
+  const start = Date.now();
+  const result = await sendWebhookMessage(url, payload);
+  const latencyMs = Date.now() - start;
+
+  let status: MessageStatus;
+  if (result.success) status = "sent";
+  else if (result.rateLimited) status = "rate_limited";
+  else status = "failed";
+
+  await db.insert(messageLogs).values({
+    userId: user.id,
+    webhookId: webhookRecord?.id ?? null,
+    webhookNameSnapshot: webhookRecord?.name ?? log.webhookNameSnapshot,
+    manualUrlEncrypted: webhookRecord ? null : log.manualUrlEncrypted,
+    manualUrlKeyVersion: webhookRecord ? null : log.manualUrlKeyVersion,
+    mode: log.mode as MessageMode,
+    payload,
+    status,
+    httpStatus: result.httpStatus,
+    latencyMs,
+    discordMessageId: result.messageId,
+    error: result.error,
+    source: "resend",
+  });
+
+  if (webhookRecord) {
+    await db
+      .update(webhooks)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(webhooks.id, webhookRecord.id));
+    if (result.httpStatus === 404 || result.httpStatus === 401) {
+      await db
+        .update(webhooks)
+        .set({ lastStatus: "invalid" })
+        .where(eq(webhooks.id, webhookRecord.id));
+    }
+  }
+
+  revalidatePath("/logs");
+  if (!result.success) {
+    return { error: result.error ?? t("generic") };
+  }
+  return { success: true, messageId: result.messageId, message: t("messageResent") };
+}
+
 /* --- Get logs with filters --- */
 export async function getLogs(filters: {
   status?: string;

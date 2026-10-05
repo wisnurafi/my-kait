@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Tooltip } from "@/components/ui/tooltip";
 import { toast } from "@/components/ui/toast";
-import { clearLogsAction, deleteMessageAction } from "@/server/actions/messages";
+import { clearLogsAction, deleteMessageAction, resendLogAction } from "@/server/actions/messages";
 import { saveAsTemplateAction } from "@/server/actions/templates";
 import {
   Search,
@@ -147,6 +147,25 @@ export function LogsView({
         toast.success(t("toast.deleted"));
       }
       setSelectedLog(null);
+    });
+  }
+
+  function doResend() {
+    if (!selectedLog?.payload) return;
+    const logId = selectedLog.id;
+    startTransition(async () => {
+      const res = await resendLogAction(logId);
+      if (res && "error" in res && res.error) {
+        if ("code" in res && res.code === "NO_TARGET") {
+          // Original webhook is gone: load the payload into the editor
+          // so the user can pick a new target and send from there.
+          loadIntoEditor(selectedLog.payload);
+        }
+        toast.error(res.error);
+      } else {
+        toast.success(t("toast.resent"));
+        setSelectedLog(null);
+      }
     });
   }
 
@@ -483,7 +502,8 @@ export function LogsView({
                       variant="primary"
                       size="sm"
                       className="gap-1.5"
-                      onClick={() => loadIntoEditor(selectedLog.payload)}
+                      disabled={pending}
+                      onClick={doResend}
                     >
                       <RefreshCw size={14} /> {t("detail.resend")}
                     </Button>
