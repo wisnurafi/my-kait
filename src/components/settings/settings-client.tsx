@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Toggle } from "@/components/ui/toggle";
 import { ThemeLanguageSwitcher } from "@/components/app/theme-language-switcher";
+import { ApiKeysCard } from "@/components/settings/api-keys-card";
 import { toast } from "@/components/ui/toast";
 import { signOut } from "next-auth/react";
 import { deleteAccountAction } from "@/server/actions/messages";
@@ -157,8 +158,13 @@ export function SettingsClient({
         </Card>
       </div>
 
-      {/* Danger zone */}
+      {/* API keys */}
       <div className="stagger-in" style={staggerStyle(3)}>
+        <ApiKeysCard />
+      </div>
+
+      {/* Danger zone */}
+      <div className="stagger-in" style={staggerStyle(4)}>
         <div
           className="panel"
           style={{
@@ -210,7 +216,7 @@ export function SettingsClient({
       </div>
 
       {/* Legal */}
-      <div className="flex gap-4 justify-center text-sm stagger-in" style={staggerStyle(4)}>
+      <div className="flex gap-4 justify-center text-sm stagger-in" style={staggerStyle(5)}>
         <Link href="/privacy" className="text-fg-secondary hover:text-link">
           {t("privacy")}
         </Link>

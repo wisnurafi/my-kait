@@ -22,6 +22,7 @@ const publicRoutes = [
   "/gallery",
   "/privacy",
   "/terms",
+  "/docs",
   "/api/auth",
 ];
 
@@ -36,6 +37,7 @@ function isPublicRoute(pathname: string): boolean {
   if (pathname.match(/^\/(id|en)\/gallery\/?$/)) return true;
   if (pathname.match(/^\/(id|en)\/privacy\/?$/)) return true;
   if (pathname.match(/^\/(id|en)\/terms\/?$/)) return true;
+  if (pathname.match(/^\/(id|en)\/docs\/?$/)) return true;
   if (pathname.startsWith("/api/auth")) return true;
   if (pathname.startsWith("/api/cron")) return true;
   return false;
