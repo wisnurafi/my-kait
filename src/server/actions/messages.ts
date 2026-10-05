@@ -7,7 +7,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { webhooks, messageLogs } from "@/lib/schema";
+import { webhooks, messageLogs, users } from "@/lib/schema";
 import { eq, and, desc, gte, lte, ilike, sql, count, inArray } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
 import { decryptWebhookUrl, encryptWebhookUrl } from "@/lib/crypto";
@@ -17,6 +17,7 @@ import {
   deleteWebhookMessage,
   validateWebhookUrl,
 } from "@/lib/discord";
+import { list as listBlobs, del as deleteBlobs } from "@vercel/blob";
 import { sendRequestSchema } from "@/lib/validations";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getActionT } from "@/server/i18n";
@@ -744,14 +745,37 @@ export async function clearLogsAction() {
 export async function deleteAccountAction() {
   const user = await requireAuth();
 
-  // CASCADE will handle all related records
-  await db.delete(webhooks).where(eq(webhooks.userId, user.id));
-  await db
-    .delete(messageLogs)
-    .where(eq(messageLogs.userId, user.id));
+  // Delete the user's uploaded blobs. Best-effort: blob storage being
+  // unreachable must never block the database delete below.
+  try {
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (token) {
+      const prefix = `mykait/${user.id}/`;
+      let cursor: string | undefined;
+      do {
+        const page = await listBlobs({ prefix, token, cursor });
+        if (page.blobs.length > 0) {
+          await deleteBlobs(
+            page.blobs.map((b) => b.url),
+            { token },
+          );
+        }
+        cursor = page.cursor;
+      } while (cursor);
+    }
+  } catch {
+    // Ignored: the database delete below is authoritative.
+  }
 
-  // Also delete templates (cascade handles shares)
-  // Users table delete handled by auth callback
+  // Delete the user row itself. Every user-owned table references users.id
+  // with onDelete: "cascade" (webhooks, templates, template folders, message
+  // logs, webhook health alerts; shares and reports cascade via templates),
+  // so this single statement removes all of the user's data.
+  // templateReports.reporterUserId is onDelete: "set null", so reports the
+  // user filed stay in the moderation queue, anonymized.
+  // Note: getCurrentUser() looks the user up in the database, so once the
+  // row is gone the session is dead even before the client signs out.
+  await db.delete(users).where(eq(users.id, user.id));
 
   revalidatePath("/");
   return { success: true };
