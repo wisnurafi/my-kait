@@ -68,16 +68,16 @@ export function HowItWorks() {
         <b className="text-sm">{t("stepVis2T")}</b>
       </div>
       <div className="overflow-hidden rounded-[10px] border border-border-ink">
-        <div className="flex gap-3 bg-[#1e1f22] p-4">
+        <div className="flex gap-3 bg-white p-4 dark:bg-[#1e1f22]">
           <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-accent text-sm font-bold text-[#0a0a0b]">
             K
           </span>
           <div className="min-w-0">
-            <div className="mb-1 text-[13px] font-bold text-white">
+            <div className="mb-1 text-[13px] font-bold text-[#060607] dark:text-white">
               My-Kait
               <span className="ml-2 rounded bg-[#5865F2] px-1.5 py-0.5 text-[10px] uppercase text-white">APP</span>
             </div>
-            <p className="text-[13px] leading-relaxed text-[#dbdee1]">{t("stepVis2Msg")}</p>
+            <p className="text-[13px] leading-relaxed text-[#313338] dark:text-[#dbdee1]">{t("stepVis2Msg")}</p>
           </div>
         </div>
       </div>
