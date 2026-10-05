@@ -49,6 +49,10 @@ export async function sendMessageAction(prevState: unknown, formData: FormData) 
   const savePayload = formData.get("savePayload") !== "false";
   const multiTargetRaw = String(formData.get("multiTarget") ?? "") || "";
   const multiTargetIds = multiTargetRaw ? multiTargetRaw.split(",").filter(Boolean) : [];
+  const MAX_MULTI_TARGETS = 20;
+  if (multiTargetIds.length > MAX_MULTI_TARGETS) {
+    return { error: t("tooManyTargets") };
+  }
   const idempotencyKey = String(formData.get("idempotencyKey") ?? "") || undefined;
 
   // Custom template variables: {name} -> value pairs supplied by the user
@@ -126,8 +130,17 @@ export async function sendMessageAction(prevState: unknown, formData: FormData) 
   // Multi-target: send to multiple webhooks
   if (multiTargetIds.length > 1) {
     const results: Array<{ id: string; name: string; success: boolean; messageId?: string; error?: string }> = [];
-    
+    let hitRateLimit = false;
+
     for (const targetId of multiTargetIds) {
+      // Enforce the send quota per target: the check at the top of this
+      // action only covers a single send, so consume one token per target.
+      const targetRl = await checkRateLimit("send", user.id);
+      if (!targetRl.success) {
+        hitRateLimit = true;
+        break;
+      }
+
       const wh = await db
         .select()
         .from(webhooks)
@@ -182,6 +195,9 @@ export async function sendMessageAction(prevState: unknown, formData: FormData) 
     }
 
     revalidatePath("/logs");
+    if (hitRateLimit) {
+      return { error: t("rateLimited"), results };
+    }
     const successCount = results.filter((r) => r.success).length;
     if (successCount === 0) {
       return { error: t("allSendsFailed"), results };

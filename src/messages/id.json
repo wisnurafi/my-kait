@@ -534,7 +534,8 @@
     "embedsTooLong": "Total karakter semua embed maksimal 6000",
     "templateInvalid": "Template tidak valid",
     "reasonTooShort": "Alasan minimal 10 karakter",
-    "reasonTooLong": "Alasan maksimal 1000 karakter"
+    "reasonTooLong": "Alasan maksimal 1000 karakter",
+    "tooManyTargets": "Terlalu banyak target (maks 20 webhook per kirim)"
   },
   "ping": {
     "active": "Webhook aktif",
