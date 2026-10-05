@@ -5,8 +5,11 @@
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
-type Variant = "primary" | "secondary" | "ghost" | "destructive";
-type Size = "sm" | "md" | "lg" | "icon";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
+export type ButtonSize = "sm" | "md" | "lg" | "icon";
+
+type Variant = ButtonVariant;
+type Size = ButtonSize;
 
 const variantClasses: Record<Variant, string> = {
   // Lime fill, dark text, semibold. Hover: deepen.
@@ -37,21 +40,34 @@ export interface ButtonProps
   loading?: boolean;
 }
 
+/**
+ * Shared class composition for button-styled elements.
+ * Use this when the interactive element must be an anchor (e.g. next/link)
+ * instead of a <button> — nesting <button> inside <a> is invalid HTML.
+ */
+export function buttonClasses(
+  variant: Variant = "primary",
+  size: Size = "md",
+  className?: string,
+) {
+  return cn(
+    "inline-flex items-center justify-center gap-2 font-semibold",
+    "cursor-pointer select-none border",
+    "transition-colors duration-150 press",
+    "disabled:opacity-45 disabled:cursor-not-allowed",
+    "focus-ring",
+    variantClasses[variant],
+    sizeClasses[size],
+    className,
+  );
+}
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", loading, children, disabled, ...props }, ref) => {
     return (
       <button
         ref={ref}
-        className={cn(
-          "inline-flex items-center justify-center gap-2 font-semibold",
-          "cursor-pointer select-none border",
-          "transition-colors duration-150 press",
-          "disabled:opacity-45 disabled:cursor-not-allowed",
-          "focus-ring",
-          variantClasses[variant],
-          sizeClasses[size],
-          className,
-        )}
+        className={buttonClasses(variant, size, className)}
         disabled={disabled || loading}
         {...props}
       >

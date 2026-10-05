@@ -1149,7 +1149,13 @@ function buildPayload(state: EditorState): Record<string, unknown> {
         embed.footer = footer;
       }
       if (e.useTimestamp) {
-        embed.timestamp = new Date().toISOString();
+        // Preserve the original timestamp when the state was rebuilt from a
+        // payload (duplicate/edit flows) instead of silently resetting it to
+        // "now". Fresh embeds have an empty manualTimestamp → use now.
+        const original = Date.parse(e.manualTimestamp);
+        embed.timestamp = Number.isNaN(original)
+          ? new Date().toISOString()
+          : new Date(original).toISOString();
       }
       return embed;
     });

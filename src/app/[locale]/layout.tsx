@@ -45,6 +45,14 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
+/**
+ * Runs before first paint: applies the stored theme so light/system users
+ * don't get a dark flash on full page loads. Must mirror use-theme.ts
+ * exactly — storage key "mykait-theme", values "system" | "light" | "dark",
+ * default "dark" (dark is the CSS default; only "light" opts in).
+ */
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("mykait-theme");var d=document.documentElement;if(t==="light"){d.setAttribute("data-theme","light")}else if(t==="system"){d.removeAttribute("data-theme")}else{d.setAttribute("data-theme","dark")}}catch(e){}})();`;
+
 export default async function LocaleLayout({
   children,
   params,
@@ -67,6 +75,9 @@ export default async function LocaleLayout({
       suppressHydrationWarning
       className={`${display.variable} ${body.variable} ${mono.variable}`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-screen" suppressHydrationWarning>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AuthProvider>{children}</AuthProvider>

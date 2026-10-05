@@ -82,7 +82,7 @@ export function WebhooksList({
         if (search) params.set("search", search);
         else params.delete("search");
         params.delete("page");
-        router.push(`?${params.toString()}`);
+        router.push(`?${params.toString()}`, { scroll: false });
       }
     }, 400);
     return () => clearTimeout(timer);

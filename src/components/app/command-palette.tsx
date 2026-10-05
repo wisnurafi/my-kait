@@ -86,7 +86,7 @@ function PaletteModal({ onClose }: { onClose: () => void }) {
       { id: "landing", label: t("landingPage"), keywords: "home site", href: "/", icon: Globe, group: "go" },
       { id: "new-message", label: t("newMessage"), keywords: "compose send create", href: "/editor", icon: Plus, group: "actions" },
       { id: "add-webhook", label: t("addWebhook"), keywords: "discord url create", href: "/webhooks", icon: Webhook, group: "actions" },
-      { id: "import-template", label: t("importTemplate"), keywords: "load gallery", href: "/templates", icon: Import, group: "actions" },
+      { id: "import-template", label: t("importTemplate"), keywords: "load gallery", href: "/gallery", icon: Import, group: "actions" },
     ],
     [t, tNav],
   );
