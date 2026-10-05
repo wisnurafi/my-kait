@@ -289,13 +289,17 @@ export function Editor({
     }
   }, []);
 
-  // Autosave draft
+  // Autosave draft. Skipped while in edit mode: the payload being edited must
+  // never overwrite the user's unsent draft in localStorage (data loss).
+  // editMessageId is in the deps so entering edit mode cancels any pending
+  // write and exiting edit mode resumes normal autosave.
   useEffect(() => {
+    if (editMessageId) return;
     const timer = setTimeout(() => {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(state));
     }, 1000);
     return () => clearTimeout(timer);
-  }, [state]);
+  }, [state, editMessageId]);
 
   // Push to history
   const pushHistory = useCallback((newState: EditorState) => {
