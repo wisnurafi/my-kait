@@ -22,6 +22,7 @@ export function ConfirmButton({
   confirmHint,
   icon,
   successMessage,
+  ariaLabel,
 }: {
   action: () => Promise<unknown>;
   variant?: Variant;
@@ -32,6 +33,8 @@ export function ConfirmButton({
   icon?: React.ReactNode;
   /** Toast message shown on success. Omit to stay silent. */
   successMessage?: string;
+  /** Accessible name for icon-only (or icon-mostly) triggers. */
+  ariaLabel?: string;
 }) {
   const t = useTranslations("admin");
   const router = useRouter();
@@ -87,6 +90,7 @@ export function ConfirmButton({
       disabled={busy}
       onClick={() => setConfirming(true)}
       className="gap-1.5"
+      aria-label={ariaLabel}
     >
       {icon}
       {label}
