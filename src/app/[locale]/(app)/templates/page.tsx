@@ -1,5 +1,5 @@
 import { setRequestLocale } from "next-intl/server";
-import { getTemplates } from "@/server/actions/templates";
+import { getTemplates, getAllTemplateTags } from "@/server/actions/templates";
 import { getFolders } from "@/server/actions/folders";
 import { TemplatesList } from "@/components/templates/templates-list";
 
@@ -14,7 +14,7 @@ export default async function TemplatesPage({
   setRequestLocale(locale);
 
   const { search, tag, folder, page } = await searchParams;
-  const [data, folders] = await Promise.all([
+  const [data, folders, allTags] = await Promise.all([
     getTemplates({
       search,
       tagFilter: tag,
@@ -22,6 +22,7 @@ export default async function TemplatesPage({
       page: page ? parseInt(page) : 1,
     }),
     getFolders(),
+    getAllTemplateTags(),
   ]);
 
   return (
@@ -30,6 +31,7 @@ export default async function TemplatesPage({
         templates={data.templates}
         folders={folders}
         activeFolder={folder ?? "all"}
+        allTags={allTags}
         pagination={{ page: data.page, totalPages: data.totalPages }}
       />
     </div>
