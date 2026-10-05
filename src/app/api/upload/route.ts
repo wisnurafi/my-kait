@@ -74,6 +74,12 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limit (same bucket as uploads)
+  const rl = await checkRateLimit("addWebhook", session.user.id);
+  if (!rl.success) {
+    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   const { searchParams } = new URL(req.url);
   const url = searchParams.get("url");
 
@@ -81,8 +87,19 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "No URL provided" }, { status: 400 });
   }
 
-  // Only allow deleting from our blob store
-  if (!url.includes("vercel-storage.com")) {
+  // Only allow deleting the caller's own uploads from our blob store.
+  // Uploads are stored at mykait/<userId>/<uuid>.<ext>, so scoping the
+  // pathname to the caller's prefix prevents deleting other users' files.
+  let pathname: string;
+  try {
+    pathname = new URL(url).pathname;
+  } catch {
+    return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+  }
+  if (
+    !url.includes("vercel-storage.com") ||
+    !pathname.startsWith(`/mykait/${session.user.id}/`)
+  ) {
     return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
   }
 
