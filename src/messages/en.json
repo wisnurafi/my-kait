@@ -92,7 +92,8 @@
     "tagsPlaceholder": "tag1, tag2",
     "importTagsPlaceholder": "tag1, tag2, tag3",
     "copyShareLink": "Copy link",
-    "openShareLink": "Open link"
+    "openShareLink": "Open link",
+    "noSearchResults": "No templates match your search."
   },
   "dashboard": {
     "greeting": "Hey, {name}! 👋",
@@ -153,7 +154,9 @@
     "dataExport": "Export Data",
     "dataExportDesc": "Download all your data (webhooks, templates, logs) as a JSON file.",
     "exportButton": "Download JSON",
-    "exporting": "Preparing..."
+    "exporting": "Preparing...",
+    "exportFailed": "Failed to export data.",
+    "deleteFailed": "Failed to delete account."
   },
   "landing": {
     "navFeatures": "Features",
@@ -285,7 +288,8 @@
       "active": "Active",
       "invalid": "Invalid",
       "rate_limited": "Rate limited",
-      "unchecked": "Unchecked"
+      "unchecked": "Unchecked",
+      "error": "Error"
     },
     "searchPlaceholder": "Search webhook name…",
     "lastChecked": "Last checked",
@@ -319,7 +323,10 @@
     "folderCreated": "Folder created",
     "save": "Save",
     "cancel": "Cancel",
-    "folderCreate": "Create folder"
+    "folderCreate": "Create folder",
+    "pingOk": "Ping successful",
+    "pingFailed": "Ping failed",
+    "pingAllDone": "All webhooks pinged"
   },
   "editor": {
     "title": "Message Editor",
@@ -484,7 +491,8 @@
       "clearFailed": "Failed to clear logs",
       "deleted": "Message deleted from Discord",
       "loadedToEditor": "Payload loaded into editor"
-    }
+    },
+    "summaryAllTime": "All-time total"
   },
   "errors": {
     "unauthorized": "Please log in first",
