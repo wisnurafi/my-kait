@@ -22,6 +22,13 @@ export async function createTemplateAction(formData: FormData) {
   const user = await requireAuth();
   const t = await getActionT("errors");
 
+  let payload: unknown;
+  try {
+    payload = JSON.parse(String(formData.get("payload") ?? "{}"));
+  } catch {
+    return { error: t("payloadInvalid") };
+  }
+
   const raw = {
     name: String(formData.get("name") ?? ""),
     description: String(formData.get("description") ?? "") || undefined,
@@ -29,7 +36,7 @@ export async function createTemplateAction(formData: FormData) {
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean),
-    payload: JSON.parse(String(formData.get("payload") ?? "{}")),
+    payload,
   };
 
   const parsed = templateSchema(t).safeParse(raw);
