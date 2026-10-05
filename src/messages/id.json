@@ -39,7 +39,8 @@
     "templates": "Template",
     "logs": "Riwayat",
     "settings": "Pengaturan",
-    "logout": "Keluar"
+    "logout": "Keluar",
+    "apiKeys": "API Keys"
   },
   "templates": {
     "title": "Template",
@@ -195,7 +196,8 @@
     "apiKeysCreateFailed": "Gagal membuat key",
     "apiKeysRevokeFailed": "Gagal mencabut key",
     "apiKeysLoadFailed": "Gagal memuat API keys",
-    "apiKeysDocsLink": "Baca dokumentasi API"
+    "apiKeysDocsLink": "Baca dokumentasi API",
+    "apiKeysLinkDesc": "Kelola REST API key lu"
   },
   "landing": {
     "navFeatures": "Fitur",

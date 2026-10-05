@@ -17,7 +17,7 @@ import {
   type ApiKeyPublic,
   type NewApiKey,
 } from "@/server/actions/api-keys";
-import { KeyRound, Copy, Check, Plus, Ban, BookOpen } from "lucide-react";
+import { Copy, Check, Plus, Ban, BookOpen } from "lucide-react";
 
 type NewKey = NewApiKey;
 
@@ -128,11 +128,6 @@ export function ApiKeysCard() {
   return (
     <Card hover>
       <CardBody>
-        <h2 className="font-display text-xl uppercase mb-2 flex items-center gap-2">
-          <KeyRound size={20} /> {t("apiKeysTitle")}
-        </h2>
-        <p className="text-sm text-fg-secondary mb-4">{t("apiKeysDesc")}</p>
-
         {/* New key — shown exactly once */}
         {newKey && (
           <div

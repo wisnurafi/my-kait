@@ -39,7 +39,8 @@
     "templates": "Templates",
     "logs": "Logs",
     "settings": "Settings",
-    "logout": "Log out"
+    "logout": "Log out",
+    "apiKeys": "API Keys"
   },
   "templates": {
     "title": "Templates",
@@ -195,7 +196,8 @@
     "apiKeysCreateFailed": "Failed to create key",
     "apiKeysRevokeFailed": "Failed to revoke key",
     "apiKeysLoadFailed": "Failed to load API keys",
-    "apiKeysDocsLink": "Read the API documentation"
+    "apiKeysDocsLink": "Read the API documentation",
+    "apiKeysLinkDesc": "Manage your REST API keys"
   },
   "landing": {
     "navFeatures": "Features",

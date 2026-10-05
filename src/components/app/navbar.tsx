@@ -12,7 +12,7 @@ import { HookLogo } from "@/components/hook-logo";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { ThemeLanguageSwitcher } from "@/components/app/theme-language-switcher";
-import { LogOut, Home, Pencil, Link2, FileText, History, Settings, Globe } from "lucide-react";
+import { LogOut, Home, Pencil, Link2, FileText, History, Settings, Globe, KeyRound } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", icon: Home, key: "dashboard" },
@@ -21,6 +21,13 @@ const navItems = [
   { href: "/templates", icon: FileText, key: "templates" },
   { href: "/logs", icon: History, key: "logs" },
   { href: "/settings", icon: Settings, key: "settings" },
+] as const;
+
+// Desktop sidebar has room for one more; the mobile bottom nav stays at 6
+// items so it doesn't wrap on 360px screens (see fix/mobile-topbar-theme).
+const desktopNavItems = [
+  ...navItems,
+  { href: "/api-keys", icon: KeyRound, key: "apiKeys" },
 ] as const;
 
 export function Navbar() {
@@ -63,7 +70,7 @@ export function Navbar() {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map((item) => {
+          {desktopNavItems.map((item) => {
             const isActive = pathname.includes(item.href);
             return (
               <Link
