@@ -162,6 +162,8 @@
     "navPrivacy": "Privacy",
     "loginDiscord": "Sign in with Discord",
     "openDashboard": "Open dashboard",
+    "navOpenShort": "Dashboard",
+    "navLoginShort": "Sign in",
     "toggleTheme": "Toggle theme",
     "heroBadgeVer": "v2.0",
     "heroBadgeNote": "FREE FOREVER",

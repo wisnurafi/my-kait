@@ -229,11 +229,13 @@ function LandingNav() {
           <LandingThemeToggle />
           {loggedIn ? (
             <Link href="/dashboard" className="ld-btn ld-btn-sm">
-              {t("openDashboard")}
+              <span className="ld-btn-full">{t("openDashboard")}</span>
+              <span className="ld-btn-short">{t("navOpenShort")}</span>
             </Link>
           ) : (
             <button type="button" onClick={login} className="ld-btn ld-btn-sm">
-              {t("loginDiscord")}
+              <span className="ld-btn-full">{t("loginDiscord")}</span>
+              <span className="ld-btn-short">{t("navLoginShort")}</span>
             </button>
           )}
         </div>
