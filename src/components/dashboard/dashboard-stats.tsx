@@ -53,7 +53,9 @@ function parseLocalDate(iso: string): Date {
    its own rendered size, then flips/clamps so the tooltip NEVER leaves the
    viewport — regardless of scroll, anchor position, or screen size.
    - bars: centered above the anchor; flips below if the top would clip
-   - donut: below the circle, never a centered overlay
+   - donut: BESIDE the circle (right by default, vertically centered on it);
+     flips left if the right side would clip — never below (the legend lives
+     there) and never a centered overlay
    - final pass: hard-clamp into the viewport on both axes
    No tooltip animation exists, so prefers-reduced-motion needs no handling. */
 type TipPlacement = "bar" | "donut";
@@ -63,7 +65,7 @@ type TipState = {
   placement: TipPlacement;
   // Anchor + container rects in client (viewport) coords, captured at show()
   // time so scroll is inherently accounted for.
-  anchor: { cx: number; top: number; bottom: number };
+  anchor: { cx: number; cy: number; top: number; bottom: number; left: number; right: number };
   container: { left: number; top: number };
 } | null;
 
@@ -79,7 +81,14 @@ function useChartTip() {
     setTip({
       content,
       placement,
-      anchor: { cx: r.left + r.width / 2, top: r.top, bottom: r.bottom },
+      anchor: {
+        cx: r.left + r.width / 2,
+        cy: r.top + r.height / 2,
+        top: r.top,
+        bottom: r.bottom,
+        left: r.left,
+        right: r.right,
+      },
       container: { left: cr.left, top: cr.top },
     });
   };
@@ -109,12 +118,14 @@ function ChartTip({ tip }: { tip: NonNullable<TipState> }) {
     let topV: number;
 
     if (placement === "donut") {
-      // Below the circle — never overlapping the donut itself.
-      topV = anchor.bottom + TIP_GAP;
-      // Not enough room below but room above: flip above (clamp keeps it
-      // inside the viewport as a last resort).
-      if (topV + th > vh - M && anchor.top - TIP_GAP - th >= M) {
-        topV = anchor.top - th - TIP_GAP;
+      // Beside the circle (right by default), vertically centered on it —
+      // never below (the legend lives there) and never a centered overlay.
+      topV = anchor.cy - th / 2;
+      leftV = anchor.right + TIP_GAP;
+      // Not enough room on the right but room on the left: flip left
+      // (the hard clamp below keeps it inside the viewport as a last resort).
+      if (leftV + tw > vw - M && anchor.left - TIP_GAP - tw >= M) {
+        leftV = anchor.left - tw - TIP_GAP;
       }
     } else {
       // Bars: above by default, centered on the bar.
@@ -268,7 +279,7 @@ function StatCard({
           <div className="label mb-2">{label}</div>
           <div className="font-mono text-4xl tabular-nums text-fg">
             {count}
-            <span className="text-lg text-fg-tertiary">{suffix}</span>
+            <span className="text-2xl text-fg-secondary ml-1">{suffix}</span>
           </div>
         </div>
         <div className="hv rounded-lg p-2.5 bg-sunken border border-border-ink shrink-0">
@@ -576,9 +587,12 @@ function SuccessDonut({
   }, [target]);
 
   return (
-    <Card className="p-5 flex flex-col items-center">
-      <h3 className="text-lg mb-4 self-start">{t("stats.successRate")}</h3>
-      <div ref={containerRef} className="relative">
+    <Card className="p-5 flex flex-col">
+      <h3 className="text-lg mb-4">{t("stats.successRate")}</h3>
+      {/* Donut block vertically centered in the stretched panel so the
+          card doesn't end with dead space when the chart panel is taller. */}
+      <div className="flex-1 flex flex-col items-center justify-center">
+        <div ref={containerRef} className="relative">
         <svg
           width={140}
           height={140}
@@ -640,12 +654,13 @@ function SuccessDonut({
           <span className="font-mono text-3xl tabular-nums">{rate}%</span>
         </div>
         {tip && <ChartTip tip={tip} />}
+        </div>
+          <div className="flex gap-4 mt-4 text-xs">
+          <span className="font-mono text-success">✓ {sent}</span>
+          <span className="font-mono text-error">✗ {failed}</span>
+        </div>
+        <p className="text-[11px] text-fg-tertiary mt-2">{t("stats.last30days")}</p>
       </div>
-      <div className="flex gap-4 mt-4 text-xs">
-        <span className="font-mono text-success">✓ {sent}</span>
-        <span className="font-mono text-error">✗ {failed}</span>
-      </div>
-      <p className="text-[11px] text-fg-tertiary mt-2">{t("stats.last30days")}</p>
     </Card>
   );
 }

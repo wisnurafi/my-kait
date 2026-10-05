@@ -887,8 +887,10 @@ html {
   top: -45%;
   height: 45%;
   pointer-events: none;
-  background: linear-gradient(to bottom, transparent, rgba(163, 230, 53, 0.055), transparent);
-  animation: scan 16s linear infinite;
+  /* Scanline terminal: alpha dinaikkan 0.055 → 0.10 dan loop 16s → 11s agar
+     gerakannya TERLIHAT tapi tetap halus — jangan lebih kuat dari ini. */
+  background: linear-gradient(to bottom, transparent, rgba(163, 230, 53, 0.10), transparent);
+  animation: scan 11s linear infinite;
 }
 @keyframes scan {
   from { transform: translateY(-40%); }
@@ -905,6 +907,14 @@ html {
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 44px 44px;
+  /* Drift super lambat (90s) — grid blueprint terasa hidup saat
+     diperhatikan, nyaris imperceptible. Loop tepat satu sel (44px)
+     agar seamless. */
+  animation: grid-drift 90s linear infinite;
+}
+@keyframes grid-drift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 44px 44px, 44px 44px; }
 }
 .dash-main::before {
   content: "";
@@ -1098,6 +1108,7 @@ html {
    (termasuk scanline & kursor blink). */
 @media (prefers-reduced-motion: reduce) {
   .dash-sidebar::after,
+  .dash-main,
   .cursor-blink::after,
   .nav-sweep,
   .donut-arc,
