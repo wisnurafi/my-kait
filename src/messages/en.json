@@ -24,7 +24,12 @@
     "next": "Next",
     "uploadTab": "Upload",
     "uploading": "Uploading…",
-    "dropHint": "Drop an image or click to upload (max 8MB)"
+    "dropHint": "Drop an image or click to upload (max 8MB)",
+    "uploadFailed": "Upload failed",
+    "uploadFailedRetry": "Upload failed. Try again.",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -137,6 +142,7 @@
     "title": "Settings",
     "profile": "Profile",
     "loginViaDiscord": "Logged in via Discord",
+    "avatarAlt": "Your profile picture",
     "preferences": "Preferences",
     "language": "Language",
     "logRetention": "Log Retention",
@@ -475,6 +481,13 @@
       "templateSaveFailed": "Failed to save template"
     },
     "export": "Export CSV/JSON",
+    "csvTime": "Time",
+    "csvWebhook": "Webhook",
+    "csvMode": "Mode",
+    "csvStatus": "Status",
+    "csvHttp": "HTTP",
+    "csvLatency": "Latency",
+    "csvError": "Error",
     "noLogs": "No logs yet",
     "clearLogs": "Clear all logs",
     "confirmClear": "Delete all logs?",

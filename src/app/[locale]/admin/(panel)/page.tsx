@@ -10,15 +10,17 @@ function StatCard({
   value,
   label,
   href,
+  locale,
 }: {
   value: number;
   label: string;
   href?: string;
+  locale: string;
 }) {
   const inner = (
     <>
       <p className="font-display font-bold text-3xl text-fg tabular-nums">
-        {value.toLocaleString()}
+        {value.toLocaleString(locale === "en" ? "en-US" : "id-ID")}
       </p>
       <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-secondary mt-1.5">
         {label}
@@ -81,18 +83,20 @@ export default async function AdminOverviewPage({
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 stagger-in">
-        <StatCard value={stats.users} label={t("statUsers")} href="/admin/users" />
-        <StatCard value={stats.templates} label={t("statTemplates")} />
+        <StatCard value={stats.users} label={t("statUsers")} href="/admin/users" locale={locale} />
+        <StatCard value={stats.templates} label={t("statTemplates")} locale={locale} />
         <StatCard
           value={stats.activeShares}
           label={t("statActiveShares")}
           href="/admin/shares"
+          locale={locale}
         />
-        <StatCard value={stats.messages7d} label={t("statMessages7d")} />
+        <StatCard value={stats.messages7d} label={t("statMessages7d")} locale={locale} />
         <StatCard
           value={stats.pendingReports}
           label={t("statPendingReports")}
           href="/admin/reports?status=pending"
+          locale={locale}
         />
       </div>
 

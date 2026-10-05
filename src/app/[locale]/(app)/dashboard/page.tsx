@@ -143,7 +143,7 @@ export default async function DashboardPage({
                         {log.webhookNameSnapshot}
                       </td>
                       <td className="px-4 py-3.5 font-mono text-xs text-fg-secondary">
-                        {log.mode}
+                        {tLogs(`mode.${log.mode as "normal" | "embed" | "both"}`)}
                       </td>
                       <td className="px-4 py-3.5 font-mono text-xs text-fg-secondary">
                         {log.latencyMs != null ? `${log.latencyMs}ms` : "—"}

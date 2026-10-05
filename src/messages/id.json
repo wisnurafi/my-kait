@@ -24,7 +24,12 @@
     "next": "Next",
     "uploadTab": "Unggah",
     "uploading": "Mengunggah…",
-    "dropHint": "Drop image atau klik untuk upload (max 8MB)"
+    "dropHint": "Drop image atau klik untuk upload (max 8MB)",
+    "uploadFailed": "Upload gagal",
+    "uploadFailedRetry": "Upload gagal. Coba lagi.",
+    "themeSystem": "Sistem",
+    "themeLight": "Terang",
+    "themeDark": "Gelap"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -137,6 +142,7 @@
     "title": "Pengaturan",
     "profile": "Profil",
     "loginViaDiscord": "Login via Discord",
+    "avatarAlt": "Foto profil kamu",
     "preferences": "Preferensi",
     "language": "Bahasa",
     "logRetention": "Retensi Log",
@@ -475,6 +481,13 @@
       "templateSaveFailed": "Gagal menyimpan template"
     },
     "export": "Export CSV/JSON",
+    "csvTime": "Waktu",
+    "csvWebhook": "Webhook",
+    "csvMode": "Mode",
+    "csvStatus": "Status",
+    "csvHttp": "HTTP",
+    "csvLatency": "Latency",
+    "csvError": "Error",
     "noLogs": "Belum ada riwayat",
     "clearLogs": "Hapus semua log",
     "confirmClear": "Yakin hapus semua log?",
