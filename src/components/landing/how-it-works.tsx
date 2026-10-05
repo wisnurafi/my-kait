@@ -153,7 +153,9 @@ export function HowItWorks() {
             ))}
           </div>
 
-          <div className="relative hidden lg:block" aria-hidden="true">
+          {/* visual kanan: tampil selaras dengan breakpoint grid 2-kolom di CSS (961px),
+              bukan lg (1024px) — di antaranya grid akan kejepit setengah lebar */}
+          <div className="relative hidden min-[961px]:block" aria-hidden="true">
             <div className="sticky top-[110px] h-[480px]">
               {visuals.map((v, i) => (
                 <div

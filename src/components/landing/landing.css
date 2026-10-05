@@ -238,7 +238,8 @@
 .ld-root .ld-c-bar{display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--ld-line)}
 .ld-root .ld-c-bar i{width:11px;height:11px;border-radius:50%;background:#2c2c31}
 .ld-root .ld-c-bar i:first-child{background:#3a3a41}
-.ld-root .ld-c-title{margin-left:8px;font-family:var(--font-mono);font-size:12px;color:var(--fg-tertiary)}
+.ld-root .ld-c-title{margin-left:8px;font-family:var(--font-mono);font-size:12px;color:var(--fg-tertiary);
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ld-root .ld-c-body{padding:20px}
 /* ---- editor mock (form asli, bukan terminal) ---- */
 .ld-root .ld-ed-body{padding:18px 20px;display:flex;flex-direction:column;gap:9px}
@@ -260,7 +261,8 @@
 @keyframes ld-blink{50%{opacity:0}}
 .ld-root .ld-ed-upload{border:1.5px dashed var(--ld-line-soft);border-radius:10px;padding:14px 16px;min-height:82px;display:flex;align-items:center;justify-content:center;transition:border-color .3s,background .3s}
 .ld-root .ld-ed-upload.active{border-color:rgba(163,230,53,.42);background:var(--accent-primary-soft)}
-.ld-root .ld-ed-upload-idle{display:flex;align-items:center;gap:10px;color:var(--fg-tertiary);font-size:12px;font-family:var(--font-mono)}
+.ld-root .ld-ed-upload-idle{display:flex;align-items:center;gap:10px;color:var(--fg-tertiary);font-size:12px;font-family:var(--font-mono);
+  flex-wrap:wrap;justify-content:center;text-align:center}
 .ld-root .ld-ed-upload-idle svg{width:18px;height:18px;stroke:var(--fg-tertiary);fill:none;stroke-width:1.8}
 .ld-root .ld-ed-progress{display:none;width:100%}
 .ld-root .ld-ed-progress .ld-track{height:6px;background:var(--ld-card-2);border-radius:99px;overflow:hidden}
@@ -273,7 +275,7 @@
 .ld-root .ld-ed-thumb span{font-family:var(--font-mono);font-size:11px;color:var(--fg-tertiary)}
 .ld-root .ld-ed-thumb .ld-ok{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--success)}
 .ld-root .ld-c-foot{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--ld-line)}
-.ld-root .ld-draft{margin-left:auto;display:flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:11px;color:var(--fg-tertiary)}
+.ld-root .ld-draft{margin-left:auto;display:flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:11px;color:var(--fg-tertiary);flex-shrink:0;white-space:nowrap}
 .ld-root .ld-draft .ld-dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
 .ld-root .ld-ed-toolbar{display:flex;align-items:center;gap:2px;padding:9px 20px;border-bottom:1px solid var(--ld-line)}
 .ld-root .ld-tool-btn{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 8px;border-radius:7px;color:var(--fg-tertiary);font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;cursor:default;transition:background .25s,color .25s}
@@ -463,6 +465,10 @@
   .ld-root .ld-float-b{ bottom:-56px; left:6px; }
   .ld-root .ld-jtrack{ max-width:100%; }
   .ld-root .ld-jnode{ width:110px; }
+}
+/* steps rail dekoratif: sembunyikan kalau viewport < 1280px —
+   di bawah itu wrap margin < 36px sehingga rail (left:-36px) kepotong tepi layar */
+@media(max-width:1280px){
   .ld-root .ld-steps-rail{ display:none; }
 }
 /* ============ RESPONSIVE: ponsel (≤640px) ============ */
@@ -491,8 +497,14 @@
 
   /* demo: panel lebih ramping */
   .ld-root .ld-dp-body{ min-height:260px; }
+  .ld-root .ld-dp-empty{ height:280px; }
   .ld-root .ld-float-a{ top:-48px; right:2px; }
   .ld-root .ld-float-b{ bottom:-48px; left:2px; }
+
+  /* form demo: hint keyboard (⌘↵) cuma relevan di desktop — sembunyikan
+     supaya tombol kirim tidak kejepit di layar sempit */
+  .ld-root .ld-ed-hint{ display:none; }
+  .ld-root .ld-send-btn{ flex:1; text-align:center; }
 
   /* journey: jadi vertical timeline */
   .ld-root .ld-journey{ padding:70px 0; }
