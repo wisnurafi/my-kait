@@ -8,13 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Toggle } from "@/components/ui/toggle";
 import { ThemeLanguageSwitcher } from "@/components/app/theme-language-switcher";
-import { ApiKeysCard } from "@/components/settings/api-keys-card";
 import { toast } from "@/components/ui/toast";
 import { signOut } from "next-auth/react";
 import { deleteAccountAction } from "@/server/actions/messages";
 import { exportUserDataAction } from "@/server/actions/export";
 import { Link } from "@/i18n/routing";
-import { Download, AlertTriangle, User } from "lucide-react";
+import { Download, AlertTriangle, User, KeyRound, ChevronRight } from "lucide-react";
 
 function staggerStyle(i: number) {
   return { "--stagger-index": i } as React.CSSProperties;
@@ -158,9 +157,26 @@ export function SettingsClient({
         </Card>
       </div>
 
-      {/* API keys */}
+      {/* API keys link */}
       <div className="stagger-in" style={staggerStyle(3)}>
-        <ApiKeysCard />
+        <Link href="/api-keys" className="no-underline block">
+          <Card hover>
+            <CardBody>
+              <div className="flex items-center gap-3">
+                <KeyRound size={20} className="text-fg-secondary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-display text-xl uppercase text-fg">
+                    {t("apiKeysTitle")}
+                  </div>
+                  <p className="text-sm text-fg-secondary">
+                    {t("apiKeysLinkDesc")}
+                  </p>
+                </div>
+                <ChevronRight size={20} className="text-fg-tertiary shrink-0" />
+              </div>
+            </CardBody>
+          </Card>
+        </Link>
       </div>
 
       {/* Danger zone */}
