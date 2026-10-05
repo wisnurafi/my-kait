@@ -118,6 +118,10 @@ export default async function AdminAuditPage({
           </div>
         )}
       </div>
+
+      {logs.length >= 200 && (
+        <p className="text-xs text-fg-tertiary font-mono">{t("limitNote")}</p>
+      )}
     </div>
   );
 }

@@ -668,7 +668,7 @@
     "deactivate": "Matikan",
     "emptyShares": "Belum ada share.",
     "usersTitle": "Pengguna",
-    "usersSubtitle": "Daftar pengguna (hanya baca).",
+    "usersSubtitle": "Kelola pengguna platform.",
     "emptyUsers": "Tidak ada pengguna.",
     "audit": "Audit",
     "auditTitle": "Log audit",
@@ -707,6 +707,19 @@
     "toastUnsuspended": "Suspend dibatalkan.",
     "toastTemplateDeleted": "Template dihapus permanen.",
     "toastActionFailed": "Aksi gagal. Coba lagi.",
-    "viewTemplate": "Lihat template"
+    "viewTemplate": "Lihat template",
+    "expandReason": "Klik untuk baca selengkapnya",
+    "filterActive": "Aktif",
+    "filterSuspended": "Disuspend",
+    "whActive": "Aktif",
+    "whInvalid": "Invalid",
+    "whRateLimited": "Rate limited",
+    "whUnchecked": "Belum dicek",
+    "limitNote": "Menampilkan maksimal 200 data terbaru.",
+    "errorTitle": "Terjadi kesalahan",
+    "errorBody": "Gagal memuat halaman admin.",
+    "retry": "Coba lagi",
+    "showPassword": "Tampilkan kata sandi",
+    "hidePassword": "Sembunyikan kata sandi"
   }
 }

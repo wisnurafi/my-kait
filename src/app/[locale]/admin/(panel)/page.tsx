@@ -6,17 +6,36 @@ import { getAdminOverview, getReports, getAdminActivity } from "@/server/actions
 import { AdminActivityCharts } from "@/components/admin/activity-charts";
 import { Flag, ArrowRight } from "lucide-react";
 
-function StatCard({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="panel p-5">
+function StatCard({
+  value,
+  label,
+  href,
+}: {
+  value: number;
+  label: string;
+  href?: string;
+}) {
+  const inner = (
+    <>
       <p className="font-display font-bold text-3xl text-fg tabular-nums">
         {value.toLocaleString()}
       </p>
       <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-secondary mt-1.5">
         {label}
       </p>
-    </div>
+    </>
   );
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="panel p-5 no-underline block transition-colors hover:border-border-strong"
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="panel p-5">{inner}</div>;
 }
 
 function fmtDate(d: Date, locale: string) {
@@ -62,11 +81,19 @@ export default async function AdminOverviewPage({
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 stagger-in">
-        <StatCard value={stats.users} label={t("statUsers")} />
+        <StatCard value={stats.users} label={t("statUsers")} href="/admin/users" />
         <StatCard value={stats.templates} label={t("statTemplates")} />
-        <StatCard value={stats.activeShares} label={t("statActiveShares")} />
+        <StatCard
+          value={stats.activeShares}
+          label={t("statActiveShares")}
+          href="/admin/shares"
+        />
         <StatCard value={stats.messages7d} label={t("statMessages7d")} />
-        <StatCard value={stats.pendingReports} label={t("statPendingReports")} />
+        <StatCard
+          value={stats.pendingReports}
+          label={t("statPendingReports")}
+          href="/admin/reports?status=pending"
+        />
       </div>
 
       {/* Activity charts */}
@@ -90,21 +117,26 @@ export default async function AdminOverviewPage({
           {latest.length === 0 ? (
             <p className="text-sm text-fg-secondary">{t("noPending")}</p>
           ) : (
-            <ul className="space-y-3">
+            <ul className="space-y-1">
               {latest.map((r) => (
                 <li
                   key={r.id}
-                  className="flex items-start justify-between gap-3 text-sm border-t border-border-ink pt-3 first:border-0 first:pt-0"
+                  className="border-t border-border-ink first:border-0"
                 >
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{r.templateName}</p>
-                    <p className="text-xs text-fg-secondary line-clamp-1">
-                      {r.reason}
-                    </p>
-                  </div>
-                  <span className="text-xs text-fg-tertiary whitespace-nowrap font-mono">
-                    {fmtDate(r.createdAt, locale)}
-                  </span>
+                  <Link
+                    href="/admin/reports?status=pending"
+                    className="flex items-start justify-between gap-3 text-sm no-underline rounded-lg px-2 -mx-2 py-2.5 transition-colors hover:bg-surface-hover/50"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium truncate text-fg">{r.templateName}</p>
+                      <p className="text-xs text-fg-secondary line-clamp-1">
+                        {r.reason}
+                      </p>
+                    </div>
+                    <span className="text-xs text-fg-tertiary whitespace-nowrap font-mono pt-0.5">
+                      {fmtDate(r.createdAt, locale)}
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -114,39 +146,39 @@ export default async function AdminOverviewPage({
         {/* Health */}
         <div className="panel p-5">
           <h3 className="mb-4">{t("healthTitle")}</h3>
-          {healthy ? (
-            <p className="text-sm text-success flex items-center gap-2">
+          {/* Numbers always stay visible — the zeros are informative too. */}
+          {healthy && (
+            <p className="text-sm text-success flex items-center gap-2 mb-4">
               <span className="inline-block size-2 rounded-full bg-success" />
               {t("allClear")}
             </p>
-          ) : (
-            <dl className="space-y-3 text-sm">
-              <div className="flex items-center justify-between border-t border-border-ink pt-3 first:border-0 first:pt-0">
-                <dt className="text-fg-secondary">{t("webhooksDown")}</dt>
-                <dd>
-                  <Badge variant={stats.webhooksDown > 0 ? "danger" : "success"}>
-                    {stats.webhooksDown}
-                  </Badge>
-                </dd>
-              </div>
-              <div className="flex items-center justify-between border-t border-border-ink pt-3">
-                <dt className="text-fg-secondary">{t("failedChecks24h")}</dt>
-                <dd>
-                  <Badge variant={stats.failedChecks24h > 0 ? "warning" : "success"}>
-                    {stats.failedChecks24h}
-                  </Badge>
-                </dd>
-              </div>
-              <div className="flex items-center justify-between border-t border-border-ink pt-3">
-                <dt className="text-fg-secondary">{t("failedMessages24h")}</dt>
-                <dd>
-                  <Badge variant={stats.failedMessages24h > 0 ? "warning" : "success"}>
-                    {stats.failedMessages24h}
-                  </Badge>
-                </dd>
-              </div>
-            </dl>
           )}
+          <dl className="space-y-3 text-sm">
+            <div className="flex items-center justify-between border-t border-border-ink pt-3 first:border-0 first:pt-0">
+              <dt className="text-fg-secondary">{t("webhooksDown")}</dt>
+              <dd>
+                <Badge variant={stats.webhooksDown > 0 ? "danger" : "success"}>
+                  {stats.webhooksDown}
+                </Badge>
+              </dd>
+            </div>
+            <div className="flex items-center justify-between border-t border-border-ink pt-3">
+              <dt className="text-fg-secondary">{t("failedChecks24h")}</dt>
+              <dd>
+                <Badge variant={stats.failedChecks24h > 0 ? "warning" : "success"}>
+                  {stats.failedChecks24h}
+                </Badge>
+              </dd>
+            </div>
+            <div className="flex items-center justify-between border-t border-border-ink pt-3">
+              <dt className="text-fg-secondary">{t("failedMessages24h")}</dt>
+              <dd>
+                <Badge variant={stats.failedMessages24h > 0 ? "warning" : "success"}>
+                  {stats.failedMessages24h}
+                </Badge>
+              </dd>
+            </div>
+          </dl>
         </div>
       </div>
     </div>

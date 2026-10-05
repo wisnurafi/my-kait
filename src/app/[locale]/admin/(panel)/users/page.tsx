@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAdminUsers } from "@/server/actions/admin";
+import { cn } from "@/lib/utils";
 import { Search } from "lucide-react";
 
 function fmtDate(d: Date, locale: string) {
@@ -14,19 +15,40 @@ function fmtDate(d: Date, locale: string) {
   });
 }
 
+const FILTERS = [
+  { v: "all", labelKey: "filterAll" },
+  { v: "active", labelKey: "filterActive" },
+  { v: "suspended", labelKey: "filterSuspended" },
+] as const;
+
+type UserFilter = (typeof FILTERS)[number]["v"];
+
 export default async function AdminUsersPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; f?: string }>;
 }) {
   const { locale } = await params;
-  const { q } = await searchParams;
+  const { q, f } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations("admin");
 
-  const list = await getAdminUsers(q);
+  const active: UserFilter =
+    f === "active" || f === "suspended" ? f : "all";
+  const list = await getAdminUsers(
+    q,
+    active === "all" ? undefined : active === "suspended",
+  );
+
+  const chipHref = (v: UserFilter) => {
+    const p = new URLSearchParams();
+    if (q) p.set("q", q);
+    if (v !== "all") p.set("f", v);
+    const s = p.toString();
+    return s ? `/admin/users?${s}` : "/admin/users";
+  };
 
   return (
     <div className="space-y-6">
@@ -37,6 +59,7 @@ export default async function AdminUsersPage({
       </div>
 
       <form method="get" className="flex gap-2 max-w-md stagger-in">
+        {active !== "all" && <input type="hidden" name="f" value={active} />}
         <div className="relative flex-1">
           <Search
             size={16}
@@ -53,6 +76,24 @@ export default async function AdminUsersPage({
           {t("search")}
         </Button>
       </form>
+
+      {/* Suspended filter */}
+      <div className="flex gap-1.5 flex-wrap stagger-in">
+        {FILTERS.map((fl) => (
+          <Link
+            key={fl.v}
+            href={chipHref(fl.v)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg no-underline font-mono text-[11px] uppercase tracking-[0.12em] border transition-colors",
+              active === fl.v
+                ? "bg-accent-soft text-accent border-accent/30"
+                : "text-fg-secondary border-border-ink hover:text-fg hover:border-border-strong",
+            )}
+          >
+            {t(fl.labelKey)}
+          </Link>
+        ))}
+      </div>
 
       <div className="panel overflow-hidden stagger-in">
         {list.length === 0 ? (
@@ -106,6 +147,10 @@ export default async function AdminUsersPage({
           </div>
         )}
       </div>
+
+      {list.length >= 200 && (
+        <p className="text-xs text-fg-tertiary font-mono">{t("limitNote")}</p>
+      )}
     </div>
   );
 }

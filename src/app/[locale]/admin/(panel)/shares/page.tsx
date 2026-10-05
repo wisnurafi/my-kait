@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getShares } from "@/server/actions/admin";
 import { ShareToggle } from "@/components/admin/share-toggle";
+import { cn } from "@/lib/utils";
 import { Search, ExternalLink } from "lucide-react";
 
 function fmtDate(d: Date, locale: string) {
@@ -15,19 +16,40 @@ function fmtDate(d: Date, locale: string) {
   });
 }
 
+const FILTERS = [
+  { v: "all", labelKey: "filterAll" },
+  { v: "active", labelKey: "active" },
+  { v: "inactive", labelKey: "inactive" },
+] as const;
+
+type ShareFilter = (typeof FILTERS)[number]["v"];
+
 export default async function AdminSharesPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; f?: string }>;
 }) {
   const { locale } = await params;
-  const { q } = await searchParams;
+  const { q, f } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations("admin");
 
-  const shares = await getShares(q);
+  const active: ShareFilter =
+    f === "active" || f === "inactive" ? f : "all";
+  const shares = await getShares(
+    q,
+    active === "all" ? undefined : active === "active",
+  );
+
+  const chipHref = (v: ShareFilter) => {
+    const p = new URLSearchParams();
+    if (q) p.set("q", q);
+    if (v !== "all") p.set("f", v);
+    const s = p.toString();
+    return s ? `/admin/shares?${s}` : "/admin/shares";
+  };
 
   return (
     <div className="space-y-6">
@@ -39,6 +61,7 @@ export default async function AdminSharesPage({
 
       {/* Search (plain GET form — no JS needed) */}
       <form method="get" className="flex gap-2 max-w-md stagger-in">
+        {active !== "all" && <input type="hidden" name="f" value={active} />}
         <div className="relative flex-1">
           <Search
             size={16}
@@ -55,6 +78,24 @@ export default async function AdminSharesPage({
           {t("search")}
         </Button>
       </form>
+
+      {/* Status filter */}
+      <div className="flex gap-1.5 flex-wrap stagger-in">
+        {FILTERS.map((fl) => (
+          <Link
+            key={fl.v}
+            href={chipHref(fl.v)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg no-underline font-mono text-[11px] uppercase tracking-[0.12em] border transition-colors",
+              active === fl.v
+                ? "bg-accent-soft text-accent border-accent/30"
+                : "text-fg-secondary border-border-ink hover:text-fg hover:border-border-strong",
+            )}
+          >
+            {t(fl.labelKey)}
+          </Link>
+        ))}
+      </div>
 
       <div className="panel overflow-hidden stagger-in">
         {shares.length === 0 ? (
@@ -130,6 +171,10 @@ export default async function AdminSharesPage({
           </div>
         )}
       </div>
+
+      {shares.length >= 200 && (
+        <p className="text-xs text-fg-tertiary font-mono">{t("limitNote")}</p>
+      )}
     </div>
   );
 }

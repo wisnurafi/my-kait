@@ -135,10 +135,29 @@ export default async function AdminReportsPage({
                       </div>
                     </td>
                     <td className="px-4 py-3 text-fg-secondary whitespace-nowrap">
-                      {r.reporterName ?? t("anonymous")}
+                      {r.reporterId ? (
+                        <Link
+                          href={`/admin/users/${r.reporterId}`}
+                          className="no-underline hover:text-fg hover:underline"
+                        >
+                          {r.reporterName}
+                        </Link>
+                      ) : (
+                        (r.reporterName ?? t("anonymous"))
+                      )}
                     </td>
                     <td className="px-4 py-3 max-w-[280px]">
-                      <p className="line-clamp-2 text-fg-secondary">{r.reason}</p>
+                      {/* Expandable: clamped by default, full text on click (no JS) */}
+                      <details className="group">
+                        <summary
+                          title={t("expandReason")}
+                          className="cursor-pointer list-none [&::-webkit-details-marker]:hidden"
+                        >
+                          <span className="line-clamp-2 group-open:line-clamp-none text-fg-secondary">
+                            {r.reason}
+                          </span>
+                        </summary>
+                      </details>
                     </td>
                     <td className="px-4 py-3 text-xs text-fg-tertiary whitespace-nowrap font-mono">
                       {fmtDate(r.createdAt, locale)}
@@ -164,6 +183,10 @@ export default async function AdminReportsPage({
           </div>
         )}
       </div>
+
+      {reports.length >= 200 && (
+        <p className="text-xs text-fg-tertiary font-mono">{t("limitNote")}</p>
+      )}
     </div>
   );
 }
