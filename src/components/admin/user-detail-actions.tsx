@@ -7,6 +7,7 @@
 
 import { useTranslations } from "next-intl";
 import { ConfirmButton } from "@/components/admin/confirm-button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { setUserSuspended, deleteTemplate } from "@/server/actions/admin";
 import { Ban, Undo2, Trash2 } from "lucide-react";
 
@@ -51,18 +52,21 @@ export function DeleteTemplateButton({
 }) {
   const t = useTranslations("admin");
   return (
-    <ConfirmButton
-      action={() => deleteTemplate(templateId)}
-      variant="ghost"
-      label={
-        <>
-          <Trash2 size={14} />
-          <span className="hidden lg:inline">{t("deleteTemplate")}</span>
-        </>
-      }
-      confirmLabel={t("deleteTemplate")}
-      confirmHint={t("deleteTemplateHint", { name: templateName })}
-      successMessage={t("toastTemplateDeleted")}
-    />
+    <Tooltip content={t("deleteTemplate")}>
+      <ConfirmButton
+        action={() => deleteTemplate(templateId)}
+        variant="ghost"
+        ariaLabel={t("deleteTemplate")}
+        label={
+          <>
+            <Trash2 size={14} />
+            <span className="hidden lg:inline">{t("deleteTemplate")}</span>
+          </>
+        }
+        confirmLabel={t("deleteTemplate")}
+        confirmHint={t("deleteTemplateHint", { name: templateName })}
+        successMessage={t("toastTemplateDeleted")}
+      />
+    </Tooltip>
   );
 }
