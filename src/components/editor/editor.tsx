@@ -166,12 +166,18 @@ export function Editor({
     embeds: [],
   });
 
-  const [sendConfig, setSendConfig] = useState(() => ({
+  const [sendConfig, setSendConfig] = useState({
     webhookId: "",
     manualUrl: "",
-    savePayload: readSavePayloadDefault(),
+    savePayload: true,
     multiTarget: [] as string[],
-  }));
+  });
+
+  // Sync savePayload default from localStorage after mount — reading it in
+  // useState would mismatch SSR HTML when the user previously set OFF.
+  useEffect(() => {
+    setSendConfig((c) => ({ ...c, savePayload: readSavePayloadDefault() }));
+  }, []);
 
   // Custom template variables detected in the payload (e.g. {nama_event}).
   // Values are filled in the send form and substituted server-side at send time.

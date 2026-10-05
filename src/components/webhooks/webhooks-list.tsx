@@ -148,24 +148,21 @@ export function WebhooksList({
 
   const searchActive = Boolean(searchParams.get("search") ?? search);
 
-  if (filteredWebhooks.length === 0 && searchActive) {
+  if (filteredWebhooks.length === 0) {
+    // Distinguish "no webhooks at all" from "filter/search matched nothing".
+    const noDataAtAll = !searchActive && !statusFilter;
     return (
       <Card className="p-12 text-center animate-fade-in">
         <div className="mx-auto mb-4 w-12 h-12 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
-          <Search size={22} className="text-accent" />
+          {noDataAtAll ? (
+            <Webhook size={22} className="text-accent" />
+          ) : (
+            <Search size={22} className="text-accent" />
+          )}
         </div>
-        <p className="text-fg-secondary text-lg">{tc("noResults")}</p>
-      </Card>
-    );
-  }
-
-  if (filteredWebhooks.length === 0 && !search) {
-    return (
-      <Card className="p-12 text-center animate-fade-in">
-        <div className="mx-auto mb-4 w-12 h-12 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
-          <Webhook size={22} className="text-accent" />
-        </div>
-        <p className="text-fg-secondary text-lg">{t("noWebhooks")}</p>
+        <p className="text-fg-secondary text-lg">
+          {noDataAtAll ? t("noWebhooks") : tc("noResults")}
+        </p>
       </Card>
     );
   }
