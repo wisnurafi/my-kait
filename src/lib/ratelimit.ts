@@ -8,6 +8,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { headers } from "next/headers";
 import { env, isRateLimitEnabled } from "./env";
+import { logger } from "./logger";
 
 /**
  * Create a rate limiter with fixed window.
@@ -71,8 +72,9 @@ export async function checkRateLimit(
     // Fail-open by explicit decision: a rate-limiter outage must not take
     // down login, sending, uploads, or reports. The unenforced window during
     // an Upstash outage is acceptable; log loudly so it stays visible.
-    console.warn(
-      "[ratelimit] Upstash error, failing open:",
+    logger.warn(
+      "ratelimit",
+      "Upstash error, failing open",
       err instanceof Error ? err.message : err,
     );
     return { success: true, remaining: 999, reset: 0 };

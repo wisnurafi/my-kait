@@ -6,6 +6,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { messageLogs, webhooks } from "@/lib/schema";
+import { logger } from "@/lib/logger";
 
 export interface PublicStats {
   totalMessages: number;
@@ -49,7 +50,7 @@ export async function getPublicStats(): Promise<PublicStats> {
       cachedAt: new Date().toISOString(),
     };
   } catch (err) {
-    console.error("[public-stats]", err);
+    logger.error("public-stats", "failed to load stats, serving fallback", err);
     // Never break the landing page — serve a graceful fallback
     return FALLBACK;
   }

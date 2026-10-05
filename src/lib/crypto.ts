@@ -89,25 +89,3 @@ export function decryptWebhookUrl(
 
   return decrypted.toString("utf8");
 }
-
-/**
- * Mask a webhook URL for display.
- * Example: https://discord.com/api/webhooks/123456/abcdef...xyz
- *       -> .../webhooks/1234.../••••abcd
- */
-export function maskWebhookUrl(url: string): string {
-  try {
-    const parsed = new URL(url);
-    const pathParts = parsed.pathname.split("/");
-    // /api/webhooks/{id}/{token}
-    const webhookId = pathParts[3] ?? "";
-    const token = pathParts[4] ?? "";
-
-    const idShort = webhookId.slice(0, 4);
-    const tokenShort = token.slice(-4);
-
-    return `…/webhooks/${idShort}…/••••${tokenShort}`;
-  } catch {
-    return "••••••••";
-  }
-}

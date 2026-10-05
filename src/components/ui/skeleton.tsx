@@ -8,21 +8,6 @@ export function Skeleton({ className, style }: { className?: string; style?: Rea
   return <div className={cn("shimmer", className)} style={style} aria-hidden />;
 }
 
-export function SkeletonRow() {
-  return (
-    <div className="p-4 flex items-center justify-between gap-3 border-b border-border-ink">
-      <div className="flex items-center gap-3 flex-1">
-        <Skeleton className="h-8 w-8 !rounded-full" />
-        <div className="space-y-2 flex-1">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-3 w-24" />
-        </div>
-      </div>
-      <Skeleton className="h-6 w-20 !rounded-full" />
-    </div>
-  );
-}
-
 /** Stat card skeleton (dashboard) */
 export function SkeletonStatCard() {
   return (

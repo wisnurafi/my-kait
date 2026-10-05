@@ -9,6 +9,7 @@ import { env } from "@/lib/env";
 import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 /**
  * Scopes: identify only (PRD: email not requested).
@@ -77,7 +78,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             .where(eq(users.discordId, discordId));
         }
       } catch (err) {
-        console.error("Failed to upsert user:", err);
+        logger.error("auth", "failed to upsert user", err);
         // Still allow sign-in — user data may be stale but session works
       }
 

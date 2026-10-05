@@ -14,6 +14,7 @@ import { decryptWebhookUrl } from "@/lib/crypto";
 import { pingWebhook } from "@/lib/discord";
 import { env } from "@/lib/env";
 import type { WebhookStatus } from "@/lib/schema";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 minutes — pinging many webhooks takes time
@@ -113,7 +114,7 @@ export async function GET(req: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    console.error("Cron health-check error:", err);
+    logger.error("cron", "health-check failed", err);
     return NextResponse.json({ error: "Health check failed" }, { status: 500 });
   }
 }
