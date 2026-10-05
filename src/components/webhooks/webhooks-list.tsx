@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useFormatter } from "next-intl";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ import {
 import { PingHistory } from "@/components/webhooks/ping-history";
 import { EditWebhookForm } from "@/components/webhooks/edit-webhook-form";
 import { Search, Zap, Trash2, Send, RefreshCw, Pencil, Webhook, Folder } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type WebhookStatus = "active" | "invalid" | "rate_limited" | "unchecked";
 
@@ -53,10 +53,12 @@ export function WebhooksList({
   folders: Array<{ id: string; name: string }>;
 }) {
   const t = useTranslations("webhooks");
+  const tc = useTranslations("common");
   const format = useFormatter();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
@@ -68,16 +70,31 @@ export function WebhooksList({
 
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
     setSearch(e.target.value);
-    const params = new URLSearchParams();
-    if (e.target.value) params.set("search", e.target.value);
-    router.push(`?${params.toString()}`);
   }
+
+  // Debounce search — preserve other params (e.g. folder), reset page.
+  // statusFilter is client-side only and is never reset by search.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const current = searchParams.get("search") ?? "";
+      if (search !== current) {
+        const params = new URLSearchParams(searchParams.toString());
+        if (search) params.set("search", search);
+        else params.delete("search");
+        params.delete("page");
+        router.push(`?${params.toString()}`);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   function handlePing(webhookId: string) {
     startTransition(async () => {
       const formData = new FormData();
       formData.set("webhookId", webhookId);
-      await pingWebhookAction(formData);
+      const res = await pingWebhookAction(formData);
+      if (res?.error) toast.error(res.error);
+      else toast.success(t("pingOk"));
     });
   }
 
@@ -109,7 +126,12 @@ export function WebhooksList({
 
   function handlePingAll() {
     startTransition(async () => {
-      await pingAllWebhooksAction();
+      try {
+        await pingAllWebhooksAction();
+        toast.success(t("pingAllDone"));
+      } catch {
+        toast.error(t("pingFailed"));
+      }
     });
   }
 
@@ -122,6 +144,19 @@ export function WebhooksList({
       if (res?.error) toast.error(res.error);
       else toast.success(t("movedToFolder"));
     });
+  }
+
+  const searchActive = Boolean(searchParams.get("search") ?? search);
+
+  if (filteredWebhooks.length === 0 && searchActive) {
+    return (
+      <Card className="p-12 text-center animate-fade-in">
+        <div className="mx-auto mb-4 w-12 h-12 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
+          <Search size={22} className="text-accent" />
+        </div>
+        <p className="text-fg-secondary text-lg">{tc("noResults")}</p>
+      </Card>
+    );
   }
 
   if (filteredWebhooks.length === 0 && !search) {

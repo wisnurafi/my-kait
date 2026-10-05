@@ -34,7 +34,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "@/i18n/routing";
 import { DiscordPreview } from "@/components/editor/discord-preview";
-import { useState as useReactState } from "react";
 
 type MessageStatus = "sent" | "failed" | "rate_limited" | "edited" | "deleted";
 type MessageMode = "normal" | "embed" | "both";
@@ -85,7 +84,7 @@ export function LogsView({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [selectedLog, setSelectedLog] = useState<(typeof logsData.logs)[0] | null>(null);
-  const [search, setSearch] = useReactState(currentFilters.search ?? "");
+  const [search, setSearch] = useState(currentFilters.search ?? "");
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
@@ -203,20 +202,23 @@ export function LogsView({
         </div>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[
-          { value: logsData.summary.sent, label: t("summary.sent"), color: "text-success" },
-          { value: logsData.summary.failed, label: t("summary.failed"), color: "text-error" },
-          { value: `${logsData.summary.successRate}%`, label: t("summary.successRate"), color: "" },
-        ].map((s, i) => (
-          <div key={s.label} className="stagger-in" style={staggerStyle(i)}>
-            <Card hover className="p-5">
-              <div className={`text-3xl font-display font-bold ${s.color}`}>{s.value}</div>
-              <div className="label mt-1.5">{s.label}</div>
-            </Card>
-          </div>
-        ))}
+      {/* Summary cards — all-time totals, independent of active filters */}
+      <div>
+        <p className="text-[11px] text-fg-tertiary mb-2">{t("summaryAllTime")}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { value: logsData.summary.sent, label: t("summary.sent"), color: "text-success" },
+            { value: logsData.summary.failed, label: t("summary.failed"), color: "text-error" },
+            { value: `${logsData.summary.successRate}%`, label: t("summary.successRate"), color: "" },
+          ].map((s, i) => (
+            <div key={s.label} className="stagger-in" style={staggerStyle(i)}>
+              <Card hover className="p-5">
+                <div className={`text-3xl font-display font-bold ${s.color}`}>{s.value}</div>
+                <div className="label mt-1.5">{s.label}</div>
+              </Card>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Filters */}

@@ -93,7 +93,7 @@ export function Navbar() {
 
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden flex items-stretch justify-around bg-surface border-t border-border-ink px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-        {navItems.slice(0, 5).map((item) => {
+        {navItems.map((item) => {
           const isActive = pathname.includes(item.href);
           return (
             <Link
@@ -101,7 +101,7 @@ export function Navbar() {
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "relative flex flex-col items-center gap-1 px-3 py-2 no-underline",
+                "relative flex flex-col items-center gap-1 px-2 py-2 no-underline",
                 "font-mono text-[9px] uppercase tracking-[0.12em]",
                 "transition-colors duration-150",
                 isActive ? "text-accent" : "text-fg-secondary",

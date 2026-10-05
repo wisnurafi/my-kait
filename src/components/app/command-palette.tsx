@@ -261,6 +261,12 @@ export function CommandPaletteProvider({
 export function CommandPaletteButton() {
   const t = useTranslations("dashboard");
   const { openPalette } = useCommandPalette();
+  // Platform-aware shortcut label. Resolved after mount so SSR HTML
+  // ("Ctrl+K") matches the first client render — no hydration mismatch.
+  const [isMac, setIsMac] = useState(false);
+  useEffect(() => {
+    setIsMac(/mac/i.test(navigator.platform ?? ""));
+  }, []);
   return (
     <button
       type="button"
@@ -269,7 +275,7 @@ export function CommandPaletteButton() {
       aria-label={t("commandPalette")}
     >
       <Command size={14} />
-      ⌘K
+      {isMac ? "⌘K" : "Ctrl+K"}
       <span className="hidden sm:inline">{t("commandPalette")}</span>
     </button>
   );

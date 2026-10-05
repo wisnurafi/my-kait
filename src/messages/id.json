@@ -92,7 +92,8 @@
     "tagsPlaceholder": "tag1, tag2",
     "importTagsPlaceholder": "tag1, tag2, tag3",
     "copyShareLink": "Salin tautan",
-    "openShareLink": "Buka tautan"
+    "openShareLink": "Buka tautan",
+    "noSearchResults": "Tidak ada template yang cocok dengan pencarian."
   },
   "dashboard": {
     "greeting": "Hai, {name}! 👋",
@@ -153,7 +154,9 @@
     "dataExport": "Ekspor Data",
     "dataExportDesc": "Download semua data kamu (webhook, template, log) sebagai file JSON.",
     "exportButton": "Download JSON",
-    "exporting": "Menyiapkan..."
+    "exporting": "Menyiapkan...",
+    "exportFailed": "Gagal mengekspor data.",
+    "deleteFailed": "Gagal menghapus akun."
   },
   "landing": {
     "navFeatures": "Fitur",
@@ -285,7 +288,8 @@
       "active": "Aktif",
       "invalid": "Tidak valid",
       "rate_limited": "Rate limited",
-      "unchecked": "Belum dicek"
+      "unchecked": "Belum dicek",
+      "error": "Error"
     },
     "searchPlaceholder": "Cari nama webhook…",
     "lastChecked": "Terakhir dicek",
@@ -319,7 +323,10 @@
     "folderCreated": "Folder dibuat",
     "save": "Simpan",
     "cancel": "Batal",
-    "folderCreate": "Buat folder"
+    "folderCreate": "Buat folder",
+    "pingOk": "Ping berhasil",
+    "pingFailed": "Ping gagal",
+    "pingAllDone": "Semua webhook berhasil di-ping"
   },
   "editor": {
     "title": "Editor Pesan",
@@ -484,7 +491,8 @@
       "clearFailed": "Gagal menghapus log",
       "deleted": "Pesan dihapus dari Discord",
       "loadedToEditor": "Payload dimuat ke editor"
-    }
+    },
+    "summaryAllTime": "Total keseluruhan"
   },
   "errors": {
     "unauthorized": "Silakan login dulu",

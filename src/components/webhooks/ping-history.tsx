@@ -11,6 +11,7 @@ type PingStatus = "active" | "invalid" | "rate_limited" | "error" | "unchecked";
 
 export function PingHistory({ webhookId }: { webhookId: string }) {
   const t = useTranslations("ping");
+  const tw = useTranslations("webhooks");
   const format = useFormatter();
   const [history, setHistory] = useState<Awaited<ReturnType<typeof getPingHistory>> | null>(null);
 
@@ -50,7 +51,7 @@ export function PingHistory({ webhookId }: { webhookId: string }) {
           <div key={check.id} className="flex items-center justify-between text-sm py-2 px-3 bg-sunken border border-border-ink rounded-lg">
             <div className="flex items-center gap-2">
               <Badge variant={statusVariant[check.status as PingStatus]}>
-                {check.status}
+                {tw(`status.${check.status}`)}
               </Badge>
               {check.httpStatus && (
                 <span className="text-fg-secondary text-xs">HTTP {check.httpStatus}</span>

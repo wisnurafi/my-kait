@@ -35,10 +35,12 @@ export function StatCards({
   webhooks,
   sent,
   successRate,
+  caption,
 }: {
   webhooks: number;
   sent: number;
   successRate: number;
+  caption?: string;
 }) {
   const t = useTranslations("dashboard");
   const stats: {
@@ -59,18 +61,21 @@ export function StatCards({
     },
   ];
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {stats.map((s, i) => (
-        <StatCard
-          key={s.label}
-          label={s.label}
-          value={s.value}
-          suffix={s.suffix}
-          icon={s.icon}
-          index={i}
-          hint={s.hint}
-        />
-      ))}
+    <div className="space-y-2">
+      {caption && <p className="text-[11px] text-fg-tertiary">{caption}</p>}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {stats.map((s, i) => (
+          <StatCard
+            key={s.label}
+            label={s.label}
+            value={s.value}
+            suffix={s.suffix}
+            icon={s.icon}
+            index={i}
+            hint={s.hint}
+          />
+        ))}
+      </div>
     </div>
   );
 }
