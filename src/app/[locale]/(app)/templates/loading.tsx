@@ -12,14 +12,14 @@ function TemplateCardSkeleton() {
       <div className="flex items-center gap-3">
         <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
         <Skeleton className="h-5 flex-1" />
-        <Skeleton className="h-6 w-16 !rounded-full shrink-0" />
+        <Skeleton className="h-6 w-16 rounded-full! shrink-0" />
       </div>
       {/* Meta block */}
       <Skeleton className="h-3 w-24" />
       {/* Tags */}
       <div className="flex gap-1.5">
-        <Skeleton className="h-5 w-14 !rounded-full" />
-        <Skeleton className="h-5 w-10 !rounded-full" />
+        <Skeleton className="h-5 w-14 rounded-full!" />
+        <Skeleton className="h-5 w-10 rounded-full!" />
       </div>
       {/* Action row: icon-buttons */}
       <div className="flex gap-1 pt-3 border-t border-border-ink">
@@ -46,9 +46,9 @@ export default function TemplatesLoading() {
           <Skeleton className="h-11 w-full rounded-xl" />
           {/* Folder chip rail (mobile) */}
           <div className="lg:hidden flex gap-2 overflow-hidden">
-            <Skeleton className="h-8 w-24 !rounded-full shrink-0" />
-            <Skeleton className="h-8 w-28 !rounded-full shrink-0" />
-            <Skeleton className="h-8 w-20 !rounded-full shrink-0" />
+            <Skeleton className="h-8 w-24 rounded-full! shrink-0" />
+            <Skeleton className="h-8 w-28 rounded-full! shrink-0" />
+            <Skeleton className="h-8 w-20 rounded-full! shrink-0" />
           </div>
           {/* Card grid: 1 -> 2 -> 3 cols */}
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

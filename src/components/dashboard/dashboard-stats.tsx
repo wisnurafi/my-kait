@@ -8,7 +8,7 @@
  * 3px minimum bar height, keyboard-navigable bars and a .chart-tip tooltip;
  * the donut arc (.donut-arc) animates on mount via rAF.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
@@ -48,37 +48,104 @@ function parseLocalDate(iso: string): Date {
   return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
 }
 
-/* --- Shared floating chart tooltip (.chart-tip contract) --- */
-type TipState = { x: number; y: number; above: boolean; content: ReactNode } | null;
+/* --- Shared floating chart tooltip (.chart-tip contract) ---
+   Positioning happens in JS (globals.css is off-limits): ChartTip measures
+   its own rendered size, then flips/clamps so the tooltip NEVER leaves the
+   viewport — regardless of scroll, anchor position, or screen size.
+   - bars: centered above the anchor; flips below if the top would clip
+   - donut: below the circle, never a centered overlay
+   - final pass: hard-clamp into the viewport on both axes
+   No tooltip animation exists, so prefers-reduced-motion needs no handling. */
+type TipPlacement = "bar" | "donut";
+
+type TipState = {
+  content: ReactNode;
+  placement: TipPlacement;
+  // Anchor + container rects in client (viewport) coords, captured at show()
+  // time so scroll is inherently accounted for.
+  anchor: { cx: number; top: number; bottom: number };
+  container: { left: number; top: number };
+} | null;
 
 function useChartTip() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tip, setTip] = useState<TipState>(null);
 
-  const show = (el: Element, content: ReactNode) => {
+  const show = (el: Element, content: ReactNode, placement: TipPlacement = "bar") => {
     const c = containerRef.current;
     if (!c) return;
     const r = el.getBoundingClientRect();
     const cr = c.getBoundingClientRect();
-    // Center on the bar, clamped inside the container (tip min-width 190px)
-    const x = Math.max(100, Math.min(cr.width - 100, r.left + r.width / 2 - cr.left));
-    const y = r.top - cr.top;
-    setTip({ x, y, above: y > 150, content });
+    setTip({
+      content,
+      placement,
+      anchor: { cx: r.left + r.width / 2, top: r.top, bottom: r.bottom },
+      container: { left: cr.left, top: cr.top },
+    });
   };
   const hide = () => setTip(null);
   return { containerRef, tip, show, hide };
 }
 
+const TIP_GAP = 12; // px between anchor and tooltip
+const TIP_VIEWPORT_MARGIN = 8; // min px between tooltip and viewport edge
+
 function ChartTip({ tip }: { tip: NonNullable<TipState> }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Container-relative coords, set after the tooltip measures itself.
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const tw = el.offsetWidth;
+    const th = el.offsetHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const M = TIP_VIEWPORT_MARGIN;
+    const { anchor, container, placement } = tip;
+
+    let leftV = anchor.cx - tw / 2; // viewport/client coords
+    let topV: number;
+
+    if (placement === "donut") {
+      // Below the circle — never overlapping the donut itself.
+      topV = anchor.bottom + TIP_GAP;
+      // Not enough room below but room above: flip above (clamp keeps it
+      // inside the viewport as a last resort).
+      if (topV + th > vh - M && anchor.top - TIP_GAP - th >= M) {
+        topV = anchor.top - th - TIP_GAP;
+      }
+    } else {
+      // Bars: above by default, centered on the bar.
+      topV = anchor.top - th - TIP_GAP;
+      // Would clip the viewport top (e.g. bar near a scrolled-up card):
+      // flip below the anchor instead.
+      if (topV < M) {
+        topV = anchor.bottom + TIP_GAP;
+      }
+    }
+
+    // Hard clamp into the viewport on both axes — the tooltip can never
+    // escape, even if that means it sits slightly off the anchor.
+    leftV = Math.max(M, Math.min(vw - tw - M, leftV));
+    topV = Math.max(M, Math.min(vh - th - M, topV));
+
+    // Convert viewport coords to container-relative (tooltip is absolutely
+    // positioned inside the relative container).
+    setPos({ left: leftV - container.left, top: topV - container.top });
+  }, [tip]);
+
   return (
     <div
+      ref={ref}
       className="chart-tip"
+      role="status"
       style={{
-        left: tip.x,
-        top: tip.y,
-        transform: tip.above
-          ? "translate(-50%, calc(-100% - 12px))"
-          : "translate(-50%, 12px)",
+        left: pos?.left ?? 0,
+        top: pos?.top ?? 0,
+        // Hidden until measured so there's no one-frame jump from (0,0).
+        visibility: pos ? "visible" : "hidden",
       }}
     >
       {tip.content}
@@ -529,6 +596,7 @@ function SuccessDonut({
                 failed={failed}
                 total={sent + failed}
               />,
+              "donut",
             )
           }
           onMouseLeave={hide}
@@ -541,6 +609,7 @@ function SuccessDonut({
                 failed={failed}
                 total={sent + failed}
               />,
+              "donut",
             )
           }
           onBlur={hide}

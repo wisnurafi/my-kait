@@ -26,7 +26,8 @@ export default async function AppLayout({
       <Navbar />
       <CommandPaletteProvider>
         <main className="dash-main md:pl-64 pb-20 md:pb-0">
-          <div className="p-6 md:p-8 max-w-7xl mx-auto">{children}</div>
+          {/* relative: keeps content above .dash-main::before noise layer (same as admin shell) */}
+          <div className="relative p-6 md:p-8 max-w-7xl mx-auto">{children}</div>
         </main>
       </CommandPaletteProvider>
       <Toaster />
