@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { auth } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/ratelimit";
+import { logger } from "@/lib/logger";
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/avif"];
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: blob.url });
   } catch (err) {
-    console.error("Upload error:", err);
+    logger.error("upload", "upload failed", err);
     return NextResponse.json(
       { error: "Upload failed. Try again." },
       { status: 500 },
@@ -108,7 +109,7 @@ export async function DELETE(req: Request) {
     await del(url, { token: process.env.BLOB_READ_WRITE_TOKEN });
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("Delete error:", err);
+    logger.error("upload", "blob delete failed", err);
     return NextResponse.json({ error: "Delete failed" }, { status: 500 });
   }
 }

@@ -50,6 +50,7 @@ import {
   extractCustomVariables,
   substitutePayloadVariables,
 } from "@/lib/template-vars";
+import { logger } from "@/lib/logger";
 
 /* --- Types --- */
 
@@ -267,11 +268,11 @@ export function Editor({
           !newState.threadId &&
           newState.embeds.length === 0;
         if (isEmpty) {
-          console.warn("[mykait] import payload parsed but produced empty state", parsed);
+          logger.warn("editor", "import payload parsed but produced empty state", parsed);
           toast.error(t("importEmpty"));
         }
       } catch (err) {
-        console.error("[mykait] failed to load import payload", err);
+        logger.error("editor", "failed to load import payload", err);
         toast.error(t("importFailed"));
       }
       sessionStorage.removeItem("mykait-import-payload");

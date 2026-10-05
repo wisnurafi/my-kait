@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: Request) {
   // Verify secret
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    console.error("Cron cleanup error:", err);
+    logger.error("cron", "cleanup failed", err);
     return NextResponse.json(
       { error: "Cleanup failed" },
       { status: 500 },

@@ -5,6 +5,7 @@
  */
 
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export type NewReportNotice = {
   templateName: string;
@@ -51,9 +52,9 @@ export async function notifyAdminNewReport(
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) {
-      console.error(`[admin-notify] Discord webhook returned ${res.status}`);
+      logger.error("admin-notify", `Discord webhook returned ${res.status}`);
     }
   } catch (err) {
-    console.error("[admin-notify] failed to send:", err);
+    logger.error("admin-notify", "failed to send", err);
   }
 }
