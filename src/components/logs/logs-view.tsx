@@ -88,6 +88,16 @@ export function LogsView({
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
+  // Lock body scroll while the detail drawer is open (same pattern as ui/dialog)
+  useEffect(() => {
+    if (!selectedLog) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [selectedLog]);
+
   function updateFilter(key: string, value: string) {
     const params = new URLSearchParams(currentFilters as Record<string, string>);
     if (value) params.set(key, value);

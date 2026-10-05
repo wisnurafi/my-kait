@@ -53,7 +53,11 @@ export function Toaster() {
   }, []);
 
   return (
-    <div className="fixed bottom-6 right-6 z-[120] flex flex-col gap-2 items-end pointer-events-none">
+    <div
+      className="fixed bottom-6 right-6 z-[120] flex flex-col gap-2 items-end pointer-events-none"
+      role="status"
+      aria-live="polite"
+    >
       <AnimatePresence>
         {items.map((t) => {
           const s = kindStyles[t.kind];
@@ -66,6 +70,8 @@ export function Toaster() {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 40, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 32 }}
+              // Errors are announced assertively so failures are never missed
+              role={t.kind === "error" ? "alert" : undefined}
               className={cn(
                 "pointer-events-auto flex items-center gap-2.5 pl-3 pr-4 py-3 rounded-lg border",
                 "bg-surface shadow-md",
