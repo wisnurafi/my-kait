@@ -99,7 +99,7 @@ export function SettingsClient({
               {user?.image ? (
                 <img
                   src={user.image}
-                  alt="Avatar"
+                  alt={t("avatarAlt")}
                   className="w-16 h-16 rounded-full ring-2 ring-border-ink object-cover"
                 />
               ) : (

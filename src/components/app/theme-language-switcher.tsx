@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Sun, Moon, Monitor, Globe } from "lucide-react";
@@ -8,6 +8,7 @@ import { useTheme, type Theme } from "./use-theme";
 
 export function ThemeLanguageSwitcher() {
   const locale = useLocale();
+  const t = useTranslations("common");
   const router = useRouter();
   const pathname = usePathname();
   const { theme, setTheme, mounted } = useTheme();
@@ -35,9 +36,9 @@ export function ThemeLanguageSwitcher() {
 
       {/* Theme switcher — segmented */}
       <div className="flex items-center p-1 rounded-lg border border-border-ink bg-sunken">
-        <ThemeButton icon={Monitor} active={theme === "system"} onClick={() => setTheme("system")} label="System" />
-        <ThemeButton icon={Sun} active={theme === "light"} onClick={() => setTheme("light")} label="Light" />
-        <ThemeButton icon={Moon} active={theme === "dark"} onClick={() => setTheme("dark")} label="Dark" />
+        <ThemeButton icon={Monitor} active={theme === "system"} onClick={() => setTheme("system")} label={t("themeSystem")} />
+        <ThemeButton icon={Sun} active={theme === "light"} onClick={() => setTheme("light")} label={t("themeLight")} />
+        <ThemeButton icon={Moon} active={theme === "dark"} onClick={() => setTheme("dark")} label={t("themeDark")} />
       </div>
     </div>
   );

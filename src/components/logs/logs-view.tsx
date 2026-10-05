@@ -193,7 +193,8 @@ export function LogsView({
             variant="secondary"
             size="sm"
             onClick={() => {
-              const csv = exportToCsv(logsData.logs);
+              const headers = [t("csvTime"), t("csvWebhook"), t("csvMode"), t("csvStatus"), t("csvHttp"), t("csvLatency"), t("csvError")];
+              const csv = exportToCsv(logsData.logs, headers);
               downloadFile(csv, "logs.csv", "text/csv");
             }}
             className="gap-1.5"
@@ -616,8 +617,7 @@ export function LogsView({
 
 /* --- Export helpers --- */
 
-function exportToCsv(logs: Array<{ webhookNameSnapshot: string; mode: string; status: string; httpStatus: number | null; latencyMs: number | null; error: string | null; createdAt: Date }>): string {
-  const headers = ["Waktu", "Webhook", "Mode", "Status", "HTTP", "Latency", "Error"];
+function exportToCsv(logs: Array<{ webhookNameSnapshot: string; mode: string; status: string; httpStatus: number | null; latencyMs: number | null; error: string | null; createdAt: Date }>, headers: string[]): string {
   const rows = logs.map((l) => [
     new Date(l.createdAt).toISOString(),
     l.webhookNameSnapshot,

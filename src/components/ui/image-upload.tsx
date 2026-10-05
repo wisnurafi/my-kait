@@ -47,13 +47,13 @@ export function ImageUpload({
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Upload gagal");
+        setError(data.error || t("uploadFailed"));
         return;
       }
 
       onChange(data.url);
     } catch {
-      setError("Upload gagal. Coba lagi.");
+      setError(t("uploadFailedRetry"));
     } finally {
       setUploading(false);
     }
