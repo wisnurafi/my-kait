@@ -29,7 +29,7 @@ export function Navbar() {
 
   return (
     <>
-      {/* Mobile top bar — logo + theme/language, one-tap access on small screens */}
+      {/* Mobile top bar — logo + theme/language/logout, one-tap access on small screens */}
       <header className="sticky top-0 z-40 md:hidden flex items-center justify-between gap-2 px-4 py-2.5 bg-surface border-b border-border-ink">
         <Link href="/dashboard" className="flex items-center gap-2 no-underline min-w-0">
           <HookLogo size={24} />
@@ -37,7 +37,18 @@ export function Navbar() {
             my-kait
           </span>
         </Link>
-        <ThemeLanguageSwitcher />
+        <div className="flex items-center gap-2 shrink-0">
+          <ThemeLanguageSwitcher />
+          <button
+            type="button"
+            onClick={() => signOut({ redirectTo: "/" })}
+            title={t("logout")}
+            aria-label={t("logout")}
+            className="p-2 rounded-lg border border-border-ink bg-surface text-fg-secondary hover:text-fg hover:border-border-strong transition-colors duration-150 cursor-pointer focus-ring"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
       </header>
 
       {/* Desktop sidebar */}
@@ -129,20 +140,6 @@ export function Navbar() {
             </Link>
           );
         })}
-        {/* Logout — mirrors admin mobile nav (sidebar footer is desktop-only) */}
-        <button
-          type="button"
-          onClick={() => signOut({ redirectTo: "/" })}
-          aria-label={t("logout")}
-          className={cn(
-            "relative flex flex-col items-center gap-1 px-2 py-2",
-            "font-mono text-[9px] uppercase tracking-[0.12em]",
-            "transition-colors duration-150 text-fg-secondary active:text-fg cursor-pointer",
-          )}
-        >
-          <LogOut size={18} />
-          {t("logout")}
-        </button>
       </nav>
     </>
   );
