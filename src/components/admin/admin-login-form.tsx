@@ -80,9 +80,11 @@ export function AdminLoginForm() {
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? t("hidePassword") : t("showPassword")}
               disabled={pending}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-tertiary hover:text-fg transition-colors"
+              className="hv absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-tertiary hover:text-fg transition-colors"
             >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              <span className="ia" aria-hidden="true">
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </span>
             </button>
           </div>
         </div>

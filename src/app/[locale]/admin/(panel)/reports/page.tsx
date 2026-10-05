@@ -59,7 +59,7 @@ export default async function AdminReportsPage({
   return (
     <div className="space-y-6">
       <div className="stagger-in">
-        <div className="label mb-2">{t("eyebrow")}</div>
+        <div className="label mb-2 cursor-blink">{t("eyebrow")}</div>
         <h2>{t("reportsTitle")}</h2>
         <p className="text-sm text-fg-secondary mt-1">{t("reportsSubtitle")}</p>
       </div>
@@ -82,105 +82,98 @@ export default async function AdminReportsPage({
         ))}
       </div>
 
-      {/* Queue */}
-      <div className="panel overflow-hidden stagger-in">
+      {/* Queue — .rtable collapses into labeled stacked cards on mobile */}
+      <div className="panel overflow-hidden stagger-in p-3 md:p-0">
         {reports.length === 0 ? (
           <p className="p-6 text-sm text-fg-secondary">{t("emptyReports")}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[880px]">
-              <thead>
-                <tr className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-tertiary text-left">
-                  <th className="px-4 py-3 font-medium">{t("colTemplate")}</th>
-                  <th className="px-4 py-3 font-medium">{t("colReporter")}</th>
-                  <th className="px-4 py-3 font-medium">{t("colReason")}</th>
-                  <th className="px-4 py-3 font-medium">{t("colDate")}</th>
-                  <th className="px-4 py-3 font-medium">{t("colStatus")}</th>
-                  <th className="px-4 py-3 font-medium text-right">
-                    {t("colActions")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {reports.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-t border-border-ink align-top hover:bg-surface-hover/50"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="font-medium max-w-[180px] truncate">
-                        {r.templateName}
-                      </div>
-                      {r.templateSlug && (
-                        <Link
-                          href={`/t/${r.templateSlug}`}
-                          target="_blank"
-                          title={t("viewTemplate")}
-                          className="font-mono text-xs text-accent hover:underline inline-flex items-center gap-1 no-underline mt-0.5"
-                        >
-                          /t/{r.templateSlug} <ExternalLink size={11} />
-                        </Link>
+          <table className="rtable">
+            <thead>
+              <tr>
+                <th>{t("colTemplate")}</th>
+                <th>{t("colReporter")}</th>
+                <th>{t("colReason")}</th>
+                <th>{t("colDate")}</th>
+                <th>{t("colStatus")}</th>
+                <th className="text-right">{t("colActions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reports.map((r) => (
+                <tr key={r.id}>
+                  <td data-label={t("colTemplate")}>
+                    <div className="font-medium max-w-[180px] truncate">
+                      {r.templateName}
+                    </div>
+                    {r.templateSlug && (
+                      <Link
+                        href={`/t/${r.templateSlug}`}
+                        target="_blank"
+                        title={t("viewTemplate")}
+                        className="font-mono text-xs text-accent hover:underline inline-flex items-center gap-1 no-underline mt-0.5"
+                      >
+                        /t/{r.templateSlug} <ExternalLink size={11} />
+                      </Link>
+                    )}
+                    <div className="flex items-center gap-1.5 mt-1">
+                      {r.reportCount > 1 && (
+                        <Badge variant="warning" className="font-mono text-[10px]">
+                          {t("reportedTimes", { count: r.reportCount })}
+                        </Badge>
                       )}
-                      <div className="flex items-center gap-1.5 mt-1">
-                        {r.reportCount > 1 && (
-                          <Badge variant="warning" className="font-mono text-[10px]">
-                            {t("reportedTimes", { count: r.reportCount })}
-                          </Badge>
-                        )}
-                        {r.shareActive === false && (
-                          <Badge variant="default" className="font-mono text-[10px]">
-                            {t("unshared")}
-                          </Badge>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-fg-secondary whitespace-nowrap">
-                      {r.reporterId ? (
-                        <Link
-                          href={`/admin/users/${r.reporterId}`}
-                          className="no-underline hover:text-fg hover:underline"
-                        >
-                          {r.reporterName}
-                        </Link>
+                      {r.shareActive === false && (
+                        <Badge variant="default" className="font-mono text-[10px]">
+                          {t("unshared")}
+                        </Badge>
+                      )}
+                    </div>
+                  </td>
+                  <td data-label={t("colReporter")} className="text-fg-secondary whitespace-nowrap">
+                    {r.reporterId ? (
+                      <Link
+                        href={`/admin/users/${r.reporterId}`}
+                        className="no-underline hover:text-fg hover:underline"
+                      >
+                        {r.reporterName}
+                      </Link>
+                    ) : (
+                      (r.reporterName ?? t("anonymous"))
+                    )}
+                  </td>
+                  <td data-label={t("colReason")} className="max-w-[280px]">
+                    {/* Expandable: clamped by default, full text on click (no JS) */}
+                    <details className="group">
+                      <summary
+                        title={t("expandReason")}
+                        className="cursor-pointer list-none [&::-webkit-details-marker]:hidden"
+                      >
+                        <span className="line-clamp-2 group-open:line-clamp-none text-fg-secondary">
+                          {r.reason}
+                        </span>
+                      </summary>
+                    </details>
+                  </td>
+                  <td data-label={t("colDate")} className="text-xs text-fg-tertiary whitespace-nowrap font-mono">
+                    {fmtDate(r.createdAt, locale)}
+                  </td>
+                  <td data-label={t("colStatus")} className="whitespace-nowrap">
+                    <Badge variant={statusVariant[r.status]}>
+                      {t(filterLabel(r.status))}
+                    </Badge>
+                  </td>
+                  <td data-label={t("colActions")}>
+                    <div className="flex md:justify-end">
+                      {r.status === "pending" ? (
+                        <ReportActions reportId={r.id} />
                       ) : (
-                        (r.reporterName ?? t("anonymous"))
+                        <span className="text-xs text-fg-tertiary">—</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 max-w-[280px]">
-                      {/* Expandable: clamped by default, full text on click (no JS) */}
-                      <details className="group">
-                        <summary
-                          title={t("expandReason")}
-                          className="cursor-pointer list-none [&::-webkit-details-marker]:hidden"
-                        >
-                          <span className="line-clamp-2 group-open:line-clamp-none text-fg-secondary">
-                            {r.reason}
-                          </span>
-                        </summary>
-                      </details>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-fg-tertiary whitespace-nowrap font-mono">
-                      {fmtDate(r.createdAt, locale)}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <Badge variant={statusVariant[r.status]}>
-                        {t(filterLabel(r.status))}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end">
-                        {r.status === "pending" ? (
-                          <ReportActions reportId={r.id} />
-                        ) : (
-                          <span className="text-xs text-fg-tertiary">—</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 

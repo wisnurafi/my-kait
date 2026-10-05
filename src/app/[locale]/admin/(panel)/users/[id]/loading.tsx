@@ -12,7 +12,7 @@ function ListRows({ rows = 3 }: { rows?: number }) {
             <Skeleton className="h-4 w-1/3" />
             <Skeleton className="h-3 w-1/4" />
           </div>
-          <Skeleton className="h-8 w-20 !rounded-lg" />
+          <Skeleton className="h-8 w-20 rounded-lg!" />
         </div>
       ))}
     </div>
@@ -34,7 +34,7 @@ export default function AdminUserDetailLoading() {
             <Skeleton className="h-4 w-40" />
             <Skeleton className="h-3 w-32" />
           </div>
-          <Skeleton className="h-9 w-28 !rounded-lg" />
+          <Skeleton className="h-9 w-28 rounded-lg!" />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
           {Array.from({ length: 4 }).map((_, i) => (

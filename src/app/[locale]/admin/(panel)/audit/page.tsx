@@ -56,7 +56,7 @@ export default async function AdminAuditPage({
   return (
     <div className="space-y-6">
       <div className="stagger-in">
-        <div className="label mb-2">{t("eyebrow")}</div>
+        <div className="label mb-2 cursor-blink">{t("eyebrow")}</div>
         <h2>{t("auditTitle")}</h2>
         <p className="text-sm text-fg-secondary mt-1">{t("auditSubtitle")}</p>
       </div>
@@ -78,44 +78,39 @@ export default async function AdminAuditPage({
         ))}
       </div>
 
-      <div className="panel overflow-hidden stagger-in">
+      <div className="panel overflow-hidden stagger-in p-3 md:p-0">
         {logs.length === 0 ? (
           <p className="p-6 text-sm text-fg-secondary">{t("emptyAudit")}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[760px]">
-              <thead>
-                <tr className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-tertiary text-left">
-                  <th className="px-4 py-3 font-medium">{t("colDate")}</th>
-                  <th className="px-4 py-3 font-medium">{t("colAction")}</th>
-                  <th className="px-4 py-3 font-medium">{t("colDetail")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((l) => {
-                  const prefix = l.action.split(".")[0] as keyof typeof categoryVariant;
-                  return (
-                    <tr
-                      key={l.id}
-                      className="border-t border-border-ink hover:bg-surface-hover/50"
-                    >
-                      <td className="px-4 py-3 text-xs text-fg-tertiary whitespace-nowrap font-mono">
-                        {fmtDate(l.createdAt, locale)}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <Badge variant={categoryVariant[prefix] ?? "default"}>
-                          {l.action}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-fg-secondary">
-                        {l.detail ?? "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <table className="rtable">
+            <thead>
+              <tr>
+                <th>{t("colDate")}</th>
+                <th>{t("colAction")}</th>
+                <th>{t("colDetail")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((l) => {
+                const prefix = l.action.split(".")[0] as keyof typeof categoryVariant;
+                return (
+                  <tr key={l.id}>
+                    <td data-label={t("colDate")} className="text-xs text-fg-tertiary whitespace-nowrap font-mono">
+                      {fmtDate(l.createdAt, locale)}
+                    </td>
+                    <td data-label={t("colAction")} className="whitespace-nowrap">
+                      <Badge variant={categoryVariant[prefix] ?? "default"}>
+                        {l.action}
+                      </Badge>
+                    </td>
+                    <td data-label={t("colDetail")} className="text-fg-secondary">
+                      {l.detail ?? "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
 

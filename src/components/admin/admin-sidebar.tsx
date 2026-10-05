@@ -3,6 +3,10 @@
 /**
  * Admin sidebar — mirrors the app Navbar (devtool sidebar, lime indicator).
  * No link to this area exists anywhere in the public UI.
+ *
+ * Dashboard redesign: desktop aside carries .dash-sidebar (dot-grid +
+ * scanline texture from the CSS agent), nav items use .hv + .ia-<name>
+ * icon animations + .nav-sweep hover sweep.
  */
 
 import { useTranslations } from "next-intl";
@@ -24,11 +28,11 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/admin", icon: LayoutDashboard, key: "overview", exact: true },
-  { href: "/admin/reports", icon: Flag, key: "reports", exact: false },
-  { href: "/admin/shares", icon: Link2, key: "shares", exact: false },
-  { href: "/admin/users", icon: Users, key: "users", exact: false },
-  { href: "/admin/audit", icon: ScrollText, key: "audit", exact: false },
+  { href: "/admin", icon: LayoutDashboard, ia: "ia-tiles", key: "overview", exact: true },
+  { href: "/admin/reports", icon: Flag, ia: "ia-wave", key: "reports", exact: false },
+  { href: "/admin/shares", icon: Link2, ia: "ia-swing", key: "shares", exact: false },
+  { href: "/admin/users", icon: Users, ia: "ia-nod", key: "users", exact: false },
+  { href: "/admin/audit", icon: ScrollText, ia: "ia-unroll", key: "audit", exact: false },
 ] as const;
 
 export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
@@ -44,7 +48,7 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
 
   const itemClass = (isActive: boolean) =>
     cn(
-      "relative flex items-center gap-3 px-3 py-2.5 no-underline rounded-lg",
+      "hv relative flex items-center gap-3 px-3 py-2.5 no-underline rounded-lg overflow-hidden",
       "font-mono text-[11px] uppercase tracking-[0.14em]",
       "transition-colors duration-150 focus-ring",
       isActive
@@ -56,7 +60,7 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
     <>
       {/* Mobile top bar — logo + theme/language, one-tap access on small screens */}
       <header className="sticky top-0 z-40 md:hidden flex items-center justify-between gap-2 px-4 py-2.5 bg-surface border-b border-border-ink">
-        <Link href="/admin" className="flex items-center gap-2 no-underline min-w-0">
+        <Link href="/admin" className="hv flex items-center gap-2 no-underline min-w-0">
           <HookLogo size={24} />
           <span className="font-display font-bold text-base tracking-tight text-fg truncate hidden min-[400px]:inline">
             my-kait
@@ -70,7 +74,7 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
       </header>
 
       {/* Desktop sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 z-40 hidden md:flex flex-col bg-surface border-r border-border-ink">
+      <aside className="dash-sidebar fixed left-0 top-0 h-full w-64 z-40 hidden md:flex flex-col border-r border-border-ink">
         <div className="px-5 py-5 border-b border-border-ink">
           <div className="flex items-center gap-2.5">
             <HookLogo size={32} />
@@ -96,16 +100,19 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
                 aria-current={isActive ? "page" : undefined}
                 className={itemClass(isActive)}
               >
+                <span className="nav-sweep" aria-hidden="true" />
                 {isActive && (
                   <span
                     aria-hidden
-                    className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-full bg-accent"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-full bg-accent z-10"
                   />
                 )}
-                <item.icon size={18} className="shrink-0" />
-                <span className="flex-1">{t(item.key)}</span>
+                <span className={cn("ia relative", item.ia)} aria-hidden="true">
+                  <item.icon size={18} className="shrink-0" />
+                </span>
+                <span className="flex-1 relative">{t(item.key)}</span>
                 {item.key === "reports" && pendingCount > 0 && (
-                  <Badge variant="warning" className="font-mono">
+                  <Badge variant="warning" className="font-mono relative">
                     {pendingCount}
                   </Badge>
                 )}
@@ -121,10 +128,12 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start gap-3 font-mono text-[11px] uppercase tracking-[0.14em]"
+            className="hv w-full justify-start gap-3 font-mono text-[11px] uppercase tracking-[0.14em]"
             onClick={logout}
           >
-            <LogOut size={18} />
+            <span className="ia ia-out" aria-hidden="true">
+              <LogOut size={18} />
+            </span>
             {t("logout")}
           </Button>
         </div>
@@ -142,13 +151,15 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "relative flex flex-col items-center gap-1 px-3 py-2 no-underline",
+                "hv relative flex flex-col items-center gap-1 px-3 py-2 no-underline",
                 "font-mono text-[9px] uppercase tracking-[0.12em]",
                 "transition-colors duration-150",
                 isActive ? "text-accent" : "text-fg-secondary",
               )}
             >
-              <item.icon size={20} />
+              <span className={cn("ia", item.ia)} aria-hidden="true">
+                <item.icon size={20} />
+              </span>
               {t(item.key)}
               {item.key === "reports" && pendingCount > 0 && (
                 <Badge variant="warning" className="absolute top-0 right-1 font-mono text-[9px] px-1">
@@ -164,12 +175,14 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
           onClick={logout}
           aria-label={t("logout")}
           className={cn(
-            "relative flex flex-col items-center gap-1 px-3 py-2",
+            "hv relative flex flex-col items-center gap-1 px-3 py-2",
             "font-mono text-[9px] uppercase tracking-[0.12em]",
             "transition-colors duration-150 text-fg-secondary active:text-fg",
           )}
         >
-          <LogOut size={20} />
+          <span className="ia ia-out" aria-hidden="true">
+            <LogOut size={20} />
+          </span>
           {t("logout")}
         </button>
       </nav>

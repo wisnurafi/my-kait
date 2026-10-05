@@ -14,7 +14,7 @@ export default function AdminReportsLoading() {
       {/* Status filter chips */}
       <div className="flex gap-1.5 flex-wrap">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-8 w-24 !rounded-lg" />
+          <Skeleton key={i} className="h-8 w-24 rounded-lg!" />
         ))}
       </div>
 

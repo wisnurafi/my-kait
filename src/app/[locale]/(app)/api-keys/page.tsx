@@ -1,5 +1,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { ApiKeysCard } from "@/components/api-keys/api-keys-card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Mascot } from "@/components/mascot";
 
 export default async function ApiKeysPage({
   params,
@@ -9,14 +11,16 @@ export default async function ApiKeysPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("settings");
+  const tn = await getTranslations("nav");
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div>
-        <div className="label mb-2">{t("apiKeysTitle")}</div>
-        <h2 className="uppercase">{t("apiKeysTitle")}</h2>
-        <p className="text-sm text-fg-secondary mt-2">{t("apiKeysDesc")}</p>
-      </div>
+      <PageHeader
+        eyebrow={tn("apiKeys")}
+        title={t("apiKeysTitle")}
+        description={t("apiKeysDesc")}
+        media={<Mascot mini size={52} />}
+      />
       <ApiKeysCard />
     </div>
   );

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { useTranslations } from "next-intl";
-import { useFormatter } from "next-intl";
+import { useTranslations, useFormatter } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Tooltip } from "@/components/ui/tooltip";
+import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "@/components/ui/toast";
 import {
   pingWebhookAction,
@@ -20,7 +20,19 @@ import {
 } from "@/server/actions/webhooks";
 import { PingHistory } from "@/components/webhooks/ping-history";
 import { EditWebhookForm } from "@/components/webhooks/edit-webhook-form";
-import { Search, Zap, Trash2, Send, RefreshCw, Pencil, Webhook, Folder } from "lucide-react";
+import {
+  Search,
+  Zap,
+  Trash2,
+  Send,
+  RefreshCw,
+  Pencil,
+  Link as LinkIcon,
+  Folder,
+  Eye,
+  X,
+  Plus,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type WebhookStatus = "active" | "invalid" | "rate_limited" | "unchecked";
@@ -32,11 +44,14 @@ const statusConfig: Record<WebhookStatus, { variant: "active" | "danger" | "warn
   unchecked: { variant: "default", pulse: false },
 };
 
+const PAGE_SIZE = 12;
+
 type ConfirmTarget = { kind: "delete" | "test"; id: string } | null;
 
 export function WebhooksList({
   webhooks: initialWebhooks,
   folders,
+  statusFilter,
 }: {
   webhooks: Array<{
     id: string;
@@ -51,6 +66,8 @@ export function WebhooksList({
     createdAt: Date;
   }>;
   folders: Array<{ id: string; name: string }>;
+  /** Status filter, URL-driven (source of truth lives in ?status=). */
+  statusFilter: string;
 }) {
   const t = useTranslations("webhooks");
   const tc = useTranslations("common");
@@ -59,21 +76,49 @@ export function WebhooksList({
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
   const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget>(null);
+
+  const detailWebhook = detailId
+    ? (initialWebhooks.find((w) => w.id === detailId) ?? null)
+    : null;
+
+  // Lock body scroll + close on Escape while the detail drawer is open
+  // (same pattern as the logs detail drawer).
+  useEffect(() => {
+    if (!detailWebhook) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDetailId(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [detailWebhook]);
+
+  const searchParam = searchParams.get("search") ?? "";
+  const folderParam = searchParams.get("folder") ?? "all";
+
+  // Reset client-side load-more whenever the result set changes.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [statusFilter, searchParam, folderParam]);
 
   const filteredWebhooks = statusFilter
     ? initialWebhooks.filter((w) => w.lastStatus === statusFilter)
     : initialWebhooks;
+  const visibleWebhooks = filteredWebhooks.slice(0, visibleCount);
 
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
     setSearch(e.target.value);
   }
 
-  // Debounce search — preserve other params (e.g. folder), reset page.
-  // statusFilter is client-side only and is never reset by search.
+  // Debounce search — preserve other params (e.g. folder, status).
   useEffect(() => {
     const timer = setTimeout(() => {
       const current = searchParams.get("search") ?? "";
@@ -81,12 +126,32 @@ export function WebhooksList({
         const params = new URLSearchParams(searchParams.toString());
         if (search) params.set("search", search);
         else params.delete("search");
-        params.delete("page");
         router.push(`?${params.toString()}`, { scroll: false });
       }
     }, 400);
     return () => clearTimeout(timer);
   }, [search]);
+
+  function updateStatus(value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) params.set("status", value);
+    else params.delete("status");
+    router.push(`?${params.toString()}`, { scroll: false });
+  }
+
+  function resetFilters() {
+    setSearch("");
+    setVisibleCount(PAGE_SIZE);
+    router.push("?", { scroll: false });
+  }
+
+  function scrollToAdd() {
+    const form = document.getElementById("add-webhook-form");
+    if (!form) return;
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+    const input = form.querySelector("input");
+    if (input) window.setTimeout(() => input.focus({ preventScroll: true }), 450);
+  }
 
   function handlePing(webhookId: string) {
     startTransition(async () => {
@@ -146,27 +211,33 @@ export function WebhooksList({
     });
   }
 
-  const searchActive = Boolean(searchParams.get("search") ?? search);
+  const searchActive = Boolean(searchParam || search);
+  const hasActiveFilter = searchActive || statusFilter !== "" || folderParam !== "all";
 
-  // Truly empty: no webhooks at all and no active search/filter.
-  // (When a search/filter yields nothing, the toolbar stays visible below
-  // so the user can adjust or clear the keyword.)
-  if (initialWebhooks.length === 0 && !searchActive && !statusFilter) {
+  // Truly empty: no webhooks at all and no active search/filter/folder.
+  if (initialWebhooks.length === 0 && !hasActiveFilter) {
     return (
-      <Card className="p-12 text-center animate-fade-in">
-        <div className="mx-auto mb-4 w-12 h-12 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
-          <Webhook size={22} className="text-accent" />
-        </div>
-        <p className="text-fg-secondary text-lg">{t("noWebhooks")}</p>
-      </Card>
+      <EmptyState
+        icon={<LinkIcon />}
+        title={t("noWebhooks")}
+        description={t("noWebhooksHint")}
+        action={
+          <Button variant="primary" onClick={scrollToAdd} className="hv gap-2">
+            <Plus size={16} className="ia-plus" />
+            {t("add")}
+          </Button>
+        }
+      />
     );
   }
 
   return (
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap items-center">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-tertiary" size={16} />
+        <div className="hv relative flex-1 min-w-[200px]">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-tertiary" aria-hidden="true">
+            <Search size={16} className="ia-search" />
+          </span>
           <Input
             placeholder={t("searchPlaceholder")}
             value={search}
@@ -174,14 +245,15 @@ export function WebhooksList({
             className="pl-9 font-mono"
           />
         </div>
-        <Button variant="secondary" size="md" onClick={handlePingAll} disabled={pending} className="gap-2">
-          <RefreshCw size={16} className={pending ? "animate-spin" : ""} />
+        <Button variant="secondary" size="md" onClick={handlePingAll} disabled={pending} className="hv gap-2">
+          <RefreshCw size={16} className={pending ? "animate-spin" : "ia-refresh"} />
           {t("pingAll")}
         </Button>
         <Select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => updateStatus(e.target.value)}
           className="w-auto"
+          aria-label={t("allStatuses")}
         >
           <option value="">{t("allStatuses")}</option>
           <option value="active">{t("status.active")}</option>
@@ -192,146 +264,261 @@ export function WebhooksList({
       </div>
 
       {filteredWebhooks.length === 0 ? (
-        <Card className="p-12 text-center animate-fade-in">
-          <div className="mx-auto mb-4 w-12 h-12 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
-            <Search size={22} className="text-accent" />
-          </div>
-          <p className="text-fg-secondary text-lg">{tc("noResults")}</p>
-        </Card>
+        <EmptyState
+          icon={<Search />}
+          title={tc("noResults")}
+          description={t("noResultsHint")}
+          action={
+            <Button variant="secondary" onClick={resetFilters} className="hv gap-2">
+              <X size={14} className="ia-x" />
+              {tc("reset")}
+            </Button>
+          }
+        />
       ) : (
-        <div className="grid gap-4">
-          {filteredWebhooks.map((wh, i) => {
-          const sc = statusConfig[wh.lastStatus];
-          const isExpanded = expandedId === wh.id;
-          // The folder may have been deleted (stale folderId) — only show
-          // the badge when the folder still exists, never an empty badge.
-          const folderName = wh.folderId
-            ? folders.find((f) => f.id === wh.folderId)?.name
-            : undefined;
-          return (
-            <div
-              key={wh.id}
-              className="stagger-in"
-              style={{ "--stagger-index": i } as React.CSSProperties}
-            >
-            <Card
-              className="p-5 h-full hover:border-border-strong transition-colors"
-              hover
-            >
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div className="flex-1 min-w-[200px]">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {editingId === wh.id ? (
-                      <EditWebhookForm
-                        webhookId={wh.id}
-                        currentName={wh.name}
-                        onDone={() => setEditingId(null)}
-                      />
-                    ) : (
-                      <h3 className="font-display text-lg font-bold uppercase tracking-[0.05em]">{wh.name}</h3>
-                    )}
-                    <Badge variant={sc.variant} pulse={sc.pulse} dot={!sc.pulse}>
-                      {t(`status.${wh.lastStatus}`)}
-                    </Badge>
-                    {folderName && (
-                      <Badge variant="default" className="gap-1">
-                        <Folder size={11} />
-                        {folderName}
-                      </Badge>
-                    )}
-                  </div>
-                  {wh.guildName && wh.channelName && (
-                    <p className="text-sm text-fg-secondary mt-1">
-                      #{wh.channelName} · {wh.guildName}
-                    </p>
-                  )}
-                  {folders.length > 0 && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <Folder size={13} className="text-fg-secondary shrink-0" aria-hidden="true" />
-                      <Select
-                        value={wh.folderId ?? ""}
-                        onChange={(e) => handleMoveFolder(wh.id, e.target.value || null)}
-                        disabled={pending}
-                        className="h-9 px-3 py-1 text-sm max-w-[220px]"
-                        aria-label={t("folder")}
+        <>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {visibleWebhooks.map((wh, i) => {
+              const sc = statusConfig[wh.lastStatus];
+              // The folder may have been deleted (stale folderId) — only show
+              // the badge when the folder still exists, never an empty badge.
+              const folderName = wh.folderId
+                ? folders.find((f) => f.id === wh.folderId)?.name
+                : undefined;
+              return (
+                <div
+                  key={wh.id}
+                  className="stagger-in"
+                  style={{ "--stagger-index": i } as React.CSSProperties}
+                >
+                  <Card className="p-5 h-full">
+                    {/* Card header: icon box + name + badges */}
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="hv w-10 h-10 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center shrink-0"
+                        aria-hidden="true"
                       >
-                        <option value="">{t("noFolder")}</option>
-                        {folders.map((f) => (
-                          <option key={f.id} value={f.id}>
-                            {f.name}
-                          </option>
-                        ))}
-                      </Select>
+                        <LinkIcon size={18} className="ia-link text-accent" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {editingId === wh.id ? (
+                          <EditWebhookForm
+                            webhookId={wh.id}
+                            currentName={wh.name}
+                            onDone={() => setEditingId(null)}
+                          />
+                        ) : (
+                          <h3 className="font-display text-lg font-bold uppercase tracking-[0.05em] truncate">
+                            {wh.name}
+                          </h3>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                        <Badge variant={sc.variant} pulse={sc.pulse} dot={!sc.pulse}>
+                          {t(`status.${wh.lastStatus}`)}
+                        </Badge>
+                        {folderName && (
+                          <Badge variant="default" className="gap-1">
+                            <Folder size={11} />
+                            {folderName}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  {wh.discordWebhookId && (
-                    <p className="text-xs text-fg-tertiary mt-1 font-mono">
-                      {wh.discordWebhookId}
-                    </p>
-                  )}
-                  {wh.lastCheckedAt && (
-                    <p className="text-xs text-fg-tertiary mt-1 font-mono">
-                      {t("lastChecked")}: {format.dateTime(wh.lastCheckedAt, { dateStyle: "medium", timeStyle: "short" })}
-                    </p>
-                  )}
+                    {/* Meta block */}
+                    <div className="font-mono text-xs text-fg-tertiary mt-2.5 space-y-1">
+                      {wh.guildName && wh.channelName && (
+                        <p className="truncate">
+                          #{wh.channelName} · {wh.guildName}
+                        </p>
+                      )}
+                      {wh.discordWebhookId && (
+                        <p className="truncate">{wh.discordWebhookId}</p>
+                      )}
+                      {wh.lastCheckedAt && (
+                        <p>
+                          {t("lastChecked")}:{" "}
+                          {format.dateTime(wh.lastCheckedAt, { dateStyle: "medium", timeStyle: "short" })}
+                        </p>
+                      )}
+                    </div>
+                    {folders.length > 0 && (
+                      <div className="flex items-center gap-2 mt-2.5">
+                        <Folder size={13} className="text-fg-secondary shrink-0" aria-hidden="true" />
+                        <Select
+                          value={wh.folderId ?? ""}
+                          onChange={(e) => handleMoveFolder(wh.id, e.target.value || null)}
+                          disabled={pending}
+                          className="h-9 px-3 py-1 text-sm max-w-[220px]"
+                          aria-label={t("folder")}
+                        >
+                          <option value="">{t("noFolder")}</option>
+                          {folders.map((f) => (
+                            <option key={f.id} value={f.id}>
+                              {f.name}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                    )}
+                    {/* Action row: icon-buttons */}
+                    <div className="flex gap-1 mt-3 pt-3 border-t border-border-ink flex-wrap">
+                      <Tooltip content={t("detailTitle")}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDetailId(wh.id)}
+                          className="hv"
+                        >
+                          <Eye size={16} />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content={t("ping")}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handlePing(wh.id)}
+                          disabled={pending}
+                          className="hv"
+                        >
+                          <Zap size={16} />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content={t("sendTest")}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleTestSend(wh.id)}
+                          disabled={pending}
+                          className="hv"
+                        >
+                          <Send size={16} />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content={t("editWebhook")}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingId(editingId === wh.id ? null : wh.id)}
+                          className="hv"
+                        >
+                          <Pencil size={16} className="ia-pencil" />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content={t("deleteWebhook")}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(wh.id)}
+                          disabled={pending}
+                          className="hv text-error"
+                        >
+                          <Trash2 size={16} className="ia-trash" />
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  </Card>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handlePing(wh.id)}
-                    disabled={pending}
-                    className="gap-1.5"
-                  >
-                    <Zap size={14} />
-                    {t("ping")}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleTestSend(wh.id)}
-                    disabled={pending}
-                    className="gap-1.5"
-                  >
-                    <Send size={14} />
-                    {t("sendTest")}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setExpandedId(isExpanded ? null : wh.id)}
-                    className="gap-1.5"
-                  >
-                    {isExpanded ? t("collapse") : t("expand")}
-                  </Button>
-                  <Tooltip content={t("editWebhook")}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setEditingId(editingId === wh.id ? null : wh.id)}
-                      className="gap-1.5"
-                    >
-                      <Pencil size={14} />
-                    </Button>
-                  </Tooltip>
-                  <Tooltip content={t("deleteWebhook")}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(wh.id)}
-                      disabled={pending}
-                      className="text-error"
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  </Tooltip>
-                </div>
-              </div>
-              {isExpanded && <PingHistory webhookId={wh.id} />}
-            </Card>
+              );
+            })}
+          </div>
+
+          {/* Client-side load-more: 12 at a time, no server changes */}
+          {filteredWebhooks.length > visibleCount && (
+            <div className="flex flex-col items-center gap-2.5 pt-2">
+              <p className="font-mono text-xs text-fg-tertiary">
+                {t("showingCount", { shown: visibleWebhooks.length, total: filteredWebhooks.length })}
+              </p>
+              <Button
+                variant="secondary"
+                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                className="hv gap-2"
+              >
+                <Plus size={16} className="ia-plus" />
+                {t("loadMore")} ({filteredWebhooks.length - visibleCount})
+              </Button>
             </div>
-          );
-          })}
+          )}
+        </>
+      )}
+
+      {/* Detail drawer — the single detail pattern (ping history lives here) */}
+      {detailWebhook && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => setDetailId(null)}
+            aria-hidden
+          />
+          <div
+            className="relative w-full max-w-lg h-full panel overflow-y-auto p-6"
+            style={{ borderLeft: "1px solid var(--border)", borderRadius: 0 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("detailTitle")}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-display text-xl font-bold uppercase">{t("detailTitle")}</h2>
+              <Tooltip content={tc("close")} position="bottom">
+                <Button variant="ghost" size="icon" onClick={() => setDetailId(null)} className="hv">
+                  <X size={18} className="ia-x" />
+                </Button>
+              </Tooltip>
+            </div>
+
+            <div className="space-y-5">
+              <div className="space-y-2.5 text-sm">
+                <div className="flex justify-between items-center gap-3">
+                  <span className="text-fg-secondary">{t("addName")}</span>
+                  <span className="font-semibold truncate">{detailWebhook.name}</span>
+                </div>
+                <div className="flex justify-between items-center gap-3">
+                  <span className="text-fg-secondary">{t("status")}</span>
+                  <Badge
+                    variant={statusConfig[detailWebhook.lastStatus].variant}
+                    pulse={statusConfig[detailWebhook.lastStatus].pulse}
+                    dot={!statusConfig[detailWebhook.lastStatus].pulse}
+                  >
+                    {t(`status.${detailWebhook.lastStatus}`)}
+                  </Badge>
+                </div>
+                {detailWebhook.guildName && detailWebhook.channelName && (
+                  <div className="flex justify-between items-center gap-3">
+                    <span className="text-fg-secondary">Discord</span>
+                    <span className="font-mono text-xs text-fg-tertiary truncate">
+                      #{detailWebhook.channelName} · {detailWebhook.guildName}
+                    </span>
+                  </div>
+                )}
+                {detailWebhook.discordWebhookId && (
+                  <div className="flex justify-between items-center gap-3">
+                    <span className="text-fg-secondary">ID</span>
+                    <span className="font-mono text-xs text-fg-tertiary truncate">
+                      {detailWebhook.discordWebhookId}
+                    </span>
+                  </div>
+                )}
+                {detailWebhook.lastCheckedAt && (
+                  <div className="flex justify-between items-center gap-3">
+                    <span className="text-fg-secondary">{t("lastChecked")}</span>
+                    <span className="font-mono text-xs text-fg-tertiary">
+                      {format.dateTime(detailWebhook.lastCheckedAt, { dateStyle: "medium", timeStyle: "short" })}
+                    </span>
+                  </div>
+                )}
+                {detailWebhook.lastUsedAt && (
+                  <div className="flex justify-between items-center gap-3">
+                    <span className="text-fg-secondary">{t("lastUsed")}</span>
+                    <span className="font-mono text-xs text-fg-tertiary">
+                      {format.dateTime(detailWebhook.lastUsedAt, { dateStyle: "medium", timeStyle: "short" })}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <PingHistory webhookId={detailWebhook.id} />
+            </div>
+          </div>
         </div>
       )}
 

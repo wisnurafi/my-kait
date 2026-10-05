@@ -6,7 +6,7 @@ export default function AdminOverviewLoading() {
     <div className="space-y-6">
       {/* Page head */}
       <div className="flex items-center gap-4">
-        <Skeleton className="size-[52px] !rounded-full" />
+        <Skeleton className="size-[52px] rounded-full!" />
         <div className="space-y-2">
           <Skeleton className="h-3 w-24" />
           <Skeleton className="h-8 w-56" />
@@ -47,7 +47,7 @@ export default function AdminOverviewLoading() {
               className="flex items-center justify-between border-t border-border-ink pt-3"
             >
               <Skeleton className="h-4 w-1/3" />
-              <Skeleton className="h-6 w-12 !rounded-full" />
+              <Skeleton className="h-6 w-12 rounded-full!" />
             </div>
           ))}
         </div>

@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Sun, Moon, Monitor, Globe } from "lucide-react";
+import { Sun, Moon, Monitor, Languages } from "lucide-react";
 import { useTheme, type Theme } from "./use-theme";
 
 export function ThemeLanguageSwitcher() {
@@ -30,7 +30,7 @@ export function ThemeLanguageSwitcher() {
         onClick={switchLanguage}
         className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] rounded-lg border border-border-ink bg-surface text-fg-secondary hover:text-fg hover:border-border-strong transition-colors duration-150 cursor-pointer focus-ring"
       >
-        <Globe size={14} />
+        <Languages size={14} />
         {locale.toUpperCase()}
       </button>
 

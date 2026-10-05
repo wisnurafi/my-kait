@@ -9,14 +9,17 @@ export function Card({
   className,
   hover = false,
   elevated = false,
+  id,
 }: {
   children: React.ReactNode;
   className?: string;
   hover?: boolean;
   elevated?: boolean;
+  id?: string;
 }) {
   return (
     <div
+      id={id}
       className={cn(
         "panel",
         // `.panel` is unlayered CSS so a normal utility can't override its
