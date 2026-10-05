@@ -100,13 +100,17 @@ export function TemplatesList({
   function pushParams(patch: Record<string, string | undefined>) {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
-    // Preserve active tag unless the patch changes it
-    const tag = searchParams.get("tag");
-    if (tag) params.set("tag", tag);
+    // Preserve active tag/folder filters unless the patch changes them
+    for (const key of ["tag", "folder"] as const) {
+      const v = searchParams.get(key);
+      if (v) params.set(key, v);
+    }
     for (const [k, v] of Object.entries(patch)) {
       if (v) params.set(k, v);
       else params.delete(k);
     }
+    // A changed filter can shrink the result set — never land on an empty page
+    params.delete("page");
     router.push(`/templates?${params.toString()}`);
   }
 
