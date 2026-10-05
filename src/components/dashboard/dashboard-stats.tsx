@@ -207,11 +207,13 @@ export function StatCards({
   sent,
   successRate,
   caption,
+  daily,
 }: {
   webhooks: number;
   sent: number;
   successRate: number;
   caption?: string;
+  daily?: DailyStat[];
 }) {
   const t = useTranslations("dashboard");
   const stats: {
@@ -221,9 +223,18 @@ export function StatCards({
     icon: typeof Link2;
     ia: string;
     hint?: string;
+    meter?: boolean;
+    spark?: number[];
   }[] = [
     { label: t("webhooksCount"), value: webhooks, suffix: "", icon: Link2, ia: "ia-swing" },
-    { label: t("messagesSent"), value: sent, suffix: "", icon: SendHorizontal, ia: "ia-launch" },
+    {
+      label: t("messagesSent"),
+      value: sent,
+      suffix: "",
+      icon: SendHorizontal,
+      ia: "ia-launch",
+      spark: daily?.map((d) => d.sent),
+    },
     {
       label: t("successRate"),
       value: successRate,
@@ -231,6 +242,7 @@ export function StatCards({
       icon: TrendingUp,
       ia: "ia-eq",
       hint: t("successRateHint"),
+      meter: true,
     },
   ];
   return (
@@ -247,10 +259,46 @@ export function StatCards({
             ia={s.ia}
             index={i}
             hint={s.hint}
+            meter={s.meter}
+            spark={s.spark}
           />
         ))}
       </div>
     </div>
+  );
+}
+
+/* Mini sparkline — garis tren 30 hari, dekoratif (angka asli tetap dibaca). */
+function Sparkline({ values }: { values: number[] }) {
+  const w = 120;
+  const h = 30;
+  const max = Math.max(1, ...values);
+  const n = values.length;
+  const pts = values
+    .map((v, i) => {
+      const x = n <= 1 ? w / 2 : (i / (n - 1)) * w;
+      const y = h - 2 - (v / max) * (h - 5);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      focusable="false"
+      className="mt-4 h-[30px] w-full"
+    >
+      <polyline
+        points={pts}
+        fill="none"
+        stroke="var(--accent-primary)"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
   );
 }
 
@@ -262,6 +310,8 @@ function StatCard({
   ia,
   index,
   hint,
+  meter,
+  spark,
 }: {
   label: string;
   value: number;
@@ -270,24 +320,35 @@ function StatCard({
   ia: string;
   index: number;
   hint?: string;
+  meter?: boolean;
+  spark?: number[];
 }) {
   const count = useCountUp(value);
   const card = (
-    <Card className={hint ? "p-5 cursor-help" : "p-5"}>
+    <Card className={cn("stat-card p-5", hint && "cursor-help")}>
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <div className="label mb-2">{label}</div>
-          <div className="font-mono text-4xl tabular-nums text-fg">
+          <div className="font-mono text-5xl leading-none tabular-nums text-fg">
             {count}
             <span className="text-2xl text-fg-secondary ml-1">{suffix}</span>
           </div>
         </div>
-        <div className="hv rounded-lg p-2.5 bg-sunken border border-border-ink shrink-0">
+        <div className="hv rounded-xl p-3 bg-accent-soft border border-accent/20 shrink-0">
           <span className={cn("ia", ia)}>
             <Icon size={20} className="text-accent" />
           </span>
         </div>
       </div>
+      {meter && (
+        <div className="mt-4 h-1.5 rounded-full bg-sunken overflow-hidden" aria-hidden="true">
+          <div
+            className="h-full rounded-full bg-accent"
+            style={{ width: `${Math.min(100, Math.max(0, count))}%` }}
+          />
+        </div>
+      )}
+      {spark && spark.length > 1 && <Sparkline values={spark} />}
     </Card>
   );
   return (

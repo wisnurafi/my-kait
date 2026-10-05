@@ -90,7 +90,7 @@
   /* Dashboard redesign — background textures */
   --sidebar: #0c0c0e;
   --dot: rgba(255, 255, 255, 0.06);
-  --grid-line: rgba(255, 255, 255, 0.038);
+  --grid-line: rgba(255, 255, 255, 0.05);
 }
 
 /* --- Design Tokens: Light (opt-in via data-theme="light") --- */
@@ -150,7 +150,7 @@
   /* Dashboard redesign — background textures */
   --sidebar: #ececef;
   --dot: rgba(0, 0, 0, 0.07);
-  --grid-line: rgba(0, 0, 0, 0.05);
+  --grid-line: rgba(0, 0, 0, 0.065);
 }
 
 /* --- Tailwind v4 Theme Mapping --- */
@@ -907,14 +907,34 @@ html {
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 44px 44px;
-  /* Drift super lambat (90s) — grid blueprint terasa hidup saat
-     diperhatikan, nyaris imperceptible. Loop tepat satu sel (44px)
-     agar seamless. */
-  animation: grid-drift 90s linear infinite;
+  /* Drift grid (40s) — terlihat dalam beberapa detik pertama, tetap tenang.
+     Loop tepat satu sel (44px) agar seamless. */
+  animation: grid-drift 40s linear infinite;
 }
 @keyframes grid-drift {
   from { background-position: 0 0, 0 0; }
   to { background-position: 44px 44px, 44px 44px; }
+}
+/* Pita sweep main page — bahasa yang sama dengan scanline sidebar
+   ("beda tapi nyambung"): pita horizontal ultra-tipis merambat vertikal
+   pelan (~26s loop), alpha sangat rendah. GPU-only (transform).
+   NOTE: jangan tambah position/display pada .dash-main — elemen memakai
+   utility Tailwind (layered); properti unlayered akan memenangkannya dan
+   merusak layout (pelajaran .dash-sidebar). */
+.dash-main::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -160px;
+  height: 160px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgba(163, 230, 53, 0.035), transparent);
+  animation: main-sweep 26s linear infinite;
+}
+@keyframes main-sweep {
+  from { transform: translateY(0); }
+  to { transform: translateY(calc(100vh + 320px)); }
 }
 .dash-main::before {
   content: "";
@@ -936,6 +956,18 @@ html {
 }
 @keyframes blink {
   50% { opacity: 0; }
+}
+
+/* ---------- Stat cards ----------
+   Hover: lift halus + border highlight. Ditulis unlayered agar menang atas
+   .panel (unlayered, spesifisitas lebih rendah) — tanpa !important. */
+.stat-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
 }
 
 /* ---------- Sapuan hover nav ----------
@@ -1109,12 +1141,14 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .dash-sidebar::after,
   .dash-main,
+  .dash-main::after,
   .cursor-blink::after,
   .nav-sweep,
   .donut-arc,
   .rtable tbody tr,
   .kpi-card.is-clickable,
   .kpi-card.is-clickable .go,
+  .stat-card,
   .hv:hover .ia,
   .hv:focus-visible .ia,
   .icon-cell:hover .ia {

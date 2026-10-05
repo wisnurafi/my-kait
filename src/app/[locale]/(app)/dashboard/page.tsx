@@ -75,6 +75,7 @@ export default async function DashboardPage({
         sent={stats.totals.sent}
         successRate={stats.totals.successRate}
         caption={t("stats.last30days")}
+        daily={stats.daily}
       />
 
       <div>
