@@ -326,7 +326,8 @@
     "folderCreate": "Buat folder",
     "pingOk": "Ping berhasil",
     "pingFailed": "Ping gagal",
-    "pingAllDone": "Semua webhook berhasil di-ping"
+    "pingAllDone": "Semua webhook berhasil di-ping",
+    "dismissAlert": "Tutup peringatan"
   },
   "editor": {
     "title": "Editor Pesan",
@@ -416,7 +417,8 @@
     "customVariablesDesc": "Isi nilai untuk setiap variabel {nama} sebelum mengirim. Nilai hanya berlaku untuk pengiriman ini.",
     "variableValuePlaceholder": "Nilai…",
     "duplicateEmbed": "Duplikat embed",
-    "removeEmbed": "Hapus embed"
+    "removeEmbed": "Hapus embed",
+    "removeField": "Hapus field"
   },
   "logs": {
     "title": "Riwayat Pengiriman",

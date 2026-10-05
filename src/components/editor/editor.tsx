@@ -1032,14 +1032,16 @@ function EmbedEditor({
                   })}
                   label={t("field.inline")}
                 />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => update({ fields: embed.fields.filter((f) => f.id !== field.id) })}
-                  className="text-error"
-                >
-                  <Trash2 size={14} />
-                </Button>
+                <Tooltip content={t("removeField")}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => update({ fields: embed.fields.filter((f) => f.id !== field.id) })}
+                    className="text-error"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </Tooltip>
               </div>
             ))}
           </div>

@@ -10,6 +10,7 @@ import { useTranslations, useFormatter } from "next-intl";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip } from "@/components/ui/tooltip";
 import { acknowledgeAlertAction, acknowledgeAllAlertsAction } from "@/server/actions/webhooks";
 import { AlertTriangle, CheckCircle2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -99,9 +100,11 @@ export function HealthAlerts({
                 <span className="text-xs text-fg-tertiary font-mono shrink-0">
                   {format.dateTime(alert.createdAt, { dateStyle: "medium", timeStyle: "short" })}
                 </span>
-                <Button variant="ghost" size="sm" onClick={() => dismiss(alert.id)} disabled={pending} className="shrink-0">
-                  <X size={14} />
-                </Button>
+                <Tooltip content={t("dismissAlert")}>
+                  <Button variant="ghost" size="sm" onClick={() => dismiss(alert.id)} disabled={pending} className="shrink-0">
+                    <X size={14} />
+                  </Button>
+                </Tooltip>
               </motion.div>
             );
           })}
