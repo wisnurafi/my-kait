@@ -534,7 +534,8 @@
     "embedsTooLong": "Total characters across all embeds must be at most 6000",
     "templateInvalid": "Invalid template",
     "reasonTooShort": "Reason must be at least 10 characters",
-    "reasonTooLong": "Reason must be at most 1000 characters"
+    "reasonTooLong": "Reason must be at most 1000 characters",
+    "tooManyTargets": "Too many targets (max 20 webhooks per send)"
   },
   "ping": {
     "active": "Webhook is active",
