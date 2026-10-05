@@ -10,11 +10,14 @@ import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
 import {
   setReportStatus,
   actionReport,
 } from "@/server/actions/admin";
 import { Check, X, Gavel } from "lucide-react";
+
+type SuccessKey = "toastDismissed" | "toastReviewed" | "toastActioned";
 
 export function ReportActions({ reportId }: { reportId: string }) {
   const t = useTranslations("admin");
@@ -22,11 +25,22 @@ export function ReportActions({ reportId }: { reportId: string }) {
   const [busy, startTransition] = useTransition();
   const [confirming, setConfirming] = useState(false);
 
-  const run = (fn: () => Promise<unknown>) =>
+  const run = (fn: () => Promise<unknown>, successKey: SuccessKey) =>
     startTransition(async () => {
-      await fn();
-      setConfirming(false);
-      router.refresh();
+      try {
+        await fn();
+        toast.success(t(successKey));
+      } catch (err) {
+        // Session expired mid-action → bounce to login instead of failing silently.
+        if (err instanceof Error && err.message === "UNAUTHORIZED") {
+          router.push("/admin/login");
+          return;
+        }
+        toast.error(t("toastActionFailed"));
+      } finally {
+        setConfirming(false);
+        router.refresh();
+      }
     });
 
   if (confirming) {
@@ -37,7 +51,7 @@ export function ReportActions({ reportId }: { reportId: string }) {
           size="sm"
           variant="destructive"
           disabled={busy}
-          onClick={() => run(() => actionReport(reportId))}
+          onClick={() => run(() => actionReport(reportId), "toastActioned")}
         >
           {t("confirmYes")}
         </Button>
@@ -59,8 +73,9 @@ export function ReportActions({ reportId }: { reportId: string }) {
         size="sm"
         variant="ghost"
         title={t("dismiss")}
+        aria-label={t("dismiss")}
         disabled={busy}
-        onClick={() => run(() => setReportStatus(reportId, "dismissed"))}
+        onClick={() => run(() => setReportStatus(reportId, "dismissed"), "toastDismissed")}
         className="gap-1"
       >
         <X size={14} />
@@ -70,8 +85,9 @@ export function ReportActions({ reportId }: { reportId: string }) {
         size="sm"
         variant="secondary"
         title={t("markReviewed")}
+        aria-label={t("markReviewed")}
         disabled={busy}
-        onClick={() => run(() => setReportStatus(reportId, "reviewed"))}
+        onClick={() => run(() => setReportStatus(reportId, "reviewed"), "toastReviewed")}
         className="gap-1"
       >
         <Check size={14} />
@@ -81,6 +97,7 @@ export function ReportActions({ reportId }: { reportId: string }) {
         size="sm"
         variant="destructive"
         title={t("actionAndUnshare")}
+        aria-label={t("actionAndUnshare")}
         disabled={busy}
         onClick={() => setConfirming(true)}
         className="gap-1"

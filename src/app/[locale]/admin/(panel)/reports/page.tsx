@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { getReports, type ReportStatus } from "@/server/actions/admin";
 import { ReportActions } from "@/components/admin/report-actions";
 import { cn } from "@/lib/utils";
+import { ExternalLink } from "lucide-react";
 
 const FILTERS: (ReportStatus | "all")[] = [
   "all",
@@ -110,6 +111,16 @@ export default async function AdminReportsPage({
                       <div className="font-medium max-w-[180px] truncate">
                         {r.templateName}
                       </div>
+                      {r.templateSlug && (
+                        <Link
+                          href={`/t/${r.templateSlug}`}
+                          target="_blank"
+                          title={t("viewTemplate")}
+                          className="font-mono text-xs text-accent hover:underline inline-flex items-center gap-1 no-underline mt-0.5"
+                        >
+                          /t/{r.templateSlug} <ExternalLink size={11} />
+                        </Link>
+                      )}
                       <div className="flex items-center gap-1.5 mt-1">
                         {r.reportCount > 1 && (
                           <Badge variant="warning" className="font-mono text-[10px]">

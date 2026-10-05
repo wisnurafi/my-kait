@@ -8,6 +8,7 @@ import { useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
 import { setShareActive } from "@/server/actions/admin";
 
 export function ShareToggle({
@@ -28,8 +29,19 @@ export function ShareToggle({
       disabled={busy}
       onClick={() =>
         startTransition(async () => {
-          await setShareActive(shareId, !isActive);
-          router.refresh();
+          try {
+            await setShareActive(shareId, !isActive);
+            toast.success(
+              t(isActive ? "toastShareDeactivated" : "toastShareActivated"),
+            );
+            router.refresh();
+          } catch (err) {
+            if (err instanceof Error && err.message === "UNAUTHORIZED") {
+              router.push("/admin/login");
+              return;
+            }
+            toast.error(t("toastActionFailed"));
+          }
         })
       }
     >

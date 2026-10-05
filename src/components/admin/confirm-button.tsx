@@ -9,6 +9,7 @@ import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
 
 type Variant = "primary" | "secondary" | "ghost" | "destructive";
 
@@ -20,6 +21,7 @@ export function ConfirmButton({
   confirmLabel,
   confirmHint,
   icon,
+  successMessage,
 }: {
   action: () => Promise<unknown>;
   variant?: Variant;
@@ -28,6 +30,8 @@ export function ConfirmButton({
   confirmLabel: React.ReactNode;
   confirmHint?: string;
   icon?: React.ReactNode;
+  /** Toast message shown on success. Omit to stay silent. */
+  successMessage?: string;
 }) {
   const t = useTranslations("admin");
   const router = useRouter();
@@ -46,9 +50,19 @@ export function ConfirmButton({
           disabled={busy}
           onClick={() =>
             startTransition(async () => {
-              await action();
-              setConfirming(false);
-              router.refresh();
+              try {
+                await action();
+                if (successMessage) toast.success(successMessage);
+              } catch (err) {
+                if (err instanceof Error && err.message === "UNAUTHORIZED") {
+                  router.push("/admin/login");
+                  return;
+                }
+                toast.error(t("toastActionFailed"));
+              } finally {
+                setConfirming(false);
+                router.refresh();
+              }
             })
           }
         >

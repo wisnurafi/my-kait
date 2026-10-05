@@ -697,6 +697,16 @@
     "chartUsers": "New users per day (30 days)",
     "sent": "Sent",
     "failed": "Failed",
-    "noData": "No data yet."
+    "noData": "No data yet.",
+    "toastDismissed": "Report dismissed.",
+    "toastReviewed": "Report marked as reviewed.",
+    "toastActioned": "Report actioned, share link disabled.",
+    "toastShareActivated": "Share link activated.",
+    "toastShareDeactivated": "Share link deactivated.",
+    "toastSuspended": "User suspended.",
+    "toastUnsuspended": "User unsuspended.",
+    "toastTemplateDeleted": "Template permanently deleted.",
+    "toastActionFailed": "Action failed. Please try again.",
+    "viewTemplate": "View template"
   }
 }

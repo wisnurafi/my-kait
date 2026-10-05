@@ -697,6 +697,16 @@
     "chartUsers": "Pengguna baru per hari (30 hari)",
     "sent": "Terkirim",
     "failed": "Gagal",
-    "noData": "Belum ada data."
+    "noData": "Belum ada data.",
+    "toastDismissed": "Laporan ditolak.",
+    "toastReviewed": "Laporan ditandai ditinjau.",
+    "toastActioned": "Laporan ditindak, share link dimatikan.",
+    "toastShareActivated": "Share link diaktifkan.",
+    "toastShareDeactivated": "Share link dimatikan.",
+    "toastSuspended": "Pengguna di-suspend.",
+    "toastUnsuspended": "Suspend dibatalkan.",
+    "toastTemplateDeleted": "Template dihapus permanen.",
+    "toastActionFailed": "Aksi gagal. Coba lagi.",
+    "viewTemplate": "Lihat template"
   }
 }

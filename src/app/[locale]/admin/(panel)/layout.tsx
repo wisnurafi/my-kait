@@ -7,6 +7,7 @@ import {
 } from "@/lib/admin-session";
 import { getPendingReportsCount } from "@/server/actions/admin";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { Toaster } from "@/components/ui/toast";
 
 /**
  * Guarded admin shell. Middleware already redirects unauthenticated
@@ -40,6 +41,7 @@ export default async function AdminPanelLayout({
       <main className="md:pl-64 pb-20 md:pb-0">
         <div className="p-6 md:p-8 max-w-7xl mx-auto">{children}</div>
       </main>
+      <Toaster />
     </div>
   );
 }
