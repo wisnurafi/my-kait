@@ -148,21 +148,16 @@ export function WebhooksList({
 
   const searchActive = Boolean(searchParams.get("search") ?? search);
 
-  if (filteredWebhooks.length === 0) {
-    // Distinguish "no webhooks at all" from "filter/search matched nothing".
-    const noDataAtAll = !searchActive && !statusFilter;
+  // Truly empty: no webhooks at all and no active search/filter.
+  // (When a search/filter yields nothing, the toolbar stays visible below
+  // so the user can adjust or clear the keyword.)
+  if (initialWebhooks.length === 0 && !searchActive && !statusFilter) {
     return (
       <Card className="p-12 text-center animate-fade-in">
         <div className="mx-auto mb-4 w-12 h-12 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
-          {noDataAtAll ? (
-            <Webhook size={22} className="text-accent" />
-          ) : (
-            <Search size={22} className="text-accent" />
-          )}
+          <Webhook size={22} className="text-accent" />
         </div>
-        <p className="text-fg-secondary text-lg">
-          {noDataAtAll ? t("noWebhooks") : tc("noResults")}
-        </p>
+        <p className="text-fg-secondary text-lg">{t("noWebhooks")}</p>
       </Card>
     );
   }
@@ -195,8 +190,16 @@ export function WebhooksList({
         </Select>
       </div>
 
-      <div className="grid gap-4">
-        {filteredWebhooks.map((wh, i) => {
+      {filteredWebhooks.length === 0 ? (
+        <Card className="p-12 text-center animate-fade-in">
+          <div className="mx-auto mb-4 w-12 h-12 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
+            <Search size={22} className="text-accent" />
+          </div>
+          <p className="text-fg-secondary text-lg">{tc("noResults")}</p>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {filteredWebhooks.map((wh, i) => {
           const sc = statusConfig[wh.lastStatus];
           const isExpanded = expandedId === wh.id;
           return (
@@ -322,8 +325,9 @@ export function WebhooksList({
             </Card>
             </div>
           );
-        })}
-      </div>
+          })}
+        </div>
+      )}
 
       <ConfirmDialog
         open={confirmTarget !== null}

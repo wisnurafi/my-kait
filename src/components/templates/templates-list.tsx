@@ -345,12 +345,16 @@ export function TemplatesList({
                   onKeyDown={(e) => e.key === "Enter" && handleRenameFolder(folder.id)}
                   autoFocus
                 />
-                <Button size="sm" onClick={() => handleRenameFolder(folder.id)} disabled={pending}>
-                  <Check size={14} />
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setRenamingId(null)}>
-                  <X size={14} />
-                </Button>
+                <Tooltip content={tc("save")}>
+                  <Button size="sm" onClick={() => handleRenameFolder(folder.id)} disabled={pending}>
+                    <Check size={14} />
+                  </Button>
+                </Tooltip>
+                <Tooltip content={tc("cancel")}>
+                  <Button size="sm" variant="ghost" onClick={() => setRenamingId(null)}>
+                    <X size={14} />
+                  </Button>
+                </Tooltip>
               </div>
             ) : (
               <div key={folder.id} className="group flex items-center">
@@ -474,9 +478,11 @@ export function TemplatesList({
                       <Button size="sm" onClick={() => handleSaveEdit(template.id)} className="gap-1.5">
                         <Check size={14} /> {t("save")}
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                        <X size={14} />
-                      </Button>
+                      <Tooltip content={tc("cancel")}>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                          <X size={14} />
+                        </Button>
+                      </Tooltip>
                     </div>
                   </div>
                 ) : (
@@ -528,18 +534,26 @@ export function TemplatesList({
                       <Button size="sm" variant="primary" onClick={() => handleLoad(template.id)} className="gap-1.5">
                         <Plus size={14} /> {t("load")}
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => startEdit(template)} className="gap-1">
-                        <Pencil size={14} />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleDuplicate(template.id)} className="gap-1">
-                        <Copy size={14} />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleShare(template.id)} className="gap-1">
-                        <Share2 size={14} />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleDelete(template.id)} className="text-error gap-1">
-                        <Trash2 size={14} />
-                      </Button>
+                      <Tooltip content={tc("edit")}>
+                        <Button size="sm" variant="ghost" onClick={() => startEdit(template)} className="gap-1">
+                          <Pencil size={14} />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content={tc("duplicate")}>
+                        <Button size="sm" variant="ghost" onClick={() => handleDuplicate(template.id)} className="gap-1">
+                          <Copy size={14} />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content={t("shareLink")}>
+                        <Button size="sm" variant="ghost" onClick={() => handleShare(template.id)} className="gap-1">
+                          <Share2 size={14} />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content={tc("delete")}>
+                        <Button size="sm" variant="ghost" onClick={() => handleDelete(template.id)} className="text-error gap-1">
+                          <Trash2 size={14} />
+                        </Button>
+                      </Tooltip>
                     </div>
                     {shared?.templateId === template.id && (
                       <div className="mt-3 p-2 bg-sunken border border-border-ink rounded-lg">

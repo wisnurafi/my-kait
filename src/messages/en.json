@@ -326,7 +326,8 @@
     "folderCreate": "Create folder",
     "pingOk": "Ping successful",
     "pingFailed": "Ping failed",
-    "pingAllDone": "All webhooks pinged"
+    "pingAllDone": "All webhooks pinged",
+    "dismissAlert": "Dismiss alert"
   },
   "editor": {
     "title": "Message Editor",
@@ -416,7 +417,8 @@
     "customVariablesDesc": "Fill in a value for each {name} variable before sending. Values apply to this send only.",
     "variableValuePlaceholder": "Value…",
     "duplicateEmbed": "Duplicate embed",
-    "removeEmbed": "Remove embed"
+    "removeEmbed": "Remove embed",
+    "removeField": "Remove field"
   },
   "logs": {
     "title": "Delivery History",
