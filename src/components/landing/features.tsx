@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { PenLine, Radio, Blocks, Activity } from "lucide-react";
 
@@ -8,6 +9,53 @@ import { PenLine, Radio, Blocks, Activity } from "lucide-react";
  */
 export function Features() {
   const t = useTranslations("landing");
+  const secRef = useRef<HTMLElement | null>(null);
+
+  /* orbs cahaya ngikutin mouse */
+  useEffect(() => {
+    const sec = secRef.current;
+    if (
+      !sec ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    const o1 = sec.querySelector<HTMLElement>(".ld-orb.ld-o1");
+    const o2 = sec.querySelector<HTMLElement>(".ld-orb.ld-o2");
+    if (!o1 || !o2) return;
+    let tx = 0,
+      ty = 0,
+      x1 = 0,
+      y1 = 0,
+      x2 = 0,
+      y2 = 0,
+      raf = 0;
+    const onMove = (e: PointerEvent) => {
+      const r = sec.getBoundingClientRect();
+      tx = (e.clientX - r.left) / r.width - 0.5;
+      ty = (e.clientY - r.top) / r.height - 0.5;
+    };
+    const onLeave = () => {
+      tx = 0;
+      ty = 0;
+    };
+    const loop = () => {
+      x1 += (tx * 70 - x1) * 0.05;
+      y1 += (ty * 70 - y1) * 0.05;
+      x2 += (tx * -100 - x2) * 0.04;
+      y2 += (ty * -100 - y2) * 0.04;
+      o1.style.transform = `translate(${x1.toFixed(1)}px,${y1.toFixed(1)}px)`;
+      o2.style.transform = `translate(${x2.toFixed(1)}px,${y2.toFixed(1)}px)`;
+      raf = requestAnimationFrame(loop);
+    };
+    sec.addEventListener("pointermove", onMove, { passive: true });
+    sec.addEventListener("pointerleave", onLeave);
+    raf = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(raf);
+      sec.removeEventListener("pointermove", onMove);
+      sec.removeEventListener("pointerleave", onLeave);
+    };
+  }, []);
 
   const onMove = (e: React.MouseEvent) => {
     const card = (e.target as HTMLElement).closest<HTMLElement>(".ld-bcard");
@@ -18,7 +66,10 @@ export function Features() {
   };
 
   return (
-    <section className="ld-features ld-tilt3d" id="fitur">
+    <section ref={secRef} className="ld-features ld-tilt3d" id="fitur">
+      <div className="ld-floor" aria-hidden="true" />
+      <div className="ld-orb ld-o1" aria-hidden="true" />
+      <div className="ld-orb ld-o2" aria-hidden="true" />
       <div className="ld-wrap">
         <div className="ld-sec-head ld-reveal">
           <span className="ld-label">{t("featuresEyebrow")}</span>

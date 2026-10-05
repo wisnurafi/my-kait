@@ -695,9 +695,9 @@ export function LandingHero({ stats }: { stats: PublicStats }) {
             </div>
             <MiniStats stats={stats} />
           </div>
+          <ScrollHint />
           <DemoStage />
         </div>
-        <ScrollHint />
       </section>
     </>
   );

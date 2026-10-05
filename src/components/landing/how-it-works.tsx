@@ -122,6 +122,11 @@ export function HowItWorks() {
         </div>
 
         <div className="ld-steps-grid">
+          <div className="ld-steps-rail" aria-hidden="true">
+            <span className="ld-pulse ld-p1" />
+            <span className="ld-pulse ld-p2" />
+            <span className="ld-pulse ld-p3" />
+          </div>
           <div ref={listRef}>
             {steps.map((s, i) => (
               <div

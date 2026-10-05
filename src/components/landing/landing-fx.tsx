@@ -30,7 +30,16 @@ export function LandingFx() {
       io = new IntersectionObserver(
         (entries) => {
           for (const e of entries) {
-            e.target.classList.toggle("ld-in", e.isIntersecting);
+            if (e.isIntersecting) {
+              e.target.classList.add("ld-in");
+            } else {
+              // reset hanya kalau sudah sepenuhnya keluar viewport —
+              // anti flicker saat elemen pas di tepi threshold
+              const r = (e.target as HTMLElement).getBoundingClientRect();
+              if (r.bottom < 0 || r.top > window.innerHeight) {
+                e.target.classList.remove("ld-in");
+              }
+            }
           }
         },
         { threshold: 0.12, rootMargin: "0px 0px -6% 0px" },
