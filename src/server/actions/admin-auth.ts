@@ -6,10 +6,10 @@
  * Login attempts are rate-limited per IP.
  */
 
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { z } from "zod";
 import { env } from "@/lib/env";
-import { checkRateLimit } from "@/lib/ratelimit";
+import { checkRateLimit, getClientIp } from "@/lib/ratelimit";
 import { getActionT } from "@/server/i18n";
 import {
   ADMIN_COOKIE_NAME,
@@ -36,9 +36,7 @@ export async function adminLoginAction(
   const t = await getActionT("admin");
 
   // Rate limit by IP (Upstash; skipped when not configured)
-  const ip =
-    (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "unknown";
+  const ip = await getClientIp();
   const rl = await checkRateLimit("login", `admin:${ip}`);
   if (!rl.success) return { error: t("rateLimited") };
 

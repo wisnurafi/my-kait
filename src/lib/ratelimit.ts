@@ -6,6 +6,7 @@
 
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { headers } from "next/headers";
 import { env, isRateLimitEnabled } from "./env";
 
 /**
@@ -65,4 +66,19 @@ export async function checkRateLimit(
     remaining: result.remaining,
     reset: result.reset,
   };
+}
+
+/**
+ * Resolve the client IP for rate limiting.
+ * Takes the LAST non-empty entry of X-Forwarded-For: entries appended by
+ * trusted edges (e.g. Vercel) sit at the end, while the leftmost entry is
+ * attacker-controlled and must not be trusted.
+ */
+export async function getClientIp(): Promise<string> {
+  const xff = (await headers()).get("x-forwarded-for");
+  const entries = (xff ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return entries.length > 0 ? entries[entries.length - 1] : "unknown";
 }
