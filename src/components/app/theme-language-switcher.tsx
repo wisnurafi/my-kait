@@ -1,37 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useLocale } from "next-intl";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Sun, Moon, Monitor, Globe } from "lucide-react";
-
-type Theme = "system" | "light" | "dark";
+import { useTheme, type Theme } from "./use-theme";
 
 export function ThemeLanguageSwitcher() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
-  // NOTE: dark is the default theme — do not change this initial value.
-  const [theme, setTheme] = useState<Theme>("dark");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem("mykait-theme") as Theme | null;
-    if (saved) setTheme(saved);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    const root = document.documentElement;
-    if (theme === "system") {
-      root.removeAttribute("data-theme");
-    } else {
-      root.setAttribute("data-theme", theme);
-    }
-    localStorage.setItem("mykait-theme", theme);
-  }, [theme, mounted]);
+  const { theme, setTheme, mounted } = useTheme();
 
   function switchLanguage() {
     const newLocale = locale === "id" ? "en" : "id";
@@ -44,7 +23,7 @@ export function ThemeLanguageSwitcher() {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 shrink-0">
       {/* Language switcher */}
       <button
         onClick={switchLanguage}
@@ -92,3 +71,6 @@ function ThemeButton({
     </button>
   );
 }
+
+// Re-export for consumers that only need the type/hook.
+export type { Theme };
