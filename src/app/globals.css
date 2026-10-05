@@ -544,15 +544,7 @@ html {
   display: inline-flex;
   line-height: 0;
 }
-.ia svg {
-  width: 20px;
-  height: 20px;
-}
-/* Sidebar: ikon sedikit lebih kecil */
-.nav-item .ia svg {
-  width: 18px;
-  height: 18px;
-}
+/* Ukuran ikon mengikuti prop size lucide; jangan paksa di sini. */
 
 .hv:hover .ia-home,
 .hv:focus-visible .ia-home,
@@ -778,7 +770,9 @@ html {
    Catatan pemakai: konten di dalam .dash-main sebaiknya
    position:relative + z-index di atas ::before (noise). */
 .dash-sidebar {
-  position: relative;
+  /* NOTE: jangan tambah position di sini — elemen memakai .fixed dari
+     Tailwind (layered); properti unlayered akan memenangkannya dan
+     merusak layout. ::after tetap ter-jangkar karena fixed = positioned. */
   overflow: hidden;
   background-color: var(--sidebar);
   background-image: radial-gradient(circle, var(--dot) 1px, transparent 1.4px);

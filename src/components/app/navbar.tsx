@@ -84,7 +84,7 @@ export function Navbar() {
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "hv relative flex items-center gap-3 px-3 py-2.5 no-underline rounded-lg",
+                  "hv relative flex items-center gap-3 px-3 py-2.5 no-underline rounded-lg overflow-hidden",
                   "font-mono text-[11px] uppercase tracking-[0.14em]",
                   "transition-colors duration-150 focus-ring",
                   isActive
@@ -111,7 +111,7 @@ export function Navbar() {
         <div className="px-3 py-4 border-t border-border-ink space-y-3">
           <Link
             href="/"
-            className="hv relative flex items-center gap-3 px-3 py-2.5 no-underline rounded-lg font-mono text-[11px] uppercase tracking-[0.14em] text-fg-secondary hover:text-fg hover:bg-surface-hover transition-colors duration-150 focus-ring"
+            className="hv relative flex items-center gap-3 px-3 py-2.5 no-underline rounded-lg overflow-hidden font-mono text-[11px] uppercase tracking-[0.14em] text-fg-secondary hover:text-fg hover:bg-surface-hover transition-colors duration-150 focus-ring"
           >
             <span className="nav-sweep" aria-hidden="true" />
             <span className="ia ia-pop shrink-0">

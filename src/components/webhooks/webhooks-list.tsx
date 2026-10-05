@@ -235,7 +235,9 @@ export function WebhooksList({
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap items-center">
         <div className="hv relative flex-1 min-w-[200px]">
-          <Search size={16} className="ia-search absolute left-3 top-1/2 -translate-y-1/2 text-fg-tertiary" />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-tertiary" aria-hidden="true">
+            <Search size={16} className="ia-search" />
+          </span>
           <Input
             placeholder={t("searchPlaceholder")}
             value={search}
