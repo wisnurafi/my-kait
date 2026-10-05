@@ -143,6 +143,20 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
             </Link>
           );
         })}
+        {/* Logout — the only way out on mobile (sidebar footer is desktop-only) */}
+        <button
+          type="button"
+          onClick={logout}
+          aria-label={t("logout")}
+          className={cn(
+            "relative flex flex-col items-center gap-1 px-3 py-2",
+            "font-mono text-[9px] uppercase tracking-[0.12em]",
+            "transition-colors duration-150 text-fg-secondary active:text-fg",
+          )}
+        >
+          <LogOut size={20} />
+          {t("logout")}
+        </button>
       </nav>
     </>
   );

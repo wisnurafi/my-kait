@@ -37,6 +37,7 @@ export function SuspendUserButton({
           ? t("unsuspendHint", { username })
           : t("suspendHint", { username })
       }
+      successMessage={t(isSuspended ? "toastUnsuspended" : "toastSuspended")}
     />
   );
 }
@@ -61,6 +62,7 @@ export function DeleteTemplateButton({
       }
       confirmLabel={t("deleteTemplate")}
       confirmHint={t("deleteTemplateHint", { name: templateName })}
+      successMessage={t("toastTemplateDeleted")}
     />
   );
 }
