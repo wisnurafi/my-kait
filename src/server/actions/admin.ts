@@ -21,6 +21,7 @@ import {
 } from "@/lib/schema";
 import { ADMIN_COOKIE_NAME, verifyAdminSession } from "@/lib/admin-session";
 import { eq, and, gte, sql, desc, ilike, or, count } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export type { ReportStatus } from "@/lib/schema";
 
@@ -33,6 +34,8 @@ export async function requireAdmin(): Promise<string> {
 
 /**
  * Append-only admin audit log. Call after every mutating admin action.
+ * Never throws: if the audit insert fails, the admin action that already
+ * happened must not be reported as failed. The failure is logged instead.
  */
 export async function logAdminAction(
   action: string,
@@ -40,14 +43,18 @@ export async function logAdminAction(
   targetId?: string | null,
   detail?: string | null,
 ): Promise<void> {
-  const adminEmail = await requireAdmin();
-  await db.insert(adminAuditLogs).values({
-    adminEmail,
-    action,
-    targetType: targetType ?? null,
-    targetId: targetId ?? null,
-    detail: detail ?? null,
-  });
+  try {
+    const adminEmail = await requireAdmin();
+    await db.insert(adminAuditLogs).values({
+      adminEmail,
+      action,
+      targetType: targetType ?? null,
+      targetId: targetId ?? null,
+      detail: detail ?? null,
+    });
+  } catch (err) {
+    logger.error("admin-audit", `failed to record audit for ${action}`, err);
+  }
 }
 
 const VALID_STATUSES: ReportStatus[] = [
@@ -514,7 +521,10 @@ export type AdminDaily = {
  */
 export async function getAdminActivity(days = 30): Promise<AdminDaily[]> {
   await requireAdmin();
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  // This is exported from a "use server" module, so a client could call it
+  // with an arbitrary value — clamp to a sane range to bound the work.
+  const safeDays = Math.min(Math.max(Math.floor(days) || 30, 1), 90);
+  const since = new Date(Date.now() - safeDays * 24 * 60 * 60 * 1000);
   const day = (
     col: typeof messageLogs.createdAt | typeof users.createdAt,
   ) => sql<string>`to_char(${col}, 'YYYY-MM-DD')`;
@@ -540,7 +550,7 @@ export async function getAdminActivity(days = 30): Promise<AdminDaily[]> {
   ]);
 
   const byDate = new Map<string, AdminDaily>();
-  for (let i = days - 1; i >= 0; i--) {
+  for (let i = safeDays - 1; i >= 0; i--) {
     const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
     const key = d.toISOString().slice(0, 10);
     byDate.set(key, { date: key, sent: 0, failed: 0, users: 0 });

@@ -18,7 +18,8 @@ import {
   validateWebhookUrl,
 } from "@/lib/discord";
 import { list as listBlobs, del as deleteBlobs } from "@vercel/blob";
-import { sendRequestSchema } from "@/lib/validations";
+import { sendRequestSchema, sendPayloadSchema, logFilterSchema } from "@/lib/validations";
+import type { LogFilter } from "@/lib/validations";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getActionT } from "@/server/i18n";
 import { substitutePayloadVariables } from "@/lib/template-vars";
@@ -331,6 +332,16 @@ export async function editMessageAction(prevState: unknown, formData: FormData) 
     return { error: t("payloadInvalid") };
   }
 
+  // Validate like the send path does — an oversize/invalid payload should
+  // be rejected here, not discovered via Discord's 400.
+  const payloadCheck = sendPayloadSchema(t).safeParse(payload);
+  if (!payloadCheck.success) {
+    return {
+      error: payloadCheck.error.issues[0]?.message ?? t("payloadInvalid"),
+    };
+  }
+  payload = payloadCheck.data;
+
   // Get the log record
   const log = await db
     .select()
@@ -612,49 +623,59 @@ export async function getLogs(filters: {
 }) {
   const user = await requireAuth();
 
+  // Validate filter params: whitelists the status/mode/source/sort enums
+  // and bounds page/perPage (perPage max 100) so a crafted query string
+  // can't exhaust memory. On invalid input fall back to safe defaults
+  // instead of throwing — this runs inside server components.
+  const v: Partial<LogFilter> = logFilterSchema.safeParse(filters).data ?? {};
+  const { status, webhookId, mode, source, search } = v;
+  const { datePreset, dateFrom, dateTo } = v;
+
   const conditions = [eq(messageLogs.userId, user.id)];
 
-  if (filters.status) {
-    conditions.push(eq(messageLogs.status, filters.status as MessageStatus));
+  if (status) {
+    conditions.push(eq(messageLogs.status, status));
   }
-  if (filters.webhookId) {
-    conditions.push(eq(messageLogs.webhookId, filters.webhookId));
+  if (webhookId) {
+    conditions.push(eq(messageLogs.webhookId, webhookId));
   }
-  if (filters.mode) {
-    conditions.push(eq(messageLogs.mode, filters.mode as MessageMode));
+  if (mode) {
+    conditions.push(eq(messageLogs.mode, mode));
   }
-  if (filters.source) {
-    conditions.push(eq(messageLogs.source, filters.source));
+  if (source) {
+    conditions.push(eq(messageLogs.source, source));
   }
 
   // Date filtering
   const now = new Date();
-  if (filters.datePreset === "today") {
+  if (datePreset === "today") {
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     conditions.push(gte(messageLogs.createdAt, startOfDay));
-  } else if (filters.datePreset === "7d") {
+  } else if (datePreset === "7d") {
     conditions.push(gte(messageLogs.createdAt, new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)));
-  } else if (filters.datePreset === "30d") {
+  } else if (datePreset === "30d") {
     conditions.push(gte(messageLogs.createdAt, new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)));
-  } else if (filters.datePreset === "custom") {
-    if (filters.dateFrom) {
-      conditions.push(gte(messageLogs.createdAt, new Date(filters.dateFrom)));
+  } else if (datePreset === "custom") {
+    if (dateFrom) {
+      conditions.push(gte(messageLogs.createdAt, new Date(dateFrom)));
     }
-    if (filters.dateTo) {
-      conditions.push(lte(messageLogs.createdAt, new Date(filters.dateTo)));
+    if (dateTo) {
+      conditions.push(lte(messageLogs.createdAt, new Date(dateTo)));
     }
   }
 
   // Search
-  if (filters.search) {
+  if (search) {
     conditions.push(
-      sql`(${messageLogs.webhookNameSnapshot} ILIKE ${`%${filters.search}%`} OR CAST(${messageLogs.payload} AS TEXT) ILIKE ${`%${filters.search}%`} OR ${messageLogs.discordMessageId} ILIKE ${`%${filters.search}%`})`,
+      sql`(${messageLogs.webhookNameSnapshot} ILIKE ${`%${search}%`} OR CAST(${messageLogs.payload} AS TEXT) ILIKE ${`%${search}%`} OR ${messageLogs.discordMessageId} ILIKE ${`%${search}%`})`,
     );
   }
 
-  const sort = filters.sort ?? "newest";
-  const page = filters.page ?? 1;
-  const perPage = filters.perPage ?? 12;
+  const sort = v.sort ?? "newest";
+  const page = v.page ?? 1;
+  // The schema default perPage is 20 but the logs UI uses 12 — keep 12 when
+  // not provided; the schema already clamps an explicit value to ≤100.
+  const perPage = filters.perPage == null ? 12 : (v.perPage ?? 12);
 
   const totalResult = await db
     .select({ total: count() })
