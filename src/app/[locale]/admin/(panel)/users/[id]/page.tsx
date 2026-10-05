@@ -45,6 +45,13 @@ export default async function AdminUserDetailPage({
 
   const activeShares = user.templates.filter((x) => x.shareActive).length;
 
+  const webhookStatusMeta = {
+    active: { variant: "success" as const, label: t("whActive") },
+    invalid: { variant: "danger" as const, label: t("whInvalid") },
+    rate_limited: { variant: "warning" as const, label: t("whRateLimited") },
+    unchecked: { variant: "default" as const, label: t("whUnchecked") },
+  };
+
   return (
     <div className="space-y-6">
       <Link
@@ -85,7 +92,8 @@ export default async function AdminUserDetailPage({
             [user.templates.length, t("colTemplates")],
             [activeShares, t("statActiveShares")],
             [user.webhooks.length, t("colWebhooks")],
-            [user.recentLogs.length, t("colMessages")],
+            // recentLogs is capped at 10 — label it as such, not as a total.
+            [user.recentLogs.length, t("recentLogs")],
           ].map(([v, label]) => (
             <div key={label as string} className="rounded-lg bg-sunken px-4 py-3">
               <p className="font-display font-bold text-2xl tabular-nums">{v as number}</p>
@@ -151,19 +159,21 @@ export default async function AdminUserDetailPage({
           <p className="text-sm text-fg-secondary">{t("emptyWebhooks")}</p>
         ) : (
           <ul className="space-y-2">
-            {user.webhooks.map((w) => (
-              <li
-                key={w.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border-ink px-4 py-3"
-              >
-                <p className="font-medium truncate">{w.name}</p>
-                <Badge
-                  variant={w.lastStatus === "active" ? "success" : "warning"}
+            {user.webhooks.map((w) => {
+              const meta =
+                webhookStatusMeta[
+                  w.lastStatus as keyof typeof webhookStatusMeta
+                ] ?? webhookStatusMeta.unchecked;
+              return (
+                <li
+                  key={w.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border-ink px-4 py-3"
                 >
-                  {w.lastStatus}
-                </Badge>
-              </li>
-            ))}
+                  <p className="font-medium truncate">{w.name}</p>
+                  <Badge variant={meta.variant}>{meta.label}</Badge>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

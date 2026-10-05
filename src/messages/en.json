@@ -668,7 +668,7 @@
     "deactivate": "Deactivate",
     "emptyShares": "No shares yet.",
     "usersTitle": "Users",
-    "usersSubtitle": "User list (read-only).",
+    "usersSubtitle": "Manage platform users.",
     "emptyUsers": "No users.",
     "audit": "Audit",
     "auditTitle": "Audit log",
@@ -707,6 +707,19 @@
     "toastUnsuspended": "User unsuspended.",
     "toastTemplateDeleted": "Template permanently deleted.",
     "toastActionFailed": "Action failed. Please try again.",
-    "viewTemplate": "View template"
+    "viewTemplate": "View template",
+    "expandReason": "Click to read more",
+    "filterActive": "Active",
+    "filterSuspended": "Suspended",
+    "whActive": "Active",
+    "whInvalid": "Invalid",
+    "whRateLimited": "Rate limited",
+    "whUnchecked": "Unchecked",
+    "limitNote": "Showing up to 200 of the most recent entries.",
+    "errorTitle": "Something went wrong",
+    "errorBody": "Failed to load the admin page.",
+    "retry": "Try again",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   }
 }

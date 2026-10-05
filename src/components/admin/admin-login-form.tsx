@@ -5,13 +5,14 @@
  * to the dashboard (the session cookie is set by the action).
  */
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HookLogo } from "@/components/hook-logo";
+import { Eye, EyeOff } from "lucide-react";
 import {
   adminLoginAction,
   type AdminLoginState,
@@ -20,6 +21,7 @@ import {
 export function AdminLoginForm() {
   const t = useTranslations("admin");
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
   const [state, formAction, pending] = useActionState<AdminLoginState, FormData>(
     adminLoginAction,
     {},
@@ -55,6 +57,7 @@ export function AdminLoginForm() {
             name="email"
             type="email"
             autoComplete="username"
+            autoFocus
             required
             className="mt-1"
             disabled={pending}
@@ -62,15 +65,26 @@ export function AdminLoginForm() {
         </div>
         <div>
           <Label htmlFor="admin-password">{t("password")}</Label>
-          <Input
-            id="admin-password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            className="mt-1"
-            disabled={pending}
-          />
+          <div className="relative mt-1">
+            <Input
+              id="admin-password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              className="pr-10"
+              disabled={pending}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? t("hidePassword") : t("showPassword")}
+              disabled={pending}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-tertiary hover:text-fg transition-colors"
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
         </div>
         {state.error && (
           <p className="text-xs text-error" role="alert">

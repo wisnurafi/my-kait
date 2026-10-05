@@ -146,6 +146,7 @@ export type AdminReport = {
   templateName: string;
   templateSlug: string | null;
   shareActive: boolean | null;
+  reporterId: string | null;
   reporterName: string | null;
   reportCount: number;
 };
@@ -162,9 +163,18 @@ export async function getReports(
       createdAt: templateReports.createdAt,
       templateId: templateReports.templateId,
       templateName: templates.name,
+      reporterId: users.id,
       reporterName: users.username,
       shareSlug: templateShares.slug,
-      shareActive: templateShares.isActive,
+      // True share status. The join above only matches ACTIVE shares (its slug
+      // feeds the /t/ link), so without this separate check shareActive could
+      // never be false and the "unshared" badge never rendered.
+      shareActive: sql<boolean | null>`(
+        select ${templateShares.isActive} from ${templateShares}
+        where ${templateShares.templateId} = ${templates.id}
+        order by ${templateShares.createdAt} desc
+        limit 1
+      )`,
       reportCount: sql<number>`(
         select count(*)::int from ${templateReports} r2
         where r2.template_id = ${templateReports.templateId}
@@ -193,6 +203,7 @@ export async function getReports(
     templateName: r.templateName,
     templateSlug: r.shareSlug,
     shareActive: r.shareActive,
+    reporterId: r.reporterId,
     reporterName: r.reporterName,
     reportCount: r.reportCount,
   }));
@@ -261,7 +272,10 @@ export type AdminShare = {
   pendingReports: number;
 };
 
-export async function getShares(query?: string): Promise<AdminShare[]> {
+export async function getShares(
+  query?: string,
+  isActive?: boolean,
+): Promise<AdminShare[]> {
   await requireAdmin();
   const q = query?.trim();
   const rows = await db
@@ -283,13 +297,18 @@ export async function getShares(query?: string): Promise<AdminShare[]> {
     .innerJoin(templates, eq(templateShares.templateId, templates.id))
     .innerJoin(users, eq(templates.userId, users.id))
     .where(
-      q
-        ? or(
-            ilike(templates.name, `%${q}%`),
-            ilike(templateShares.slug, `%${q}%`),
-            ilike(users.username, `%${q}%`),
-          )
-        : undefined,
+      and(
+        q
+          ? or(
+              ilike(templates.name, `%${q}%`),
+              ilike(templateShares.slug, `%${q}%`),
+              ilike(users.username, `%${q}%`),
+            )
+          : undefined,
+        isActive !== undefined
+          ? eq(templateShares.isActive, isActive)
+          : undefined,
+      ),
     )
     .orderBy(desc(templateShares.createdAt))
     .limit(200);
@@ -333,7 +352,10 @@ export type AdminUser = {
   messageCount: number;
 };
 
-export async function getAdminUsers(query?: string): Promise<AdminUser[]> {
+export async function getAdminUsers(
+  query?: string,
+  suspended?: boolean,
+): Promise<AdminUser[]> {
   await requireAdmin();
   const q = query?.trim();
   const rows = await db
@@ -356,12 +378,17 @@ export async function getAdminUsers(query?: string): Promise<AdminUser[]> {
     })
     .from(users)
     .where(
-      q
-        ? or(
-            ilike(users.username, `%${q}%`),
-            ilike(users.discordId, `%${q}%`),
-          )
-        : undefined,
+      and(
+        q
+          ? or(
+              ilike(users.username, `%${q}%`),
+              ilike(users.discordId, `%${q}%`),
+            )
+          : undefined,
+        suspended !== undefined
+          ? eq(users.isSuspended, suspended)
+          : undefined,
+      ),
     )
     .orderBy(desc(users.createdAt))
     .limit(200);
