@@ -13,17 +13,10 @@ export function FreeBanner() {
   const locale = useLocale();
 
   const points = [
-    { icon: ShieldOff, key: "noPaywall" },
-    { icon: InfinityIcon, key: "noQuota" },
-    { icon: Gift, key: "noCard" },
+    { icon: ShieldOff, label: t("freeNoPaywall") },
+    { icon: InfinityIcon, label: t("freeNoQuota") },
+    { icon: Gift, label: t("freeNoCard") },
   ] as const;
-
-  const labels: Record<string, { id: string; en: string }> = {
-    noPaywall: { id: "Tanpa paywall", en: "No paywall" },
-    noQuota: { id: "Tanpa batasan jumlah", en: "No quota limits" },
-    noCard: { id: "Tanpa kartu kredit", en: "No credit card" },
-  };
-  const lang = locale === "en" ? "en" : "id";
 
   return (
     <section className="border-t border-border-ink bg-accent text-[#0a0a0b]">
@@ -43,12 +36,12 @@ export function FreeBanner() {
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           {points.map((p) => (
             <div
-              key={p.key}
+              key={p.label}
               className="flex items-center gap-2 rounded-lg border border-[#0a0a0b]/40 px-4 py-2"
             >
               <p.icon size={17} strokeWidth={2.25} />
               <span className="font-mono text-xs font-bold uppercase tracking-[0.08em]">
-                {labels[p.key][lang]}
+                {p.label}
               </span>
             </div>
           ))}

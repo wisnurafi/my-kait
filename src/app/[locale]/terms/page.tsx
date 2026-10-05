@@ -1,4 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
+import { LegalShell } from "@/components/legal-shell";
 
 export default async function TermsPage({
   params,
@@ -12,6 +13,7 @@ export default async function TermsPage({
   const prohibitions = [t("forbid1"), t("forbid2"), t("forbid3"), t("forbid4")];
 
   return (
+    <LegalShell homeLabel={locale === "en" ? "Home" : "Beranda"}>
     <div className="max-w-2xl space-y-8 animate-fade-in">
       <div>
         <div className="label mb-2">{t("eyebrow")}</div>
@@ -40,5 +42,6 @@ export default async function TermsPage({
         </section>
       </div>
     </div>
+    </LegalShell>
   );
 }
