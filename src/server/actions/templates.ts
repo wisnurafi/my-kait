@@ -317,6 +317,21 @@ export async function revokeShareLinkAction(formData: FormData) {
   const t = await getActionT("errors");
   const shareId = String(formData.get("shareId") ?? "");
 
+  // Verify the share belongs to one of the user's templates
+  const owned = await db
+    .select({ id: templateShares.id })
+    .from(templateShares)
+    .innerJoin(templates, eq(templateShares.templateId, templates.id))
+    .where(
+      and(
+        eq(templateShares.id, shareId),
+        eq(templates.userId, user.id),
+      ),
+    )
+    .limit(1);
+
+  if (owned.length === 0) return { error: t("templateNotFound") };
+
   await db
     .update(templateShares)
     .set({ isActive: false })
