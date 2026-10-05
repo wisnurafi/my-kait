@@ -492,7 +492,8 @@
       "clearSuccess": "Semua log berhasil dihapus",
       "clearFailed": "Gagal menghapus log",
       "deleted": "Pesan dihapus dari Discord",
-      "loadedToEditor": "Payload dimuat ke editor"
+      "loadedToEditor": "Payload dimuat ke editor",
+      "resent": "Pesan dikirim ulang ke webhook asal"
     },
     "summaryAllTime": "Total keseluruhan"
   },
@@ -527,6 +528,10 @@
     "templateSaved": "Template disimpan!",
     "messageSent": "Pesan terkirim!",
     "messageSentDuplicate": "Pesan terkirim! (duplikat dicegah)",
+    "messageResent": "Pesan dikirim ulang!",
+    "logNotFound": "Log tidak ditemukan",
+    "resendNoPayload": "Payload tidak disimpan untuk log ini",
+    "resendNoTarget": "Webhook asal sudah dihapus",
     "testSendFailed": "Gagal mengirim pesan tes",
     "urlInvalid": "URL tidak valid",
     "nameTooLong": "Nama maksimal 100 karakter",
