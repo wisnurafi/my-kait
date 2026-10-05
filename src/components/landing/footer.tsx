@@ -13,7 +13,7 @@ export function Footer() {
   return (
     <footer className="ld-footer">
       <div className="ld-wrap">
-        <div className="ld-foot ld-reveal">
+        <div className="ld-foot">
           <Link href="/" className="ld-brand" aria-label="My-Kait">
             <HookLogo size={26} />
             My-Kait

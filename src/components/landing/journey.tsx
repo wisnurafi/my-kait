@@ -125,15 +125,30 @@ function DataStream() {
 export function Journey() {
   const t = useTranslations("landing");
   const [lit, setLit] = useState(-1);
+  const travelerRef = useRef<HTMLSpanElement | null>(null);
+  const litRef = useRef(-1);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let i = 0;
-    const id = window.setInterval(() => {
-      i = (i + 1) % steps.length;
-      setLit(i);
-    }, 1125);
-    return () => window.clearInterval(id);
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const dot = travelerRef.current;
+    if (reduced || !dot) return;
+    // satu clock untuk dot & node: dot jalan, node nyala pas dot nyentuh
+    const CYCLE = 4500;
+    let raf = 0;
+    const frame = (now: number) => {
+      const p = (now % CYCLE) / CYCLE;
+      dot.style.left = `${(p * 100).toFixed(2)}%`;
+      const idx = Math.min(steps.length - 1, Math.floor(p * steps.length));
+      if (idx !== litRef.current) {
+        litRef.current = idx;
+        setLit(idx);
+      }
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   return (
@@ -148,7 +163,7 @@ export function Journey() {
           <DataStream />
           <div className="ld-jtrack">
             <div className="ld-jline" aria-hidden="true">
-              <span className="ld-traveler" />
+              <span ref={travelerRef} className="ld-traveler" />
             </div>
             {steps.map((s, idx) => (
               <div

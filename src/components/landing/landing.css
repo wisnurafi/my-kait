@@ -130,10 +130,10 @@
 .ld-root .ld-mstat .v .unit{ font-size:16px; color:var(--fg-tertiary); font-weight:500; }
 .ld-root .ld-mstat .l{ font-size:12.5px; color:var(--fg-tertiary); margin-top:5px; }
 
-/* scroll hint */
+/* scroll hint — in-flow antara hero copy & stage (seperti preview) */
 .ld-root .ld-scrollhint{
-  position:absolute; left:50%; bottom:26px; transform:translateX(-50%);
-  display:flex; flex-direction:column; align-items:center; gap:9px; z-index:2;
+  display:flex; flex-direction:column; align-items:center; gap:9px;
+  width:fit-content; margin:54px auto 0; position:relative; z-index:2;
   transition: opacity .6s;
 }
 .ld-root .ld-scrollhint.hide{ opacity:0; }
@@ -284,10 +284,9 @@
 .ld-root .ld-jtrack{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start;max-width:860px;margin:0 auto}
 .ld-root .ld-jline{position:absolute;top:23px;left:12%;right:12%;height:2px;border-radius:2px;
   background:linear-gradient(90deg,transparent,var(--ld-line-soft) 12%,var(--ld-line-soft) 88%,transparent)}
-.ld-root .ld-jline .ld-ld-traveler{position:absolute;top:50%;left:0;width:9px;height:9px;border-radius:50%;
+.ld-root .ld-jline .ld-traveler{position:absolute;top:50%;left:0;width:9px;height:9px;border-radius:50%;
   background:var(--ld-lime);box-shadow:0 0 14px rgba(163,230,53,.9);transform:translate(-50%,-50%);
-  animation:ld-travel 4.5s linear infinite}
-@keyframes ld-travel{from{left:0}to{left:100%}}
+  will-change:left}
 .ld-root .ld-jnode{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:12px;width:150px;text-align:center}
 .ld-root .ld-jnode .ld-n{width:46px;height:46px;border-radius:50%;background:var(--ld-card);border:1px solid var(--ld-line-soft);display:grid;place-items:center;transition:border-color .4s,box-shadow .4s}
 .ld-root .ld-jnode .ld-n svg{width:19px;height:19px;stroke:var(--fg-secondary);fill:none;stroke-width:1.8;transition:stroke .4s}
@@ -342,16 +341,50 @@
 .ld-root .ld-step h3{font-family:var(--font-display);font-size:24px;font-weight:600;letter-spacing:-.02em;margin-bottom:10px}
 .ld-root .ld-step p{color:var(--fg-secondary);font-size:14.5px;line-height:1.65;max-width:40ch}
 .ld-root .ld-step kbd{font-family:var(--font-mono);font-size:12px;background:var(--ld-card-2);border:1px solid var(--ld-line-soft);border-bottom-width:2px;border-radius:6px;padding:2px 8px;color:var(--fg)}
-.ld-root .ld-root .ld-footer{border-top:1px solid var(--ld-line)}
+.ld-root .ld-footer{border-top:1px solid var(--ld-line)}
 .ld-root .ld-foot{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;padding:30px 0}
-.ld-root .ld-foot .brand{font-size:15px}
-.ld-root .ld-foot .brand-mark{width:26px;height:26px;font-size:11px;border-radius:7px}
+.ld-root .ld-foot .ld-brand{font-size:15px}
 .ld-root .ld-foot-links{display:flex;gap:26px;flex-wrap:wrap}
 .ld-root .ld-foot-links a{font-size:13.5px;color:var(--fg-secondary);transition:color .25s}
 .ld-root .ld-foot-links a:hover{color:var(--fg)}
 .ld-root .ld-foot small{color:var(--fg-tertiary);font-size:12px;font-family:var(--font-mono);letter-spacing:.02em}
 
-/* ============ TAMBAHAN: reveal, tilt3d, responsive ============ */
+/* ============ TAMBAHAN: features floor + orbs, steps rail ============ */
+/* features: perspective grid floor */
+.ld-root .ld-features{ position:relative; overflow:hidden; }
+.ld-root .ld-floor{
+  position:absolute; left:-15%; right:-15%; bottom:-30px; height:330px; pointer-events:none;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--ld-lime) 13%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--ld-lime) 13%, transparent) 1px, transparent 1px);
+  background-size:46px 46px;
+  transform:perspective(650px) rotateX(63deg); transform-origin:bottom;
+  -webkit-mask-image:linear-gradient(to top,#000 25%,transparent 92%);
+  mask-image:linear-gradient(to top,#000 25%,transparent 92%);
+  animation:ld-floor-move 3s linear infinite;
+}
+@keyframes ld-floor-move{ to{ background-position:0 46px, 0 0 } }
+/* features: orbs ngikutin mouse */
+.ld-root .ld-orb{
+  position:absolute; width:360px; height:360px; border-radius:50%;
+  filter:blur(100px); pointer-events:none; will-change:transform;
+}
+.ld-root .ld-orb.ld-o1{ background:color-mix(in srgb, var(--ld-lime) 9%, transparent); top:6%; left:2% }
+.ld-root .ld-orb.ld-o2{ background:color-mix(in srgb, var(--accent-sky) 6%, transparent); bottom:0; right:4% }
+/* steps: data rail vertikal */
+.ld-root .ld-steps-grid{ position:relative; }
+.ld-root .ld-steps-rail{
+  position:absolute; left:-36px; top:24px; bottom:24px; width:1px;
+  background:var(--ld-line);
+}
+.ld-root .ld-steps-rail .ld-pulse{
+  position:absolute; left:-2.5px; width:6px; height:6px; border-radius:50%;
+  background:var(--ld-lime); box-shadow:0 0 14px var(--ld-lime);
+  animation:ld-rail-drop 3.8s linear infinite;
+}
+.ld-root .ld-steps-rail .ld-p2{ animation-delay:1.25s }
+.ld-root .ld-steps-rail .ld-p3{ animation-delay:2.5s }
+@keyframes ld-rail-drop{ from{ top:-1% } to{ top:101% } }
 @keyframes ld-pulse{ 50%{ opacity:.45 } }
 @keyframes ld-wheel{ 0%{ opacity:1; top:7px } 65%{ opacity:0; top:20px } 100%{ opacity:0; top:7px } }
 /* Discord panel selalu dark (autentik Discord dark theme) di kedua tema */
@@ -400,6 +433,7 @@
   .ld-root .ld-float-b{ bottom:-56px; left:6px; }
   .ld-root .ld-jtrack{ max-width:100%; }
   .ld-root .ld-jnode{ width:110px; }
+  .ld-root .ld-steps-rail{ display:none; }
 }
 @media(prefers-reduced-motion:reduce){
   .ld-root .ld-reveal,.ld-root .ld-pop{ opacity:1!important; transform:none!important; }
