@@ -39,19 +39,33 @@ export default async function AdminAuditPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ cat?: string }>;
+  searchParams: Promise<{ cat?: string; page?: string }>;
 }) {
   const { locale } = await params;
-  const { cat } = await searchParams;
+  const { cat, page: rawPage } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations("admin");
+  const tc = await getTranslations("common");
 
   const active: AuditCategory = (
     AUDIT_CATEGORIES as readonly string[]
   ).includes(cat ?? "")
     ? (cat as AuditCategory)
     : "all";
-  const logs = await getAuditLogs(active);
+  const PAGE_SIZE = 20;
+  const requested = Math.max(1, parseInt(rawPage ?? "", 10) || 1);
+  const first = await getAuditLogs(active, requested, PAGE_SIZE);
+  // Kalau page di URL melebihi total, jatuh ke halaman terakhir.
+  const { logs, totalPages } =
+    first.page > first.totalPages
+      ? await getAuditLogs(active, first.totalPages, PAGE_SIZE)
+      : first;
+  const page = first.page > first.totalPages ? first.totalPages : first.page;
+
+  const pageHref = (p: number) =>
+    active === "all" ? `/admin/audit?page=${p}` : `/admin/audit?cat=${active}&page=${p}`;
+  const pagerCls =
+    "px-3 py-1.5 rounded-lg no-underline font-mono text-[11px] uppercase tracking-[0.12em] border transition-colors";
 
   return (
     <div className="space-y-6">
@@ -114,8 +128,30 @@ export default async function AdminAuditPage({
         )}
       </div>
 
-      {logs.length >= 200 && (
-        <p className="text-xs text-fg-tertiary font-mono">{t("limitNote")}</p>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between stagger-in">
+          {page > 1 ? (
+            <Link href={pageHref(page - 1)} className={`${pagerCls} text-fg-secondary border-border-ink hover:text-fg hover:border-border-strong`}>
+              ← {tc("prev")}
+            </Link>
+          ) : (
+            <span aria-disabled="true" className={`${pagerCls} text-fg-tertiary border-border-ink opacity-40 cursor-not-allowed`}>
+              ← {tc("prev")}
+            </span>
+          )}
+          <span className="text-xs text-fg-tertiary font-mono">
+            {t("auditPageOf", { page, totalPages })}
+          </span>
+          {page < totalPages ? (
+            <Link href={pageHref(page + 1)} className={`${pagerCls} text-fg-secondary border-border-ink hover:text-fg hover:border-border-strong`}>
+              {tc("next")} →
+            </Link>
+          ) : (
+            <span aria-disabled="true" className={`${pagerCls} text-fg-tertiary border-border-ink opacity-40 cursor-not-allowed`}>
+              {tc("next")} →
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

@@ -484,27 +484,41 @@ export type AuditCategory = "all" | "report" | "share" | "template" | "user" | "
 
 export async function getAuditLogs(
   category?: AuditCategory,
-): Promise<AuditEntry[]> {
+  page = 1,
+  pageSize = 20,
+): Promise<{ logs: AuditEntry[]; total: number; page: number; totalPages: number }> {
   await requireAdmin();
-  const rows = await db
-    .select({
-      id: adminAuditLogs.id,
-      adminEmail: adminAuditLogs.adminEmail,
-      action: adminAuditLogs.action,
-      targetType: adminAuditLogs.targetType,
-      targetId: adminAuditLogs.targetId,
-      detail: adminAuditLogs.detail,
-      createdAt: adminAuditLogs.createdAt,
-    })
-    .from(adminAuditLogs)
-    .where(
-      category && category !== "all"
-        ? ilike(adminAuditLogs.action, `${category}.%`)
-        : undefined,
-    )
-    .orderBy(desc(adminAuditLogs.createdAt))
-    .limit(200);
-  return rows;
+  const safePage = Math.max(1, Math.floor(page) || 1);
+  const safeSize = Math.min(100, Math.max(1, Math.floor(pageSize) || 20));
+  const filter =
+    category && category !== "all"
+      ? ilike(adminAuditLogs.action, `${category}.%`)
+      : undefined;
+  const [rows, totalRows] = await Promise.all([
+    db
+      .select({
+        id: adminAuditLogs.id,
+        adminEmail: adminAuditLogs.adminEmail,
+        action: adminAuditLogs.action,
+        targetType: adminAuditLogs.targetType,
+        targetId: adminAuditLogs.targetId,
+        detail: adminAuditLogs.detail,
+        createdAt: adminAuditLogs.createdAt,
+      })
+      .from(adminAuditLogs)
+      .where(filter)
+      .orderBy(desc(adminAuditLogs.createdAt))
+      .limit(safeSize)
+      .offset((safePage - 1) * safeSize),
+    db.select({ n: count() }).from(adminAuditLogs).where(filter),
+  ]);
+  const total = totalRows[0]?.n ?? 0;
+  return {
+    logs: rows,
+    total,
+    page: safePage,
+    totalPages: Math.max(1, Math.ceil(total / safeSize)),
+  };
 }
 
 /* --- Activity charts (overview) --- */

@@ -841,6 +841,7 @@
     "whRateLimited": "Rate limited",
     "whUnchecked": "Unchecked",
     "limitNote": "Showing up to 200 of the most recent entries.",
+    "auditPageOf": "Page {page} of {totalPages}",
     "errorTitle": "Something went wrong",
     "errorBody": "Failed to load the admin page.",
     "retry": "Try again",
