@@ -156,81 +156,118 @@
     "exporting": "Menyiapkan..."
   },
   "landing": {
-    "heroTitle": "Buat pesan Discord yang bikin rusuh",
-    "heroSubtitle": "Tulis, preview, template, dan tembak webhook dari editor yang proper — lengkap dengan logs, health check, tanpa paywall.",
-    "loginButton": "Login dengan Discord",
-    "marquee": "GRATIS,TANPA BOT,TANPA BATASAN,FULL CUSTOMIZATION,KIRIM WEBHOOK,EDIT EMBED,TANPA DAFTAR",
-    "howTitle": "Cara Pakai",
-    "howSubtitle": "Empat langkah. Kurang dari dua menit.",
-    "steps": {
-      "step1": {
-        "title": "Login pakai Discord",
-        "desc": "Satu klik, langsung masuk. Tanpa daftar, tanpa email."
+    "navFeatures": "Fitur",
+    "navHow": "Cara kerja",
+    "navGallery": "Galeri",
+    "navPrivacy": "Privasi",
+    "loginDiscord": "Masuk dengan Discord",
+    "openDashboard": "Buka dashboard",
+    "toggleTheme": "Ganti tema",
+    "heroBadgeVer": "v1.0",
+    "heroBadgeNote": "GRATIS SELAMANYA",
+    "heroTitle": "Satu dashboard untuk semua <lime>webhook Discord</lime>-mu.",
+    "heroSubtitle": "Tulis pesan, lihat preview persis seperti di Discord, lalu kirim ke banyak server dalam satu klik. Tanpa deploy bot, tanpa nulis kode, tanpa drama.",
+    "ctaStart": "Mulai gratis",
+    "ctaGallery": "Lihat galeri",
+    "scrollHint": "SCROLL",
+    "statsSent": "pesan terkirim",
+    "statsRate": "success rate",
+    "statsWebhooks": "webhook dikelola",
+    "statsFree": "selamanya",
+    "statsFreeVal": "0 Rp",
+    "demoEditorTitle": "editor — pengumuman-rutin",
+    "demoDraft": "draf tersimpan",
+    "demoMsgLabel": "Pesan",
+    "demoEmbedLabel": "Embed",
+    "demoImgLabel": "Gambar",
+    "demoUploadIdle": "Tarik gambar ke sini / klik untuk upload",
+    "demoUploading": "mengupload…",
+    "demoTargetLabel": "Kirim ke",
+    "demoTargetCount": "2 dipilih",
+    "demoChan1": "pengumuman",
+    "demoChan2": "info-event",
+    "demoChan3": "general",
+    "demoHint": "untuk kirim",
+    "demoSend": "Kirim ke 2 webhook",
+    "demoSending": "Mengirim…",
+    "demoMsgText": "Halo semuanya! Weekly update v1.0 sudah live — cek changelog di bawah",
+    "demoEmbedTitle": "v1.0.0 — Changelog",
+    "demoEmbedDesc": "Maintenance malam ini jam 22.00 WIB. Siapin kopi kalian ☕",
+    "demoLivePreview": "LIVE PREVIEW",
+    "demoToday": "hari ini",
+    "demoEmptyPreview": "Ketik di editor — preview muncul di sini",
+    "demoSentMeta": "2 target · 184ms",
+    "demoSentSub": "terkirim semua",
+    "journeyEyebrow": "Alur",
+    "journeyTitle": "Dari draft sampai terkirim, satu alur",
+    "journeyDesc": "Tulis, preview, kirim, catat. Semua terjadi di satu tempat — nggak ada tab ke-sembilan.",
+    "journey": {
+      "j1": {
+        "t": "Tulis",
+        "d": "editor + embed"
       },
-      "step2": {
-        "title": "Siapkan link webhook",
-        "desc": "Discord channel settings → Integrations → Webhooks → New Webhook. Salin URL-nya."
+      "j2": {
+        "t": "Preview",
+        "d": "persis Discord"
       },
-      "step3": {
-        "title": "Susun pesan di editor",
-        "desc": "Tulis teks, tambah embed, atur warna, lihat preview real-time ala Discord."
+      "j3": {
+        "t": "Kirim",
+        "d": "multi-server"
       },
-      "step4": {
-        "title": "Kirim!",
-        "desc": "Pilih webhook, tekan kirim. Pesan langsung muncul di channel."
+      "j4": {
+        "t": "Terkirim",
+        "d": "log per target"
       }
     },
+    "journeyCap": "Alurnya cuma segini. <b>Nggak ada langkah ke-lima.</b>",
+    "featuresEyebrow": "Kenapa My-Kait",
+    "featuresTitle": "Dibuat untuk orang yang capek copy-paste pesan ke 10 server.",
+    "featuresDesc": "Semua yang tadinya manual — nulis di Discord, kirim satu-satu, nggak ada jejak — sekarang rapi di satu tempat.",
+    "featEditorT": "Editor dengan preview Discord asli",
+    "featEditorD": "Formatting, embed, dan gambar tampil persis seperti yang member lihat. Salah ketik ketahuan sebelum kekirim.",
+    "featChat1": "Event minggu depan pindah ke Sabtu ya 🙏",
+    "featChat2": "Siap, pengumuman sudah diupdate di semua server.",
+    "featChat3": "Mantap. Makasih!",
+    "featMultiT": "Broadcast multi-server",
+    "featMultiD": "Satu pesan, banyak webhook. Sekali klik.",
+    "featSent": "terkirim",
+    "featSending": "mengirim…",
+    "featTplT": "Template + variabel",
+    "featTplD": "Simpan format pengumuman, isi variabelnya tiap kirim.",
+    "featLogsT": "Logs & health monitoring",
+    "featLogsD": "Setiap pengiriman tercatat per target. Webhook mati langsung ketahuan sebelum member komplain.",
+    "howEyebrow": "Cara kerja",
+    "howTitle": "Dari nol sampai kekirim, tiga langkah.",
+    "howDesc": "Nggak perlu baca dokumentasi 40 halaman.",
+    "stepKicker": "LANGKAH",
+    "steps": {
+      "s1": {
+        "t": "Tempel URL webhook",
+        "d": "Di Discord: Server Settings → Integrations → Webhooks → copy URL. Tempel di My-Kait. URL-nya dienkripsi sebelum disimpan."
+      },
+      "s2": {
+        "t": "Tulis & preview",
+        "d": "Ketik pesanmu di editor. Embed, mention, dan format tampil persis seperti di Discord — nggak ada kejutan setelah kekirim."
+      },
+      "s3": {
+        "t": "Kirim ke banyak server",
+        "d": "Centang webhook tujuan, tekan kirim. Status per server tercatat di logs — yang gagal bisa dikirim ulang satu klik."
+      }
+    },
+    "stepVis1T": "Tambah webhook",
+    "stepVis1Ok": "URL valid · terenkripsi & tersimpan",
+    "stepVis2T": "Live preview",
+    "stepVis2Msg": "Pengumuman: maintenance malam ini jam 22.00 WIB.",
+    "stepVis2D": "Persis seperti yang member lihat. Termasuk embed & warna.",
+    "stepVis3T": "Broadcast terkirim",
+    "stepVis3Unit": "server",
     "freeTitle": "Gratis.",
     "freeTitle2": "Tanpa batasan.",
     "freeDesc": "Tanpa kuota webhook. Tanpa paywall. Tanpa kartu kredit. Kirim sebanyak kalian mau. Simpan webhook sebanyak kalian butuh. Selamanya gratis.",
     "freeCta": "Mulai sekarang",
-    "footerTagline": "Webhook Studio untuk Discord",
-    "footerRights": "Gratis. Selamanya.",
-    "features": {
-      "editor": {
-        "title": "Editor visual",
-        "desc": "Susun embed dengan live preview ala Discord"
-      },
-      "webhook": {
-        "title": "Webhook aman",
-        "desc": "URL webhook dienkripsi end-to-end"
-      },
-      "template": {
-        "title": "Template",
-        "desc": "Simpan dan bagikan template pesan"
-      },
-      "logs": {
-        "title": "Riwayat lengkap",
-        "desc": "Lacak setiap pengiriman dengan detail"
-      },
-      "title": "Fitur Unggulan",
-      "subtitle": "Semua yang kamu butuhkan untuk mengelola webhook Discord dengan nyaman."
-    },
-    "navFeatures": "Fitur",
-    "navHow": "Cara kerja",
-    "navTemplates": "Template",
-    "loginDiscord": "Masuk dengan Discord",
-    "versionPill": "v1.0.0 · SCHEDULED SENDS — sudah live",
-    "heroTitleA": "Kirim pesan Discord",
-    "heroTitleB1": "semudah ",
-    "heroTitleB2": "ship code.",
-    "ctaStart": "Mulai bangun",
-    "ctaTemplates": "Jelajahi template",
-    "demoComposer": "composer",
-    "demoMessage": "Pesan",
-    "demoEmbedTitle": "Judul embed",
-    "demoMessageText": "Halo semuanya! Weekly update v1.0 sudah live — cek changelog di bawah",
-    "demoTitleText": "v1.0.0 — Changelog",
-    "demoSend": "Kirim →",
-    "demoSent": "✓ Terkirim",
-    "demoDelivered": "200 — terkirim dalam 184ms",
-    "statsSent": "pesan terkirim",
-    "statsRate": "tingkat keberhasilan",
-    "statsLatency": "latensi median",
-    "live": "LIVE",
-    "versionNote": "SCHEDULED SENDS — sudah live",
-    "openDashboard": "Buka dashboard",
-    "toggleTheme": "Ganti tema"
+    "freeNoPaywall": "Tanpa paywall",
+    "freeNoQuota": "Tanpa batasan jumlah",
+    "freeNoCard": "Tanpa kartu kredit"
   },
   "webhooks": {
     "title": "Webhook Saya",

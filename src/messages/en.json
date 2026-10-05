@@ -156,81 +156,118 @@
     "exporting": "Preparing..."
   },
   "landing": {
-    "heroTitle": "Craft Discord messages that hit different",
-    "heroSubtitle": "Compose, preview, template and fire webhooks from a proper editor — with logs, health checks and zero paywalls.",
-    "loginButton": "Log in with Discord",
-    "marquee": "FREE,NO BOT,NO LIMITS,FULL CUSTOMIZATION,SEND WEBHOOKS,EDIT EMBEDS,NO SIGNUP",
-    "howTitle": "How It Works",
-    "howSubtitle": "Four steps. Under two minutes.",
-    "steps": {
-      "step1": {
-        "title": "Log in with Discord",
-        "desc": "One click, you're in. No signup, no email."
-      },
-      "step2": {
-        "title": "Get your webhook URL",
-        "desc": "Discord channel settings → Integrations → Webhooks → New Webhook. Copy the URL."
-      },
-      "step3": {
-        "title": "Compose your message",
-        "desc": "Write text, add embeds, set colors, see real-time Discord-style preview."
-      },
-      "step4": {
-        "title": "Send!",
-        "desc": "Pick a webhook, hit send. Your message appears in the channel."
-      }
-    },
-    "freeTitle": "Free.",
-    "freeTitle2": "No limits.",
-    "freeDesc": "No webhook quota. No paywall. No credit card. Send as much as you want. Store as many webhooks as you need. Free forever.",
-    "freeCta": "Get started",
-    "footerTagline": "Webhook Studio for Discord",
-    "footerRights": "Free. Forever.",
-    "features": {
-      "editor": {
-        "title": "Visual editor",
-        "desc": "Build embeds with Discord-style live preview"
-      },
-      "webhook": {
-        "title": "Secure webhooks",
-        "desc": "Webhook URLs encrypted end-to-end"
-      },
-      "template": {
-        "title": "Templates",
-        "desc": "Save and share message templates"
-      },
-      "logs": {
-        "title": "Full history",
-        "desc": "Track every send with detailed logs"
-      },
-      "title": "Featured",
-      "subtitle": "Everything you need to manage Discord webhooks comfortably."
-    },
     "navFeatures": "Features",
     "navHow": "How it works",
-    "navTemplates": "Templates",
-    "loginDiscord": "Log in with Discord",
-    "versionPill": "v1.0.0 · SCHEDULED SENDS — now live",
-    "heroTitleA": "Ship Discord messages",
-    "heroTitleB1": "like you ",
-    "heroTitleB2": "ship code.",
-    "ctaStart": "Start building",
-    "ctaTemplates": "Explore templates",
-    "demoComposer": "composer",
-    "demoMessage": "Message",
-    "demoEmbedTitle": "Embed title",
-    "demoMessageText": "Hey everyone! Weekly update v1.0 is live — check the changelog below",
-    "demoTitleText": "v1.0.0 — Changelog",
-    "demoSend": "Send →",
-    "demoSent": "✓ Sent",
-    "demoDelivered": "200 — delivered in 184ms",
-    "statsSent": "messages sent",
-    "statsRate": "delivery rate",
-    "statsLatency": "median latency",
-    "live": "LIVE",
-    "versionNote": "SCHEDULED SENDS — now live",
+    "navGallery": "Gallery",
+    "navPrivacy": "Privacy",
+    "loginDiscord": "Sign in with Discord",
     "openDashboard": "Open dashboard",
-    "toggleTheme": "Toggle theme"
+    "toggleTheme": "Toggle theme",
+    "heroBadgeVer": "v1.0",
+    "heroBadgeNote": "FREE FOREVER",
+    "heroTitle": "One dashboard for all your <lime>Discord webhooks</lime>.",
+    "heroSubtitle": "Write messages, see a pixel-perfect Discord preview, then send to many servers in one click. No bot to deploy, no code to write, no drama.",
+    "ctaStart": "Start free",
+    "ctaGallery": "Browse gallery",
+    "scrollHint": "SCROLL",
+    "statsSent": "messages sent",
+    "statsRate": "success rate",
+    "statsWebhooks": "webhooks managed",
+    "statsFree": "forever",
+    "statsFreeVal": "$0",
+    "demoEditorTitle": "editor — routine-announcement",
+    "demoDraft": "draft saved",
+    "demoMsgLabel": "Message",
+    "demoEmbedLabel": "Embed",
+    "demoImgLabel": "Image",
+    "demoUploadIdle": "Drop an image here / click to upload",
+    "demoUploading": "uploading…",
+    "demoTargetLabel": "Send to",
+    "demoTargetCount": "2 selected",
+    "demoChan1": "announcements",
+    "demoChan2": "event-info",
+    "demoChan3": "general",
+    "demoHint": "to send",
+    "demoSend": "Send to 2 webhooks",
+    "demoSending": "Sending…",
+    "demoMsgText": "Hey everyone! Weekly update v1.0 is live — check the changelog below",
+    "demoEmbedTitle": "v1.0.0 — Changelog",
+    "demoEmbedDesc": "Maintenance tonight at 22:00. Get your coffee ready ☕",
+    "demoLivePreview": "LIVE PREVIEW",
+    "demoToday": "today",
+    "demoEmptyPreview": "Type in the editor — preview shows up here",
+    "demoSentMeta": "2 targets · 184ms",
+    "demoSentSub": "all delivered",
+    "journeyEyebrow": "Flow",
+    "journeyTitle": "From draft to delivered, one flow",
+    "journeyDesc": "Write, preview, send, logged. It all happens in one place — no ninth tab.",
+    "journey": {
+      "j1": {
+        "t": "Write",
+        "d": "editor + embeds"
+      },
+      "j2": {
+        "t": "Preview",
+        "d": "pixel-perfect Discord"
+      },
+      "j3": {
+        "t": "Send",
+        "d": "multi-server"
+      },
+      "j4": {
+        "t": "Delivered",
+        "d": "per-target logs"
+      }
+    },
+    "journeyCap": "That's the whole flow. <b>There is no step five.</b>",
+    "featuresEyebrow": "Why My-Kait",
+    "featuresTitle": "Built for people tired of copy-pasting messages to 10 servers.",
+    "featuresDesc": "Everything that used to be manual — typing in Discord, sending one by one, no trace — now tidy in one place.",
+    "featEditorT": "Editor with true Discord preview",
+    "featEditorD": "Formatting, embeds, and images render exactly like members see them. Typos get caught before sending.",
+    "featChat1": "Next week's event moved to Saturday 🙏",
+    "featChat2": "Done, announcement updated on all servers.",
+    "featChat3": "Nice. Thanks!",
+    "featMultiT": "Multi-server broadcast",
+    "featMultiD": "One message, many webhooks. One click.",
+    "featSent": "sent",
+    "featSending": "sending…",
+    "featTplT": "Templates + variables",
+    "featTplD": "Save announcement formats, fill in the variables each time you send.",
+    "featLogsT": "Logs & health monitoring",
+    "featLogsD": "Every delivery logged per target. A dead webhook gets noticed before members complain.",
+    "howEyebrow": "How it works",
+    "howTitle": "From zero to sent in three steps.",
+    "howDesc": "No 40-page docs required.",
+    "stepKicker": "STEP",
+    "steps": {
+      "s1": {
+        "t": "Paste your webhook URL",
+        "d": "In Discord: Server Settings → Integrations → Webhooks → copy URL. Paste it in My-Kait. The URL is encrypted before it's stored."
+      },
+      "s2": {
+        "t": "Write & preview",
+        "d": "Type your message in the editor. Embeds, mentions, and formatting render exactly like in Discord — no surprises after sending."
+      },
+      "s3": {
+        "t": "Send to many servers",
+        "d": "Check the target webhooks, hit send. Per-server status is logged — failures can be retried in one click."
+      }
+    },
+    "stepVis1T": "Add webhook",
+    "stepVis1Ok": "Valid URL · encrypted & stored",
+    "stepVis2T": "Live preview",
+    "stepVis2Msg": "Announcement: maintenance tonight at 22:00.",
+    "stepVis2D": "Exactly like members see it. Embeds & colors included.",
+    "stepVis3T": "Broadcast delivered",
+    "stepVis3Unit": "servers",
+    "freeTitle": "Free.",
+    "freeTitle2": "No limits.",
+    "freeDesc": "No webhook quota. No paywall. No credit card. Send as much as you want. Save as many webhooks as you need. Free forever.",
+    "freeCta": "Start now",
+    "freeNoPaywall": "No paywall",
+    "freeNoQuota": "No quota limits",
+    "freeNoCard": "No credit card"
   },
   "webhooks": {
     "title": "My Webhooks",

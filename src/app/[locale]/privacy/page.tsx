@@ -1,4 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
+import { LegalShell } from "@/components/legal-shell";
 
 export default async function PrivacyPage({
   params,
@@ -19,6 +20,7 @@ export default async function PrivacyPage({
   ];
 
   return (
+    <LegalShell homeLabel={locale === "en" ? "Home" : "Beranda"}>
     <div className="max-w-2xl space-y-8 animate-fade-in">
       <div>
         <div className="label mb-2">{t("eyebrow")}</div>
@@ -33,5 +35,6 @@ export default async function PrivacyPage({
         ))}
       </div>
     </div>
+    </LegalShell>
   );
 }

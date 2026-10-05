@@ -1,30 +1,37 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/routing";
 import { HookLogo } from "@/components/hook-logo";
 
 /**
- * Footer — minimal, bordered, structural.
+ * Footer — satu baris, simple & elegan.
  */
 export function Footer() {
   const t = useTranslations("landing");
 
   return (
-    <footer className="border-t border-border-ink">
-      <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-6 py-12 md:flex-row md:items-center">
-        <div className="flex items-center gap-3">
-          <HookLogo size={32} />
-          <div>
-            <div className="font-display text-lg font-bold tracking-wide text-fg">
-              MY KAIT
-            </div>
-            <div className="font-mono text-xs text-fg-secondary">
-              {t("footerTagline")}
-            </div>
-          </div>
-        </div>
-        <div className="font-mono text-xs uppercase tracking-[0.08em] text-fg-tertiary">
-          {t("footerRights")}
+    <footer className="ld-footer">
+      <div className="ld-wrap">
+        <div className="ld-foot ld-reveal">
+          <Link href="/" className="ld-brand" aria-label="My-Kait">
+            <HookLogo size={26} />
+            My-Kait
+          </Link>
+          <nav className="ld-foot-links" aria-label="Footer">
+            <a href="#fitur">{t("navFeatures")}</a>
+            <a href="#cara">{t("navHow")}</a>
+            <Link href="/gallery">{t("navGallery")}</Link>
+            <a
+              href="https://github.com/wisnurafi/my-kait"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub
+            </a>
+            <Link href="/privacy">{t("navPrivacy")}</Link>
+          </nav>
+          <small>© 2026 my-kait · mit</small>
         </div>
       </div>
     </footer>
