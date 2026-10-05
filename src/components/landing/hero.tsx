@@ -439,7 +439,7 @@ function DemoStage() {
 
             <div className="ld-ed-sec-head">
               <span className="ld-ed-label">{t("demoEmbedLabel")}</span>
-              <span className="ld-ed-badge">0/6000</span>
+              <span className="ld-ed-badge">{s.title.length + s.desc.length}/6000</span>
             </div>
             <div className={`ld-ed-embed${s.active === "title" || s.active === "desc" ? " typing" : ""}`}>
               <div className="ld-ed-embed-accent" />
