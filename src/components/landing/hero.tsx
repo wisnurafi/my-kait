@@ -217,7 +217,7 @@ function LandingNav() {
         <Link href="/" className="ld-brand" aria-label="My-Kait">
           <HookLogo size={28} />
           My-Kait
-          <span className="ld-brand-ver">v1.0</span>
+          <span className="ld-brand-ver">v2.0</span>
         </Link>
         <nav className="ld-nav-links" aria-label="Navigasi">
           <a href="#fitur">{t("navFeatures")}</a>

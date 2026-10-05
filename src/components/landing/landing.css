@@ -204,6 +204,22 @@
 .ld-root .ld-dp-img span{position:absolute;bottom:8px;left:10px;font-family:var(--font-mono);font-size:10.5px;color:#dbdee1;background:rgba(0,0,0,.45);padding:3px 8px;border-radius:5px}
 .ld-root .ld-dp-flash{animation:ld-dp-flash .8s cubic-bezier(.22,1,.36,1)}
 @keyframes ld-dp-flash{0%{box-shadow:0 0 0 3px rgba(163,230,53,.5)}100%{box-shadow:0 0 0 0 transparent}}
+/* ============ LIGHT MODE: mock Discord ikut terang ============ */
+[data-theme="light"] .ld-root .ld-dp-body{ background:#ffffff }
+[data-theme="light"] .ld-root .ld-dp-empty{ color:#6d6f78 }
+[data-theme="light"] .ld-root .ld-dp-empty svg{ stroke:#b5bac1 }
+[data-theme="light"] .ld-root .ld-dp-name{ color:#060607 }
+[data-theme="light"] .ld-root .ld-dp-time{ color:#6d6f78 }
+[data-theme="light"] .ld-root .ld-dp-content{ color:#313338 }
+[data-theme="light"] .ld-root .ld-dp-embed{ background:#f2f3f5 }
+[data-theme="light"] .ld-root .ld-dp-embed b{ color:#060607 }
+[data-theme="light"] .ld-root .ld-dp-embed p{ color:#313338 }
+/* bento mini chat bubbles: pastikan teks kebaca di light mode */
+[data-theme="light"] .ld-root .ld-mini-msg{ background:#ffffff; border:1px solid var(--ld-line) }
+[data-theme="light"] .ld-root .ld-avatar{
+  background:linear-gradient(135deg,#e2e4e7,#c9ccd1);
+  border-color:var(--ld-line-soft); color:var(--ld-lime-deep);
+}
 .ld-root .ld-c-bar{display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--ld-line)}
 .ld-root .ld-c-bar i{width:11px;height:11px;border-radius:50%;background:#2c2c31}
 .ld-root .ld-c-bar i:first-child{background:#3a3a41}
