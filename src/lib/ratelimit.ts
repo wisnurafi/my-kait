@@ -60,12 +60,23 @@ export async function checkRateLimit(
     return { success: true, remaining: 999, reset: 0 };
   }
 
-  const result = await limiter.limit(identifier);
-  return {
-    success: result.success,
-    remaining: result.remaining,
-    reset: result.reset,
-  };
+  try {
+    const result = await limiter.limit(identifier);
+    return {
+      success: result.success,
+      remaining: result.remaining,
+      reset: result.reset,
+    };
+  } catch (err) {
+    // Fail-open by explicit decision: a rate-limiter outage must not take
+    // down login, sending, uploads, or reports. The unenforced window during
+    // an Upstash outage is acceptable; log loudly so it stays visible.
+    console.warn(
+      "[ratelimit] Upstash error, failing open:",
+      err instanceof Error ? err.message : err,
+    );
+    return { success: true, remaining: 999, reset: 0 };
+  }
 }
 
 /**
