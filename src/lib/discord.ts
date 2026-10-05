@@ -19,6 +19,34 @@ const ALLOWED_HOSTS = [
 const WEBHOOK_PATH_REGEX = /^\/api\/webhooks\/\d+\/[\w-]+$/;
 
 /**
+ * Discord usually answers in well under 2s. Without a timeout a hung
+ * connection would block a server action until the platform kills it,
+ * wasting a slot that could serve other users.
+ */
+const FETCH_TIMEOUT_MS = 15_000;
+
+/**
+ * Upper bound for a single 429 backoff wait. Discord's `retry_after` is
+ * normally a few seconds, but we never trust the value blindly — an
+ * uncapped sleep could stall a server action for minutes.
+ */
+const MAX_RETRY_WAIT_S = 30;
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = FETCH_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
  * Validate that a URL is a legitimate Discord webhook URL.
  * Throws on invalid — does not make a network request.
  */
@@ -78,7 +106,7 @@ export async function pingWebhook(url: string): Promise<PingResult> {
   }
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: "GET",
       headers: {
         "User-Agent": "MyKait/1.0 (webhook-studio)",
@@ -176,7 +204,7 @@ export async function sendWebhookMessage(
     try {
       const sendUrl = url.includes("?") ? `${url}&wait=true` : `${url}?wait=true`;
 
-      const response = await fetch(sendUrl, {
+      const response = await fetchWithTimeout(sendUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -197,7 +225,12 @@ export async function sendWebhookMessage(
 
       if (response.status === 429) {
         const body = await response.json().catch(() => null);
-        const retryAfter = Math.ceil(body?.retry_after ?? 5);
+        // Cap the backoff: never sleep longer than MAX_RETRY_WAIT_S
+        // on a single wait, no matter what retry_after claims.
+        const retryAfter = Math.min(
+          Math.ceil(body?.retry_after ?? 5),
+          MAX_RETRY_WAIT_S,
+        );
         lastResult = {
           success: false,
           httpStatus: 429,
@@ -269,7 +302,7 @@ export async function editWebhookMessage(
 ): Promise<SendResult> {
   try {
     const editUrl = `${url}/messages/${messageId}`;
-    const response = await fetch(editUrl, {
+    const response = await fetchWithTimeout(editUrl, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -308,7 +341,7 @@ export async function deleteWebhookMessage(
 ): Promise<SendResult> {
   try {
     const deleteUrl = `${url}/messages/${messageId}`;
-    const response = await fetch(deleteUrl, {
+    const response = await fetchWithTimeout(deleteUrl, {
       method: "DELETE",
       headers: {
         "User-Agent": "MyKait/1.0 (webhook-studio)",
