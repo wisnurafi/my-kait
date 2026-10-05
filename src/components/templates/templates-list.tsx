@@ -70,11 +70,13 @@ export function TemplatesList({
   templates: initial,
   folders,
   activeFolder,
+  allTags,
   pagination,
 }: {
   templates: Template[];
   folders: Folder[];
   activeFolder: string;
+  allTags: string[];
   pagination: { page: number; totalPages: number };
 }) {
   const t = useTranslations("templates");
@@ -260,7 +262,8 @@ export function TemplatesList({
     activeTag !== null ||
     activeFolder !== "all";
 
-  const allTags = [...new Set(initial.flatMap((t) => t.tags ?? []))];
+  // Tag filter chips cover ALL user templates, not just the current page.
+  // (allTags comes from the server via getAllTemplateTags.)
 
   const folderButton = (
     id: string,

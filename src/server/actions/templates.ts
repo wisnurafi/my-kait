@@ -565,3 +565,15 @@ export async function getGalleryTemplates(opts: {
 
   return rows;
 }
+
+/* --- Distinct tags across ALL user templates (for the filter chips) --- */
+export async function getAllTemplateTags(): Promise<string[]> {
+  const user = await requireAuth();
+  const rows = await db
+    .select({ tags: templates.tags })
+    .from(templates)
+    .where(eq(templates.userId, user.id));
+  return [...new Set(rows.flatMap((r) => r.tags ?? []))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+}
