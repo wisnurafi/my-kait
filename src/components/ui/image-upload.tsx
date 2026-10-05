@@ -123,7 +123,19 @@ export function ImageUpload({
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => fileInputRef.current?.click()}
-          className="flex items-center justify-center h-11 px-4 text-sm rounded-lg border border-dashed border-border-strong cursor-pointer hover:bg-surface-hover hover:border-accent transition-colors"
+          onKeyDown={(e) => {
+            // Ignore key events bubbling up from inner controls (e.g. the
+            // clear button) — they handle their own keyboard interaction.
+            if (e.target !== e.currentTarget) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label={t("dropHint")}
+          className="flex items-center justify-center h-11 px-4 text-sm rounded-lg border border-dashed border-border-strong cursor-pointer hover:bg-surface-hover hover:border-accent transition-colors focus-visible:outline-2 focus-visible:outline-accent"
         >
           {uploading ? (
             <>

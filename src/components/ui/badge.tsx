@@ -85,6 +85,7 @@ export function FilterChip({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
         "px-4 py-1.5 font-mono text-[11px] font-medium uppercase tracking-wide leading-none",
         "rounded-full border cursor-pointer transition-colors duration-150 press",

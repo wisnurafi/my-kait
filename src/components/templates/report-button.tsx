@@ -40,6 +40,8 @@ export function ReportButton({ templateId }: { templateId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
+        aria-expanded={false}
+        aria-controls="report-form"
         className="text-error hover:underline inline-flex items-center gap-1"
       >
         <Flag size={12} /> {t("report")}
@@ -48,7 +50,11 @@ export function ReportButton({ templateId }: { templateId: string }) {
   }
 
   return (
-    <form action={formAction} className="w-full max-w-md text-left space-y-3 panel p-5 animate-fade-in">
+    <form
+      id="report-form"
+      action={formAction}
+      className="w-full max-w-md text-left space-y-3 panel p-5 animate-fade-in"
+    >
       <input type="hidden" name="templateId" value={templateId} />
       <div>
         <Label htmlFor="report-reason">{t("reportReason")}</Label>

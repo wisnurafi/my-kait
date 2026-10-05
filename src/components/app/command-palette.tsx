@@ -146,14 +146,14 @@ function PaletteModal({ onClose }: { onClose: () => void }) {
     <div
       className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 px-4 pt-[18vh] animate-fade-in"
       onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("title")}
     >
       <div
         className="panel w-full max-w-lg overflow-hidden shadow-lg"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={onKeyDown}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("title")}
       >
         <div className="flex items-center gap-3 border-b border-border-ink px-4">
           <Search size={16} className="shrink-0 text-fg-tertiary" />
