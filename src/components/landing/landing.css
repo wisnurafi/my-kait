@@ -461,6 +461,13 @@
   .ld-root .ld-steps-grid{ grid-template-columns:1fr; gap:40px; }
   .ld-root .ld-step{ opacity:1; }
   .ld-root .ld-nav-links{ display:none; }
+  /* nav-links hidden -> tidak ada yang dorong tombol kanan ke tepi;
+     margin-left:auto jaga tombol tetap rata kanan */
+  .ld-root .ld-nav-right{ margin-left:auto; }
+  /* matikan tilt 3D antar-section di layar kecil: perspective+rotateX bikin
+     section (yang tinggi) melebar melebihi viewport -> konten kepotong tepi.
+     !important karena transform di-set inline oleh JS (LandingFx) */
+  .ld-root .ld-tilt3d{ transform:none !important; }
   .ld-root .ld-float-a{ top:-56px; right:6px; }
   .ld-root .ld-float-b{ bottom:-56px; left:6px; }
   .ld-root .ld-jtrack{ max-width:100%; }
