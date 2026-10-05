@@ -373,7 +373,13 @@ export async function getShareLinks(templateId: string) {
 
 /* --- Get shared template by slug (public) --- */
 export async function getSharedTemplateBySlug(slug: string) {
-  const t = await getActionT("errors");
+  // Public endpoint: throttle by IP so share pages can't be scraped at will.
+  const rl = await checkRateLimit("publicTemplate", await getClientIp());
+  if (!rl.success) {
+    const t = await getActionT("errors");
+    throw new Error(t("rateLimited"));
+  }
+
   const result = await db
     .select({
       id: templates.id,
@@ -539,6 +545,13 @@ export async function getGalleryTemplates(opts: {
   sort?: "popular" | "latest";
   limit?: number;
 }): Promise<GalleryTemplate[]> {
+  // Public endpoint: throttle by IP so the gallery can't be scraped at will.
+  const rl = await checkRateLimit("publicTemplate", await getClientIp());
+  if (!rl.success) {
+    const t = await getActionT("errors");
+    throw new Error(t("rateLimited"));
+  }
+
   const { search, sort = "popular", limit = 48 } = opts;
 
   const conditions = [eq(templateShares.isActive, true)];
