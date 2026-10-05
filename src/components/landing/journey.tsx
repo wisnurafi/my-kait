@@ -173,8 +173,10 @@ export function Journey() {
                 <span className="ld-n">
                   <s.icon />
                 </span>
-                <b>{t(`journey.${s.key}.t`)}</b>
-                <span>{t(`journey.${s.key}.d`)}</span>
+                <span className="ld-jtxt">
+                  <b>{t(`journey.${s.key}.t`)}</b>
+                  <span>{t(`journey.${s.key}.d`)}</span>
+                </span>
               </div>
             ))}
           </div>
