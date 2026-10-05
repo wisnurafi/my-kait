@@ -54,6 +54,21 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
 
   return (
     <>
+      {/* Mobile top bar — logo + theme/language, one-tap access on small screens */}
+      <header className="sticky top-0 z-40 md:hidden flex items-center justify-between gap-2 px-4 py-2.5 bg-surface border-b border-border-ink">
+        <Link href="/admin" className="flex items-center gap-2 no-underline min-w-0">
+          <HookLogo size={24} />
+          <span className="font-display font-bold text-base tracking-tight text-fg truncate">
+            my-kait
+          </span>
+          <Badge variant="danger" className="ml-1 font-mono text-[9px] shrink-0">
+            <ShieldAlert size={10} className="mr-1" />
+            {t("title")}
+          </Badge>
+        </Link>
+        <ThemeLanguageSwitcher />
+      </header>
+
       {/* Desktop sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 z-40 hidden md:flex flex-col bg-surface border-r border-border-ink">
         <div className="px-5 py-5 border-b border-border-ink">
