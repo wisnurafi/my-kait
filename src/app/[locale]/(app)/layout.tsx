@@ -25,7 +25,7 @@ export default async function AppLayout({
     <div className="min-h-screen">
       <Navbar />
       <CommandPaletteProvider>
-        <main className="md:pl-64 pb-20 md:pb-0">
+        <main className="dash-main md:pl-64 pb-20 md:pb-0">
           <div className="p-6 md:p-8 max-w-7xl mx-auto">{children}</div>
         </main>
       </CommandPaletteProvider>

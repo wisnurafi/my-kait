@@ -86,6 +86,11 @@
   --font-display: "Space Grotesk", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Courier New", monospace;
+
+  /* Dashboard redesign — background textures */
+  --sidebar: #0c0c0e;
+  --dot: rgba(255, 255, 255, 0.06);
+  --grid-line: rgba(255, 255, 255, 0.038);
 }
 
 /* --- Design Tokens: Light (opt-in via data-theme="light") --- */
@@ -141,6 +146,11 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
   --shadow-accent: 0 0 24px rgba(101, 163, 13, 0.15);
+
+  /* Dashboard redesign — background textures */
+  --sidebar: #ececef;
+  --dot: rgba(0, 0, 0, 0.07);
+  --grid-line: rgba(0, 0, 0, 0.05);
 }
 
 /* --- Tailwind v4 Theme Mapping --- */
@@ -187,6 +197,10 @@
 
   --color-surface-hover: var(--surface-hover);
   --color-surface-input: var(--surface-input);
+
+  --color-sidebar: var(--sidebar);
+  --color-dot: var(--dot);
+  --color-grid-line: var(--grid-line);
 
   --font-display: var(--font-display);
   --font-body: var(--font-body);
@@ -513,4 +527,488 @@ textarea::placeholder {
 
 html {
   scroll-behavior: smooth;
+}
+
+/* ============================================================
+   DASHBOARD REDESIGN — fondasi (Agent A)
+   Port dari pratinjau yang di-approve Wisnu
+   (my-kait-dashboard-redesign-preview.html).
+   Semua selector di bawah ini BARU — tidak ada rule lama diubah.
+   Konvensi pemicu hover: parent diberi class .hv.
+   ============================================================ */
+
+/* ---------- Animasi ikon ----------
+   Bungkus svg: <span class="ia ia-<nama>">…</span>.
+   Semua keyframes hanya transform/opacity (GPU-only). */
+.ia {
+  display: inline-flex;
+  line-height: 0;
+}
+.ia svg {
+  width: 20px;
+  height: 20px;
+}
+/* Sidebar: ikon sedikit lebih kecil */
+.nav-item .ia svg {
+  width: 18px;
+  height: 18px;
+}
+
+.hv:hover .ia-home,
+.hv:focus-visible .ia-home,
+.icon-cell:hover .ia-home {
+  animation: ia-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes ia-pop {
+  0% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-3px) scale(1.18); }
+  100% { transform: translateY(0) scale(1); }
+}
+.hv:hover .ia-pencil,
+.icon-cell:hover .ia-pencil {
+  animation: ia-scribble 0.5s ease;
+}
+@keyframes ia-scribble {
+  0% { transform: rotate(0); }
+  30% { transform: rotate(-14deg) translateY(-1px); }
+  60% { transform: rotate(10deg); }
+  100% { transform: rotate(0); }
+}
+.hv:hover .ia-link,
+.icon-cell:hover .ia-link {
+  animation: ia-swing 0.6s ease;
+  transform-origin: 50% 18%;
+}
+@keyframes ia-swing {
+  0% { transform: rotate(0); }
+  25% { transform: rotate(-16deg); }
+  55% { transform: rotate(11deg); }
+  80% { transform: rotate(-5deg); }
+  100% { transform: rotate(0); }
+}
+.hv:hover .ia-file,
+.icon-cell:hover .ia-file {
+  animation: ia-lift 0.4s ease;
+}
+@keyframes ia-lift {
+  0% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-3px) rotate(-7deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+.hv:hover .ia-history,
+.icon-cell:hover .ia-history {
+  animation: ia-rewind 0.6s ease;
+}
+@keyframes ia-rewind {
+  from { transform: rotate(0); }
+  to { transform: rotate(-360deg); }
+}
+.hv:hover .ia-gear,
+.icon-cell:hover .ia-gear {
+  animation: ia-gearspin 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes ia-gearspin {
+  from { transform: rotate(0); }
+  to { transform: rotate(90deg); }
+}
+.hv:hover .ia-key,
+.icon-cell:hover .ia-key {
+  animation: ia-jiggle 0.5s ease;
+  transform-origin: 30% 70%;
+}
+@keyframes ia-jiggle {
+  0% { transform: rotate(0); }
+  30% { transform: rotate(-20deg); }
+  60% { transform: rotate(12deg); }
+  100% { transform: rotate(0); }
+}
+.hv:hover .ia-grid,
+.icon-cell:hover .ia-grid {
+  animation: ia-tiles 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes ia-tiles {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.hv:hover .ia-flag,
+.icon-cell:hover .ia-flag {
+  animation: ia-wave 0.55s ease;
+  transform-origin: 15% 85%;
+}
+@keyframes ia-wave {
+  0% { transform: rotate(0); }
+  30% { transform: rotate(-10deg); }
+  60% { transform: rotate(7deg); }
+  100% { transform: rotate(0); }
+}
+.hv:hover .ia-users,
+.icon-cell:hover .ia-users {
+  animation: ia-nod 0.55s ease;
+}
+@keyframes ia-nod {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-3px); }
+  50% { transform: translateY(0); }
+  75% { transform: translateY(-2px); }
+}
+.hv:hover .ia-scroll,
+.icon-cell:hover .ia-scroll {
+  animation: ia-unroll 0.45s ease;
+  transform-origin: 50% 0%;
+}
+@keyframes ia-unroll {
+  0% { transform: scaleY(1); }
+  50% { transform: scaleY(1.16); }
+  100% { transform: scaleY(1); }
+}
+.hv:hover .ia-bell,
+.icon-cell:hover .ia-bell {
+  animation: ia-ring 0.6s ease;
+  transform-origin: 50% 8%;
+}
+@keyframes ia-ring {
+  0% { transform: rotate(0); }
+  20% { transform: rotate(15deg); }
+  45% { transform: rotate(-12deg); }
+  70% { transform: rotate(7deg); }
+  100% { transform: rotate(0); }
+}
+.hv:hover .ia-chart,
+.icon-cell:hover .ia-chart {
+  animation: ia-eq 0.55s ease;
+  transform-origin: 50% 100%;
+}
+@keyframes ia-eq {
+  0%, 100% { transform: scaleY(1); }
+  30% { transform: scaleY(1.28); }
+  60% { transform: scaleY(0.92); }
+}
+.hv:hover .ia-send,
+.icon-cell:hover .ia-send {
+  animation: ia-launch 0.45s ease;
+}
+@keyframes ia-launch {
+  0% { transform: translate(0, 0); opacity: 1; }
+  45% { transform: translate(5px, -5px); opacity: 0.4; }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
+.hv:hover .ia-trash,
+.icon-cell:hover .ia-trash {
+  animation: ia-shake 0.45s ease;
+}
+@keyframes ia-shake {
+  0% { transform: rotate(0); }
+  25% { transform: rotate(9deg); }
+  55% { transform: rotate(-8deg); }
+  80% { transform: rotate(4deg); }
+  100% { transform: rotate(0); }
+}
+.hv:hover .ia-refresh,
+.icon-cell:hover .ia-refresh {
+  animation: ia-spin180 0.5s ease;
+}
+@keyframes ia-spin180 {
+  from { transform: rotate(0); }
+  to { transform: rotate(180deg); }
+}
+.hv:hover .ia-plus,
+.icon-cell:hover .ia-plus {
+  animation: ia-plus90 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes ia-plus90 {
+  from { transform: rotate(0) scale(1); }
+  to { transform: rotate(90deg) scale(1.18); }
+}
+.hv:hover .ia-search,
+.icon-cell:hover .ia-search {
+  animation: ia-scan 0.5s ease;
+}
+@keyframes ia-scan {
+  0% { transform: translateX(0); }
+  35% { transform: translateX(3px); }
+  70% { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+.hv:hover .ia-x,
+.icon-cell:hover .ia-x {
+  animation: ia-x90 0.35s ease;
+}
+@keyframes ia-x90 {
+  from { transform: rotate(0); }
+  to { transform: rotate(90deg); }
+}
+.hv:hover .ia-chev,
+.icon-cell:hover .ia-chev {
+  animation: ia-nudge 0.4s ease;
+}
+@keyframes ia-nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+.hv:hover .ia-download,
+.icon-cell:hover .ia-download {
+  animation: ia-drop 0.45s ease;
+}
+@keyframes ia-drop {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+.hv:hover .ia-logout,
+.icon-cell:hover .ia-logout {
+  animation: ia-out 0.4s ease;
+}
+@keyframes ia-out {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+.hv:hover .ia-check,
+.icon-cell:hover .ia-check {
+  animation: ia-checkpop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes ia-checkpop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- Background dashboard ----------
+   Sidebar: dot-grid 22px + scanline lime 16s (nuansa terminal).
+   Main: blueprint grid 44px + noise film statis.
+   Catatan pemakai: konten di dalam .dash-main sebaiknya
+   position:relative + z-index di atas ::before (noise). */
+.dash-sidebar {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--sidebar);
+  background-image: radial-gradient(circle, var(--dot) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+.dash-sidebar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -45%;
+  height: 45%;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgba(163, 230, 53, 0.055), transparent);
+  animation: scan 16s linear infinite;
+}
+@keyframes scan {
+  from { transform: translateY(-40%); }
+  to { transform: translateY(320%); }
+}
+.dash-main {
+  position: relative;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+.dash-main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+/* ---------- Kursor blok berkedip (▊) ----------
+   Untuk eyebrow tiap halaman. */
+.cursor-blink::after {
+  content: "\2588";
+  color: var(--accent-primary);
+  margin-left: 6px;
+  animation: blink 1.2s steps(1) infinite;
+  font-size: 0.9em;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* ---------- Sapuan hover nav ----------
+   Span panel lime meluncur dari kiri saat hover.
+   Parent WAJIB position:relative + overflow:hidden (urusan pemakai). */
+.nav-sweep {
+  position: absolute;
+  inset: 0;
+  background: var(--accent-primary-soft);
+  transform: translateX(-102%);
+  transition: transform 0.28s ease;
+}
+.hv:hover .nav-sweep,
+.hv:focus-visible .nav-sweep {
+  transform: translateX(0);
+}
+
+/* ---------- Tooltip chart ----------
+   Diposisikan via JS mengikuti kursor/fokus; parent chart
+   sebaiknya position:relative. */
+.chart-tip {
+  position: absolute;
+  z-index: 300;
+  min-width: 190px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--accent-primary);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  font-size: 12px;
+}
+.chart-tip .tt-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.chart-tip .tt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 2px 0;
+  color: var(--fg-secondary);
+}
+.chart-tip .tt-row b {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.chart-tip .ok { color: var(--success); }
+.chart-tip .err { color: var(--error); }
+.chart-tip .tt-foot {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  justify-content: space-between;
+  color: var(--fg-secondary);
+}
+.chart-tip .tt-foot b {
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+}
+
+/* ---------- Tabel responsif → kartu ----------
+   Di ≤767px: thead disembunyikan, tiap baris jadi kartu tumpuk.
+   Tiap <td> WAJIB punya atribut data-label (urusan pemakai). */
+.rtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.rtable th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--fg-tertiary);
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.rtable td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.rtable tr:last-child td {
+  border-bottom: 0;
+}
+.rtable tbody tr {
+  transition: background 0.15s;
+}
+.rtable tbody tr:hover {
+  background: color-mix(in srgb, var(--accent-primary-soft) 55%, transparent);
+}
+@media (max-width: 767px) {
+  .rtable thead { display: none; }
+  .rtable,
+  .rtable tbody,
+  .rtable tr,
+  .rtable td {
+    display: block;
+    width: 100%;
+  }
+  .rtable tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin: 0 0 10px;
+    background: var(--surface);
+    padding: 4px 14px;
+  }
+  .rtable tr:hover { background: var(--surface); }
+  .rtable td {
+    border: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 9px 0;
+    text-align: right;
+  }
+  .rtable td + td {
+    border-top: 1px dashed var(--border);
+  }
+  .rtable td::before {
+    content: attr(data-label);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-tertiary);
+    text-align: left;
+    flex: none;
+  }
+}
+
+/* ---------- Busur donut + KPI klikable ---------- */
+.donut-arc {
+  transition: stroke-dashoffset 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.kpi-card.is-clickable {
+  position: relative;
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.kpi-card.is-clickable:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-md);
+}
+.kpi-card.is-clickable .go {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  color: var(--fg-tertiary);
+  transition: transform 0.2s, color 0.2s;
+}
+.kpi-card.is-clickable:hover .go {
+  transform: translateX(4px);
+  color: var(--accent-primary);
+}
+
+/* ---------- Reduced motion ----------
+   Matikan SEMUA animasi/transisi baru di atas
+   (termasuk scanline & kursor blink). */
+@media (prefers-reduced-motion: reduce) {
+  .dash-sidebar::after,
+  .cursor-blink::after,
+  .nav-sweep,
+  .donut-arc,
+  .rtable tbody tr,
+  .kpi-card.is-clickable,
+  .kpi-card.is-clickable .go,
+  .hv:hover .ia,
+  .hv:focus-visible .ia,
+  .icon-cell:hover .ia {
+    animation: none !important;
+    transition: none !important;
+  }
 }

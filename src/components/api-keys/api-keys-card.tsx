@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonCard } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { Link } from "@/i18n/routing";
 import {
@@ -17,7 +20,7 @@ import {
   type ApiKeyPublic,
   type NewApiKey,
 } from "@/server/actions/api-keys";
-import { Copy, Check, Plus, Ban, BookOpen } from "lucide-react";
+import { Copy, Check, Plus, Ban, BookOpen, KeyRound } from "lucide-react";
 
 type NewKey = NewApiKey;
 
@@ -43,7 +46,7 @@ export function ApiKeysCard() {
   const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState<NewKey | null>(null);
   const [copied, setCopied] = useState(false);
-  const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<ApiKeyPublic | null>(null);
   const [revoking, setRevoking] = useState(false);
 
   const load = async () => {
@@ -100,14 +103,12 @@ export function ApiKeysCard() {
     toast.success(t("apiKeysCopied"));
   };
 
-  const handleRevoke = async (id: string) => {
-    if (confirmRevokeId !== id) {
-      setConfirmRevokeId(id);
-      return;
-    }
+  /** Revoke goes through ConfirmDialog (destructive-action pattern). */
+  const doRevoke = async () => {
+    if (!revokeTarget) return;
     setRevoking(true);
     try {
-      const result = await revokeApiKeyAction(id);
+      const result = await revokeApiKeyAction(revokeTarget.id);
       if ("error" in result) {
         toast.error(result.error);
       } else {
@@ -118,7 +119,7 @@ export function ApiKeysCard() {
       toast.error(t("apiKeysRevokeFailed"));
     } finally {
       setRevoking(false);
-      setConfirmRevokeId(null);
+      setRevokeTarget(null);
     }
   };
 
@@ -126,152 +127,186 @@ export function ApiKeysCard() {
     !k.revokedAt && k.expiresAt && new Date(k.expiresAt) < new Date();
 
   return (
-    <Card hover>
-      <CardBody>
-        {/* New key — shown exactly once */}
-        {newKey && (
-          <div
-            className="panel p-4 mb-4"
-            style={{
-              borderColor: "var(--accent-primary)",
-              background: "var(--accent-primary-soft)",
-            }}
-            role="alert"
-          >
-            <div className="font-bold mb-1">{t("apiKeysCreatedTitle")}</div>
-            <p className="text-sm text-fg-secondary mb-3">
-              {t("apiKeysCreatedWarning")}
-            </p>
-            <div className="flex items-center gap-2 flex-wrap">
-              <code className="font-mono text-sm bg-sunken border border-border-ink rounded px-3 py-2 break-all flex-1 min-w-0">
-                {newKey.raw}
-              </code>
-              <Button
-                variant="secondary"
-                onClick={handleCopy}
-                className="gap-2 shrink-0"
-              >
-                {copied ? <Check size={16} /> : <Copy size={16} />}
-                {t("apiKeysCopy")}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Create form */}
-        <div className="flex gap-2 flex-wrap items-end mb-4">
-          <div className="flex-1 min-w-[180px]">
-            <Label>{t("apiKeysNameLabel")}</Label>
-            <Input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t("apiKeysNamePlaceholder")}
-              maxLength={50}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label>{t("apiKeysExpiryLabel")}</Label>
-            <Select
-              value={expiry}
-              onChange={(e) => setExpiry(e.target.value)}
-              className="mt-1"
-            >
-              <option value="never">{t("apiKeysExpiryNever")}</option>
-              <option value="30">{t("apiKeysExpiry30")}</option>
-              <option value="90">{t("apiKeysExpiry90")}</option>
-              <option value="365">{t("apiKeysExpiry365")}</option>
-            </Select>
-          </div>
-          <Button
-            onClick={handleCreate}
-            disabled={creating || !name.trim()}
-            className="gap-2"
-          >
-            <Plus size={16} />
-            {creating ? t("apiKeysCreating") : t("apiKeysCreate")}
-          </Button>
-        </div>
-
-        {/* Key list */}
-        {keys === null ? (
-          <div className="text-sm text-fg-tertiary">{t("loading")}</div>
-        ) : keys.length === 0 ? (
-          <p className="text-sm text-fg-secondary">{t("apiKeysEmpty")}</p>
-        ) : (
-          <ul className="space-y-2">
-            {keys.map((k) => {
-              const expired = isExpired(k);
-              const revoked = !!k.revokedAt;
-              return (
-                <li
-                  key={k.id}
-                  className="panel p-3 flex items-center gap-3 flex-wrap"
-                >
-                  <div className="flex-1 min-w-[160px]">
-                    <div className="font-bold flex items-center gap-2 flex-wrap">
-                      {k.name}
-                      <code className="font-mono text-xs text-fg-tertiary">
-                        {k.keyPrefix}…
-                      </code>
-                      {k.scopes.map((s) => (
-                        <Badge key={s} variant="info">
-                          {s}
-                        </Badge>
-                      ))}
-                      {revoked ? (
-                        <Badge variant="error">{t("apiKeysRevokedBadge")}</Badge>
-                      ) : expired ? (
-                        <Badge variant="warning">{t("apiKeysExpiredBadge")}</Badge>
-                      ) : (
-                        <Badge variant="success">{t("apiKeysActiveBadge")}</Badge>
-                      )}
-                    </div>
-                    <div className="text-xs text-fg-tertiary mt-1">
-                      {t("apiKeysLastUsed")}:{" "}
-                      {k.lastUsedAt
-                        ? formatDate(k.lastUsedAt, locale)
-                        : t("apiKeysNeverUsed")}{" "}
-                      · {t("apiKeysExpires")}:{" "}
-                      {k.expiresAt
-                        ? formatDate(k.expiresAt, locale)
-                        : t("apiKeysNoExpiry")}
-                    </div>
-                  </div>
-                  {!revoked && !expired && (
-                    <Button
-                      variant={confirmRevokeId === k.id ? "destructive" : "ghost"}
-                      onClick={() => handleRevoke(k.id)}
-                      disabled={revoking}
-                      className="gap-2"
-                      aria-label={t("apiKeysRevoke")}
-                    >
-                      <Ban size={16} />
-                      {confirmRevokeId === k.id
-                        ? t("apiKeysRevokeConfirmButton")
-                        : t("apiKeysRevoke")}
-                    </Button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-
-        {confirmRevokeId && (
-          <p className="text-sm text-error mt-2" role="alert">
-            {t("apiKeysRevokeConfirm")}
-          </p>
-        )}
-
-        <Link
-          href="/docs"
-          className="inline-flex items-center gap-2 text-sm text-link hover:underline mt-4"
+    <div className="space-y-4">
+      {/* New key — shown exactly once */}
+      {newKey && (
+        <div
+          className="panel p-4"
+          style={{
+            borderColor: "var(--accent-primary)",
+            background: "var(--accent-primary-soft)",
+          }}
+          role="alert"
         >
-          <BookOpen size={16} /> {t("apiKeysDocsLink")}
-        </Link>
-      </CardBody>
-    </Card>
+          <div className="font-bold mb-1">{t("apiKeysCreatedTitle")}</div>
+          <p className="text-sm text-fg-secondary mb-3">
+            {t("apiKeysCreatedWarning")}
+          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <code className="font-mono text-sm bg-sunken border border-border-ink rounded px-3 py-2 break-all flex-1 min-w-0">
+              {newKey.raw}
+            </code>
+            <Button
+              variant="secondary"
+              onClick={handleCopy}
+              className="hv gap-2 shrink-0"
+            >
+              {copied ? (
+                <span className="ia ia-checkpop">
+                  <Check size={16} />
+                </span>
+              ) : (
+                <Copy size={16} />
+              )}
+              {t("apiKeysCopy")}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Create form */}
+      <Card>
+        <CardBody>
+          <div className="flex gap-2 flex-wrap items-end">
+            <div className="flex-1 min-w-[180px]">
+              <Label>{t("apiKeysNameLabel")}</Label>
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t("apiKeysNamePlaceholder")}
+                maxLength={50}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>{t("apiKeysExpiryLabel")}</Label>
+              <Select
+                value={expiry}
+                onChange={(e) => setExpiry(e.target.value)}
+                className="mt-1"
+              >
+                <option value="never">{t("apiKeysExpiryNever")}</option>
+                <option value="30">{t("apiKeysExpiry30")}</option>
+                <option value="90">{t("apiKeysExpiry90")}</option>
+                <option value="365">{t("apiKeysExpiry365")}</option>
+              </Select>
+            </div>
+            <Button
+              onClick={handleCreate}
+              disabled={creating || !name.trim()}
+              className="hv gap-2"
+            >
+              <span className="ia ia-plus90">
+                <Plus size={16} />
+              </span>
+              {creating ? t("apiKeysCreating") : t("apiKeysCreate")}
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Key list — unified card anatomy: icon box + name + badges,
+          mono meta line, actions */}
+      {keys === null ? (
+        <div className="space-y-3">
+          {[0, 1].map((i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : keys.length === 0 ? (
+        <EmptyState
+          icon={
+            <span className="hv">
+              <span className="ia ia-jiggle">
+                <KeyRound size={22} />
+              </span>
+            </span>
+          }
+          title={t("apiKeysEmpty")}
+        />
+      ) : (
+        <ul className="space-y-3">
+          {keys.map((k) => {
+            const expired = isExpired(k);
+            const revoked = !!k.revokedAt;
+            return (
+              <li key={k.id}>
+                <Card className="p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="hv grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+                      <span className="ia ia-jiggle">
+                        <KeyRound size={18} />
+                      </span>
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold">{k.name}</span>
+                        <code className="font-mono text-xs text-fg-tertiary">
+                          {k.keyPrefix}…
+                        </code>
+                        {k.scopes.map((s) => (
+                          <Badge key={s} variant="info">
+                            {s}
+                          </Badge>
+                        ))}
+                        {revoked ? (
+                          <Badge variant="error">{t("apiKeysRevokedBadge")}</Badge>
+                        ) : expired ? (
+                          <Badge variant="warning">{t("apiKeysExpiredBadge")}</Badge>
+                        ) : (
+                          <Badge variant="success">{t("apiKeysActiveBadge")}</Badge>
+                        )}
+                      </div>
+                      <div className="font-mono text-xs text-fg-tertiary mt-1.5">
+                        {t("apiKeysLastUsed")}:{" "}
+                        {k.lastUsedAt
+                          ? formatDate(k.lastUsedAt, locale)
+                          : t("apiKeysNeverUsed")}{" "}
+                        · {t("apiKeysExpires")}:{" "}
+                        {k.expiresAt
+                          ? formatDate(k.expiresAt, locale)
+                          : t("apiKeysNoExpiry")}
+                      </div>
+                    </div>
+                    {!revoked && !expired && (
+                      <Button
+                        variant="ghost"
+                        onClick={() => setRevokeTarget(k)}
+                        disabled={revoking}
+                        className="hv gap-2 shrink-0"
+                        aria-label={t("apiKeysRevoke")}
+                      >
+                        <Ban size={16} />
+                        {t("apiKeysRevoke")}
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <Link
+        href="/docs"
+        className="inline-flex items-center gap-2 text-sm text-link hover:underline"
+      >
+        <BookOpen size={16} /> {t("apiKeysDocsLink")}
+      </Link>
+
+      {/* Confirm: revoke key */}
+      <ConfirmDialog
+        open={revokeTarget !== null}
+        onClose={() => setRevokeTarget(null)}
+        onConfirm={doRevoke}
+        title={t("apiKeysRevoke")}
+        message={revokeTarget ? t("apiKeysRevokeMessage", { name: revokeTarget.name }) : ""}
+        confirmLabel={t("apiKeysRevokeConfirmButton")}
+        loading={revoking}
+        danger
+      />
+    </div>
   );
 }

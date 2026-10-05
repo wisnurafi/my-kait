@@ -4,21 +4,29 @@ import { Badge } from "@/components/ui/badge";
 import { Mascot } from "@/components/mascot";
 import { getAdminOverview, getReports, getAdminActivity } from "@/server/actions/admin";
 import { AdminActivityCharts } from "@/components/admin/activity-charts";
-import { Flag, ArrowRight } from "lucide-react";
+import { Flag, ChevronRight, ArrowRight } from "lucide-react";
 
 function StatCard({
   value,
   label,
   href,
+  viewAria,
   locale,
 }: {
   value: number;
   label: string;
   href?: string;
+  /** aria-label for clickable cards, e.g. "Lihat daftar pengguna" */
+  viewAria?: string;
   locale: string;
 }) {
   const inner = (
     <>
+      {href && (
+        <span className="ia ia-nudge go" aria-hidden="true">
+          <ChevronRight size={16} />
+        </span>
+      )}
       <p className="font-display font-bold text-3xl text-fg tabular-nums">
         {value.toLocaleString(locale === "en" ? "en-US" : "id-ID")}
       </p>
@@ -31,7 +39,8 @@ function StatCard({
     return (
       <Link
         href={href}
-        className="panel p-5 no-underline block transition-colors hover:border-border-strong"
+        aria-label={viewAria ?? label}
+        className="hv kpi-card is-clickable panel p-5 no-underline"
       >
         {inner}
       </Link>
@@ -72,7 +81,7 @@ export default async function AdminOverviewPage({
         <div className="flex items-center gap-4">
           <Mascot mini size={52} />
           <div>
-            <div className="label mb-2">{t("eyebrow")}</div>
+            <div className="label mb-2 cursor-blink">{t("eyebrow")}</div>
             <h2>{t("overviewTitle")}</h2>
             <p className="text-sm text-fg-secondary mt-1">
               {t("overviewSubtitle")}
@@ -81,14 +90,22 @@ export default async function AdminOverviewPage({
         </div>
       </div>
 
-      {/* KPI cards */}
+      {/* KPI cards — the 3 linked ones get a clear click affordance
+          (is-clickable + chevron); the 2 static ones have none. */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 stagger-in">
-        <StatCard value={stats.users} label={t("statUsers")} href="/admin/users" locale={locale} />
+        <StatCard
+          value={stats.users}
+          label={t("statUsers")}
+          href="/admin/users"
+          viewAria={t("kpiViewLabel", { label: t("statUsers") })}
+          locale={locale}
+        />
         <StatCard value={stats.templates} label={t("statTemplates")} locale={locale} />
         <StatCard
           value={stats.activeShares}
           label={t("statActiveShares")}
           href="/admin/shares"
+          viewAria={t("kpiViewLabel", { label: t("statActiveShares") })}
           locale={locale}
         />
         <StatCard value={stats.messages7d} label={t("statMessages7d")} locale={locale} />
@@ -96,6 +113,7 @@ export default async function AdminOverviewPage({
           value={stats.pendingReports}
           label={t("statPendingReports")}
           href="/admin/reports?status=pending"
+          viewAria={t("kpiViewLabel", { label: t("statPendingReports") })}
           locale={locale}
         />
       </div>

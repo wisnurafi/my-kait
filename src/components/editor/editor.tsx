@@ -26,6 +26,8 @@ import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { cn } from "@/lib/utils";
 import { DiscordPreview } from "@/components/editor/discord-preview";
+import { PageHeader } from "@/components/ui/page-header";
+import { Mascot } from "@/components/mascot";
 import { sendMessageAction, editMessageAction } from "@/server/actions/messages";
 import {
   Layers,
@@ -141,7 +143,12 @@ export function Editor({
   webhooks: Array<{ id: string; name: string; lastStatus: string }>;
 }) {
   const t = useTranslations("editor");
+  const tn = useTranslations("nav");
   const [pending, startTransition] = useTransition();
+  // Tablet (768–1023px) view toggle: "write" (form) or "preview".
+  // Initial "write" on both server and client — no window/navigator reads,
+  // so no hydration mismatch; visibility is pure CSS breakpoints.
+  const [tab, setTab] = useState<"write" | "preview">("write");
   const [result, setResult] = useState<{
     success?: boolean;
     error?: string;
@@ -480,36 +487,37 @@ export function Editor({
         </div>
       )}
 
-      {/* Page head */}
-      <div className="flex items-end justify-between flex-wrap gap-4">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent mb-2">compose</p>
-          <h1 className="font-display text-3xl tracking-tight">{t("title")}</h1>
-        </div>
-        {/* Segmented mode control */}
-        <div
-          role="group"
-          aria-label={t("title")}
-          className="inline-flex items-center bg-sunken border border-border-ink rounded-lg p-1"
-        >
-          {(["normal", "embed", "both"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => updateState((prev) => ({ ...prev, mode: m }))}
-              aria-pressed={state.mode === m}
-              className={cn(
-                "px-4 py-2 rounded-md font-mono text-xs uppercase tracking-[0.08em] transition-colors cursor-pointer focus-ring",
-                state.mode === m
-                  ? "bg-accent text-[#0a0a0b] font-semibold"
-                  : "text-fg-secondary hover:text-fg"
-              )}
-            >
-              {t(`mode.${m}`)}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Page head — unified PageHeader; the mode segmented control
+          rides in the actions slot */}
+      <PageHeader
+        eyebrow={tn("editor")}
+        title={t("title")}
+        media={<Mascot mini size={52} />}
+        actions={
+          <div
+            role="group"
+            aria-label={t("title")}
+            className="inline-flex items-center bg-sunken border border-border-ink rounded-lg p-1"
+          >
+            {(["normal", "embed", "both"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => updateState((prev) => ({ ...prev, mode: m }))}
+                aria-pressed={state.mode === m}
+                className={cn(
+                  "px-4 py-2 rounded-md font-mono text-xs uppercase tracking-[0.08em] transition-colors cursor-pointer focus-ring",
+                  state.mode === m
+                    ? "bg-accent text-[#0a0a0b] font-semibold"
+                    : "text-fg-secondary hover:text-fg"
+                )}
+              >
+                {t(`mode.${m}`)}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {/* Toolbar: undo/redo · JSON import-export · save template */}
       <div className="flex items-center gap-1 flex-wrap">
@@ -520,8 +528,8 @@ export function Editor({
           <Redo size={14} /> {t("redo")}
         </Button>
         <span aria-hidden="true" className="mx-2 h-5 w-px bg-border-ink" />
-        <Button variant="ghost" size="sm" onClick={handleExportJson} className="gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
-          <Download size={14} /> {t("exportJson")}
+        <Button variant="ghost" size="sm" onClick={handleExportJson} className="hv gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
+          <span className="ia ia-drop"><Download size={14} /></span> {t("exportJson")}
         </Button>
         <Button variant="ghost" size="sm" onClick={() => setShowJson(!showJson)} className="gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
           <Upload size={14} /> {t("importJson")}
@@ -549,9 +557,52 @@ export function Editor({
         </div>
       )}
 
+      {/* Tablet-only tabs (768–1023px): Tulis | Pratinjau.
+          Mobile stays stacked, desktop stays 2-column — the tab bar is
+          rendered only in the tablet range via `hidden md:block lg:hidden`. */}
+      <div
+        className="hidden md:block lg:hidden"
+        role="tablist"
+        aria-label={t("tabWrite")}
+      >
+        <div
+          role="group"
+          className="inline-flex items-center bg-sunken border border-border-ink rounded-lg p-1"
+        >
+          {(
+            [
+              { id: "write", label: t("tabWrite") },
+              { id: "preview", label: t("tabPreview") },
+            ] as const
+          ).map((tb) => (
+            <button
+              key={tb.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === tb.id}
+              onClick={() => setTab(tb.id)}
+              className={cn(
+                "px-4 py-2 rounded-md font-mono text-xs uppercase tracking-[0.08em] transition-colors cursor-pointer focus-ring",
+                tab === tb.id
+                  ? "bg-accent text-[#0a0a0b] font-semibold"
+                  : "text-fg-secondary hover:text-fg"
+              )}
+            >
+              {tb.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-4 items-start">
-        {/* Left: form */}
-        <div className="space-y-4 min-w-0">
+        {/* Left: form — hidden on tablet when the preview tab is active */}
+        <div
+          className={cn(
+            "space-y-4 min-w-0",
+            tab === "write" ? "md:block" : "md:hidden",
+            "lg:block"
+          )}
+        >
           {/* Content */}
           {(state.mode === "normal" || state.mode === "both") && (
             <section className="panel p-5 animate-fade-in">
@@ -629,9 +680,9 @@ export function Editor({
                     ...prev,
                     embeds: [...prev.embeds, createEmptyEmbed()],
                   }))}
-                  className="gap-2 w-full font-mono text-[11px] uppercase tracking-[0.14em]"
+                  className="hv gap-2 w-full font-mono text-[11px] uppercase tracking-[0.14em]"
                 >
-                  <Plus size={16} />
+                  <span className="ia ia-plus90"><Plus size={16} /></span>
                   {t("addEmbed")}
                 </Button>
               )}
@@ -687,15 +738,21 @@ export function Editor({
           </section>
         </div>
 
-        {/* Right: preview + send */}
-        <div className="space-y-4 lg:sticky lg:top-6 min-w-0">
+        {/* Right: preview + send — hidden on tablet when the write tab is active */}
+        <div
+          className={cn(
+            "space-y-4 lg:sticky lg:top-6 min-w-0",
+            tab === "preview" ? "md:block" : "md:hidden",
+            "lg:block"
+          )}
+        >
           <DiscordPreview payload={previewPayload} username={state.username} avatarUrl={state.avatarUrl} />
 
           {/* Send form */}
           <section className="panel p-5 animate-fade-in">
             <h2 className="flex items-center gap-2.5 font-display text-base font-semibold mb-4">
-              <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
-                <Send size={14} />
+              <span className="hv grid size-7 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
+                <span className="ia ia-launch"><Send size={14} /></span>
               </span>
               {t("sendTo")}
             </h2>
@@ -837,11 +894,11 @@ export function Editor({
                   ))}
                 </div>
               )}
-              <Button type="submit" disabled={pending || !canSend} title={t("kbdSend", { mod: modKey })} className="w-full gap-2" size="lg">
+              <Button type="submit" disabled={pending || !canSend} title={t("kbdSend", { mod: modKey })} className="hv w-full gap-2" size="lg">
                 {pending ? (
                   <span className="inline-block h-5 w-5 animate-spin rounded-full border-[3px] border-current border-t-transparent" />
                 ) : (
-                  <Send size={20} />
+                  <span className="ia ia-launch"><Send size={20} /></span>
                 )}
                 {pending ? t("sending") : editMessageId ? t("sendEdit") : t("send")}
               </Button>
@@ -1019,9 +1076,9 @@ function EmbedEditor({
                   variant="ghost"
                   size="sm"
                   onClick={() => update({ fields: [...embed.fields, createEmptyField()] })}
-                  className="gap-1 font-mono text-[11px] uppercase tracking-[0.14em]"
+                  className="hv gap-1 font-mono text-[11px] uppercase tracking-[0.14em]"
                 >
-                  <Plus size={14} />
+                  <span className="ia ia-plus90"><Plus size={14} /></span>
                   {t("addField")}
                 </Button>
               )}

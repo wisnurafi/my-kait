@@ -184,26 +184,36 @@ export default async function AdminUserDetailPage({
         {user.recentLogs.length === 0 ? (
           <p className="text-sm text-fg-secondary">{t("emptyLogs")}</p>
         ) : (
-          <ul className="space-y-2">
-            {user.recentLogs.map((l) => (
-              <li
-                key={l.id}
-                className="flex items-center justify-between gap-3 text-sm rounded-lg border border-border-ink px-4 py-2.5"
-              >
-                <Badge
-                  variant={
-                    logStatusVariant[l.status as keyof typeof logStatusVariant] ??
-                    "default"
-                  }
-                >
-                  {l.status}
-                </Badge>
-                <span className="text-xs text-fg-tertiary font-mono">
-                  {fmtDate(l.createdAt, locale)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <table className="rtable">
+            <thead>
+              <tr>
+                <th>{t("colStatus")}</th>
+                <th>{t("colDate")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {user.recentLogs.map((l) => (
+                <tr key={l.id}>
+                  <td data-label={t("colStatus")}>
+                    <Badge
+                      variant={
+                        logStatusVariant[l.status as keyof typeof logStatusVariant] ??
+                        "default"
+                      }
+                    >
+                      {l.status}
+                    </Badge>
+                  </td>
+                  <td
+                    data-label={t("colDate")}
+                    className="text-xs text-fg-tertiary font-mono"
+                  >
+                    {fmtDate(l.createdAt, locale)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

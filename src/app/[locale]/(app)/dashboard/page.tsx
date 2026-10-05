@@ -7,8 +7,11 @@ import { buttonClasses } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Mascot } from "@/components/mascot";
 import { CommandPaletteButton } from "@/components/app/command-palette";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { DashboardStats, StatCards } from "@/components/dashboard/dashboard-stats";
-import { Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Plus, History } from "lucide-react";
 
 const statusVariants = {
   sent: "success",
@@ -46,23 +49,25 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-6">
-      {/* Page head */}
-      <div className="flex items-start justify-between gap-4 flex-wrap stagger-in">
-        <div className="flex items-center gap-4">
-          <Mascot mini size={52} />
-          <div>
-            <div className="label mb-2">{t("overview")}</div>
-            <h2>{t("missionControl")}</h2>
-            <p className="text-fg-secondary mt-1 text-sm">{t("welcome")}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <CommandPaletteButton />
-          <Link href="/editor" className={buttonClasses("primary", "md")}>
-            <Plus size={16} />
-            {t("createMessage")}
-          </Link>
-        </div>
+      {/* Page head — unified PageHeader (eyebrow blinks via .cursor-blink) */}
+      <div className="stagger-in">
+        <PageHeader
+          eyebrow={t("overview")}
+          title={t("missionControl")}
+          description={t("welcome")}
+          media={<Mascot mini size={52} />}
+          actions={
+            <>
+              <CommandPaletteButton />
+              <Link href="/editor" className={cn(buttonClasses("primary", "md"), "hv")}>
+                <span className="ia ia-plus90">
+                  <Plus size={16} />
+                </span>
+                {t("createMessage")}
+              </Link>
+            </>
+          }
+        />
       </div>
 
       <StatCards
@@ -88,7 +93,7 @@ export default async function DashboardPage({
         />
       </div>
 
-      {/* Recent activity — table */}
+      {/* Recent activity — responsive .rtable (cards on mobile) */}
       <div>
         <div
           className="panel overflow-hidden stagger-in"
@@ -106,28 +111,27 @@ export default async function DashboardPage({
             </Link>
           </div>
           {logsData.logs.length === 0 ? (
-            <div className="p-8 text-center text-fg-secondary text-sm">
-              {t("noActivity")}
-            </div>
+            <EmptyState
+              icon={<History size={22} />}
+              title={t("recentActivity")}
+              description={t("noActivity")}
+            />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="rtable">
                 <thead>
-                  <tr className="border-b border-border-ink">
-                    <th className="label text-left font-medium px-5 py-3">{t("tableStatus")}</th>
-                    <th className="label text-left font-medium px-4 py-3">{t("tableTarget")}</th>
-                    <th className="label text-left font-medium px-4 py-3">{t("tableMode")}</th>
-                    <th className="label text-left font-medium px-4 py-3">{t("tableLatency")}</th>
-                    <th className="label text-right font-medium px-5 py-3">{t("tableTime")}</th>
+                  <tr>
+                    <th>{t("tableStatus")}</th>
+                    <th>{t("tableTarget")}</th>
+                    <th>{t("tableMode")}</th>
+                    <th>{t("tableLatency")}</th>
+                    <th className="text-right">{t("tableTime")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {logsData.logs.map((log) => (
-                    <tr
-                      key={log.id}
-                      className="border-b border-border-ink last:border-0 transition-colors hover:bg-surface-hover"
-                    >
-                      <td className="px-5 py-3.5">
+                    <tr key={log.id}>
+                      <td data-label={t("tableStatus")}>
                         <span className="inline-flex items-center gap-2">
                           <span
                             className={`status-dot ${statusDot[log.status] ?? "bg-fg-tertiary"}`}
@@ -137,7 +141,7 @@ export default async function DashboardPage({
                           </Badge>
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 font-medium truncate max-w-[220px]">
+                      <td data-label={t("tableTarget")} className="font-medium truncate max-w-[220px]">
                         <Link
                           href={`/logs?search=${encodeURIComponent(log.discordMessageId ?? log.webhookNameSnapshot)}`}
                           className="hover:text-link hover:underline"
@@ -146,13 +150,22 @@ export default async function DashboardPage({
                           {log.webhookNameSnapshot}
                         </Link>
                       </td>
-                      <td className="px-4 py-3.5 font-mono text-xs text-fg-secondary">
+                      <td
+                        data-label={t("tableMode")}
+                        className="font-mono text-xs text-fg-secondary"
+                      >
                         {tLogs(`mode.${log.mode as "normal" | "embed" | "both"}`)}
                       </td>
-                      <td className="px-4 py-3.5 font-mono text-xs text-fg-secondary">
+                      <td
+                        data-label={t("tableLatency")}
+                        className="font-mono text-xs text-fg-secondary"
+                      >
                         {log.latencyMs != null ? `${log.latencyMs}ms` : "—"}
                       </td>
-                      <td className="px-5 py-3.5 font-mono text-xs text-fg-tertiary text-right whitespace-nowrap">
+                      <td
+                        data-label={t("tableTime")}
+                        className="font-mono text-xs text-fg-tertiary text-right whitespace-nowrap"
+                      >
                         {format.dateTime(log.createdAt, {
                           dateStyle: "medium",
                           timeStyle: "short",

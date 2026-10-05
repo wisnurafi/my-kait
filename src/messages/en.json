@@ -92,14 +92,18 @@
       "renamed": "Folder renamed",
       "deleted": "Folder deleted",
       "moveTo": "Move to folder",
-      "create": "Create folder"
+      "create": "Create folder",
+      "actions": "Folder actions"
     },
     "previewTitle": "Preview",
     "tagsPlaceholder": "tag1, tag2",
     "importTagsPlaceholder": "tag1, tag2, tag3",
     "copyShareLink": "Copy link",
     "openShareLink": "Open link",
-    "noSearchResults": "No templates match your search."
+    "noSearchResults": "No templates match your search.",
+    "eyebrow": "template library",
+    "createTemplate": "Create template",
+    "noSearchResultsHint": "Try a different keyword or reset the filters."
   },
   "dashboard": {
     "greeting": "Hey, {name}! 👋",
@@ -138,7 +142,41 @@
     "tableTarget": "Target",
     "tableMode": "Mode",
     "tableLatency": "Latency",
-    "tableTime": "Time"
+    "tableTime": "Time",
+    "chart": {
+      "sent": "Sent",
+      "failed": "Failed",
+      "total": "Total",
+      "successRate": "Success rate",
+      "tipHint": "hover or focus each bar",
+      "whTipHint": "hover for details",
+      "barAria": "{date}: {sent} sent, {failed} failed",
+      "donutAria": "{rate}% — {sent} sent, {failed} failed",
+      "whRowAria": "{name}: {total} messages, {failed} failed, success rate {rate}%",
+      "days": {
+        "sun": "Sunday",
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday"
+      },
+      "months": {
+        "jan": "Jan",
+        "feb": "Feb",
+        "mar": "Mar",
+        "apr": "Apr",
+        "mei": "May",
+        "jun": "Jun",
+        "jul": "Jul",
+        "agu": "Aug",
+        "sep": "Sep",
+        "okt": "Oct",
+        "nov": "Nov",
+        "des": "Dec"
+      }
+    }
   },
   "settings": {
     "title": "Settings",
@@ -197,7 +235,8 @@
     "apiKeysRevokeFailed": "Failed to revoke key",
     "apiKeysLoadFailed": "Failed to load API keys",
     "apiKeysDocsLink": "Read the API documentation",
-    "apiKeysLinkDesc": "Manage your REST API keys"
+    "apiKeysLinkDesc": "Manage your REST API keys",
+    "apiKeysRevokeMessage": "Revoke key \"{name}\"? The key stops working immediately."
   },
   "landing": {
     "navFeatures": "Features",
@@ -368,7 +407,13 @@
     "pingOk": "Ping successful",
     "pingFailed": "Ping failed",
     "pingAllDone": "All webhooks pinged",
-    "dismissAlert": "Dismiss alert"
+    "dismissAlert": "Dismiss alert",
+    "eyebrow": "webhook management",
+    "detailTitle": "Webhook detail",
+    "loadMore": "Load more",
+    "showingCount": "Showing {shown} of {total} webhooks",
+    "noWebhooksHint": "Add your first Discord webhook to start sending messages.",
+    "noResultsHint": "Try a different keyword or reset the filters."
   },
   "editor": {
     "title": "Message Editor",
@@ -459,7 +504,9 @@
     "variableValuePlaceholder": "Value…",
     "duplicateEmbed": "Duplicate embed",
     "removeEmbed": "Remove embed",
-    "removeField": "Remove field"
+    "removeField": "Remove field",
+    "tabWrite": "Write",
+    "tabPreview": "Preview"
   },
   "logs": {
     "title": "Delivery History",
@@ -543,7 +590,17 @@
       "loadedToEditor": "Payload loaded into editor",
       "resent": "Message resent to the original webhook"
     },
-    "summaryAllTime": "All-time total"
+    "summaryAllTime": "All-time total",
+    "filterToggle": "Filter",
+    "emptyDesc": "Send your first message from the editor to start logging history.",
+    "noMatchTitle": "No results",
+    "noMatchDesc": "Try adjusting your filters or search keywords.",
+    "colStatus": "Status",
+    "colTarget": "Target",
+    "colMode": "Mode",
+    "colLatency": "Latency",
+    "colTime": "Time",
+    "colAction": "Action"
   },
   "errors": {
     "unauthorized": "Please log in first",
@@ -788,7 +845,12 @@
     "errorBody": "Failed to load the admin page.",
     "retry": "Try again",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "kpiViewLabel": "View {label}",
+    "chartHint": "Hover / focus each bar for details",
+    "chartUsersNew": "New users",
+    "chartTotal": "Total",
+    "chartSuccessRate": "Success rate"
   },
   "docs": {
     "eyebrow": "Public REST API",

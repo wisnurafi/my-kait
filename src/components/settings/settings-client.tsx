@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Toggle } from "@/components/ui/toggle";
 import { ThemeLanguageSwitcher } from "@/components/app/theme-language-switcher";
 import { toast } from "@/components/ui/toast";
+import { PageHeader } from "@/components/ui/page-header";
+import { Mascot } from "@/components/mascot";
 import { signOut } from "next-auth/react";
 import { deleteAccountAction } from "@/server/actions/messages";
 import { exportUserDataAction } from "@/server/actions/export";
@@ -35,6 +37,7 @@ export function SettingsClient({
   user: { name?: string | null; image?: string | null } | null;
 }) {
   const t = useTranslations("settings");
+  const tn = useTranslations("nav");
   const [savePayload, setSavePayload] = useState(true);
   // Sync from localStorage after mount — reading it in useState would
   // mismatch SSR HTML when the user previously set OFF (hydration flicker).
@@ -82,13 +85,11 @@ export function SettingsClient({
 
   return (
     <div className="space-y-6 max-w-2xl">
-      {/* Page head */}
-      <div className="flex items-start justify-between gap-4 flex-wrap stagger-in">
-        <div>
-          <div className="label mb-2">{t("title")}</div>
-          <h2 className="uppercase">{t("title")}</h2>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={tn("settings")}
+        title={t("title")}
+        media={<Mascot mini size={52} />}
+      />
 
       {/* Profile */}
       <div className="stagger-in" style={staggerStyle(0)}>
@@ -149,8 +150,8 @@ export function SettingsClient({
           <CardBody>
             <h2 className="font-display text-xl uppercase mb-4">{t("dataExport")}</h2>
             <p className="text-sm text-fg-secondary mb-4">{t("dataExportDesc")}</p>
-            <Button variant="secondary" onClick={handleExport} disabled={exporting} className="gap-2">
-              <Download size={16} />
+            <Button variant="secondary" onClick={handleExport} disabled={exporting} className="hv gap-2">
+              <span className="ia ia-drop"><Download size={16} /></span>
               {exporting ? t("exporting") : t("exportButton")}
             </Button>
           </CardBody>
@@ -159,11 +160,11 @@ export function SettingsClient({
 
       {/* API keys link */}
       <div className="stagger-in" style={staggerStyle(3)}>
-        <Link href="/api-keys" className="no-underline block">
+        <Link href="/api-keys" className="hv no-underline block">
           <Card hover>
             <CardBody>
               <div className="flex items-center gap-3">
-                <KeyRound size={20} className="text-fg-secondary shrink-0" />
+                <span className="ia ia-jiggle shrink-0"><KeyRound size={20} className="text-fg-secondary" /></span>
                 <div className="flex-1 min-w-0">
                   <div className="font-display text-xl uppercase text-fg">
                     {t("apiKeysTitle")}
@@ -172,7 +173,7 @@ export function SettingsClient({
                     {t("apiKeysLinkDesc")}
                   </p>
                 </div>
-                <ChevronRight size={20} className="text-fg-tertiary shrink-0" />
+                <span className="ia ia-nudge shrink-0"><ChevronRight size={20} className="text-fg-tertiary" /></span>
               </div>
             </CardBody>
           </Card>

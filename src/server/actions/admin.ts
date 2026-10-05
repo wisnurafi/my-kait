@@ -275,6 +275,7 @@ export type AdminShare = {
   createdAt: Date;
   templateId: string;
   templateName: string;
+  ownerId: string;
   ownerName: string;
   pendingReports: number;
 };
@@ -294,6 +295,7 @@ export async function getShares(
       createdAt: templateShares.createdAt,
       templateId: templates.id,
       templateName: templates.name,
+      ownerId: users.id,
       ownerName: users.username,
       pendingReports: sql<number>`(
         select count(*)::int from ${templateReports} r

@@ -1,7 +1,9 @@
 import { setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { getTemplates, getAllTemplateTags } from "@/server/actions/templates";
 import { getFolders } from "@/server/actions/folders";
 import { TemplatesList } from "@/components/templates/templates-list";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function TemplatesPage({
   params,
@@ -24,9 +26,11 @@ export default async function TemplatesPage({
     getFolders(),
     getAllTemplateTags(),
   ]);
+  const t = await getTranslations("templates");
 
   return (
-    <div className="animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <TemplatesList
         templates={data.templates}
         folders={folders}

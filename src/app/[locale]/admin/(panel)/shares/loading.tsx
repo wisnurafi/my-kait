@@ -11,10 +11,16 @@ export default function AdminSharesLoading() {
         <Skeleton className="h-4 w-80 max-w-full" />
       </div>
 
-      {/* Search form */}
-      <div className="flex gap-2 max-w-md">
-        <Skeleton className="h-10 flex-1 !rounded-xl" />
-        <Skeleton className="h-10 w-20 !rounded-xl" />
+      {/* Search input (debounced, no submit button) */}
+      <div className="max-w-md">
+        <Skeleton className="h-10 w-full !rounded-xl" />
+      </div>
+
+      {/* Status filter chips */}
+      <div className="flex gap-1.5 flex-wrap">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-24 !rounded-lg" />
+        ))}
       </div>
 
       {/* Shares table */}

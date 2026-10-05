@@ -16,6 +16,9 @@ import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Tooltip } from "@/components/ui/tooltip";
 import { toast } from "@/components/ui/toast";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Mascot } from "@/components/mascot";
 import { clearLogsAction, deleteMessageAction, resendLogAction } from "@/server/actions/messages";
 import { saveAsTemplateAction } from "@/server/actions/templates";
 import {
@@ -23,14 +26,15 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   X,
   Copy,
   Pencil,
-  Eye,
   RefreshCw,
   Download,
   Save,
   Terminal,
+  History,
 } from "lucide-react";
 import { useRouter } from "@/i18n/routing";
 import { DiscordPreview } from "@/components/editor/discord-preview";
@@ -80,6 +84,7 @@ export function LogsView({
 }) {
   const t = useTranslations("logs");
   const tc = useTranslations("common");
+  const tn = useTranslations("nav");
   const locale = useLocale();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -87,6 +92,16 @@ export function LogsView({
   const [search, setSearch] = useState(currentFilters.search ?? "");
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+  // Whether any result-narrowing filter is active — drives the "no match"
+  // vs "no logs yet" empty state distinction.
+  const hasActiveFilters = Boolean(
+    currentFilters.status ||
+      currentFilters.webhookId ||
+      currentFilters.mode ||
+      currentFilters.source ||
+      currentFilters.search,
+  );
 
   // Lock body scroll while the detail drawer is open (same pattern as ui/dialog)
   useEffect(() => {
@@ -192,48 +207,48 @@ export function LogsView({
 
   return (
     <div className="space-y-6">
-      {/* Page head */}
-      <div className="flex items-start justify-between gap-4 flex-wrap stagger-in">
-        <div>
-          <div className="label mb-2">{t("title")}</div>
-          <h2 className="uppercase">{t("title")}</h2>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              const headers = [t("csvTime"), t("csvWebhook"), t("csvMode"), t("csvStatus"), t("csvHttp"), t("csvLatency"), t("csvError")];
-              const csv = exportToCsv(logsData.logs, headers);
-              downloadFile(csv, "logs.csv", "text/csv");
-            }}
-            className="gap-1.5"
-          >
-            <Download size={14} /> CSV
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              const json = JSON.stringify(logsData.logs, null, 2);
-              downloadFile(json, "logs.json", "application/json");
-            }}
-            className="gap-1.5"
-          >
-            <Download size={14} /> JSON
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClearLogs}
-            disabled={pending}
-            className="text-error gap-1.5"
-          >
-            <Trash2 size={14} />
-            {t("clearLogs")}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={tn("logs")}
+        title={t("title")}
+        media={<Mascot mini size={52} />}
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                const headers = [t("csvTime"), t("csvWebhook"), t("csvMode"), t("csvStatus"), t("csvHttp"), t("csvLatency"), t("csvError")];
+                const csv = exportToCsv(logsData.logs, headers);
+                downloadFile(csv, "logs.csv", "text/csv");
+              }}
+              className="hv gap-1.5"
+            >
+              <span className="ia ia-drop"><Download size={14} /></span> CSV
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                const json = JSON.stringify(logsData.logs, null, 2);
+                downloadFile(json, "logs.json", "application/json");
+              }}
+              className="hv gap-1.5"
+            >
+              <span className="ia ia-drop"><Download size={14} /></span> JSON
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearLogs}
+              disabled={pending}
+              className="hv text-error gap-1.5"
+            >
+              <span className="ia ia-shake"><Trash2 size={14} /></span>
+              {t("clearLogs")}
+            </Button>
+          </>
+        }
+      />
 
       {/* Summary cards — all-time totals, independent of active filters */}
       <div>
@@ -254,9 +269,23 @@ export function LogsView({
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters — collapsible on mobile (<768px), always open on desktop.
+          State is CSS-only via a checkbox + `peer-checked:`: the checkbox is
+          never pre-checked, so server and client render identical HTML and
+          visibility is decided purely by media queries. */}
       <div className="stagger-in" style={staggerStyle(3)}>
         <Card className="p-5">
+          <input type="checkbox" id="logs-filter-toggle" className="peer sr-only" />
+          <div className="md:hidden mb-1">
+            <label
+              htmlFor="logs-filter-toggle"
+              className="hv inline-flex cursor-pointer items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-secondary hover:text-fg"
+            >
+              <span className="ia ia-nudge"><ChevronDown size={16} /></span>
+              {t("filterToggle")}
+            </label>
+          </div>
+          <div className="hidden peer-checked:block md:block">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <Label>{t("filterStatus")}</Label>
@@ -334,7 +363,7 @@ export function LogsView({
 
           <div className="mt-4 flex gap-2.5 flex-wrap items-center">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-tertiary" size={16} />
+              <span className="ia ia-scan absolute left-3 top-1/2 -translate-y-1/2 text-fg-tertiary"><Search size={16} /></span>
               <Input
                 placeholder={t("searchPlaceholder")}
                 value={search}
@@ -346,86 +375,157 @@ export function LogsView({
             <Button variant="secondary" size="sm" onClick={applySearch}>{tc("search")}</Button>
             <div className="flex items-center gap-2 flex-wrap">
               {currentFilters.status && (
-                <FilterChip active onClick={() => updateFilter("status", "")} className="inline-flex items-center gap-1.5">
-                  {t(`status.${currentFilters.status}`)} <X size={11} />
+                <FilterChip active onClick={() => updateFilter("status", "")} className="hv inline-flex items-center gap-1.5">
+                  {t(`status.${currentFilters.status}`)} <span className="ia ia-x90"><X size={11} /></span>
                 </FilterChip>
               )}
               {currentFilters.mode && (
-                <FilterChip active onClick={() => updateFilter("mode", "")} className="inline-flex items-center gap-1.5">
-                  {t(`mode.${currentFilters.mode as "normal" | "embed" | "both"}`)} <X size={11} />
+                <FilterChip active onClick={() => updateFilter("mode", "")} className="hv inline-flex items-center gap-1.5">
+                  {t(`mode.${currentFilters.mode as "normal" | "embed" | "both"}`)} <span className="ia ia-x90"><X size={11} /></span>
                 </FilterChip>
               )}
               {currentFilters.webhookId && (
-                <FilterChip active onClick={() => updateFilter("webhookId", "")} className="inline-flex items-center gap-1.5">
-                  {webhooks.find((w) => w.id === currentFilters.webhookId)?.name ?? currentFilters.webhookId} <X size={11} />
+                <FilterChip active onClick={() => updateFilter("webhookId", "")} className="hv inline-flex items-center gap-1.5">
+                  {webhooks.find((w) => w.id === currentFilters.webhookId)?.name ?? currentFilters.webhookId} <span className="ia ia-x90"><X size={11} /></span>
                 </FilterChip>
               )}
               {currentFilters.source && (
-                <FilterChip active onClick={() => updateFilter("source", "")} className="inline-flex items-center gap-1.5">
-                  {t(`source.${currentFilters.source as "send" | "edit" | "delete" | "resend"}`)} <X size={11} />
+                <FilterChip active onClick={() => updateFilter("source", "")} className="hv inline-flex items-center gap-1.5">
+                  {t(`source.${currentFilters.source as "send" | "edit" | "delete" | "resend"}`)} <span className="ia ia-x90"><X size={11} /></span>
                 </FilterChip>
               )}
               {currentFilters.search && (
-                <FilterChip active onClick={() => updateFilter("search", "")} className="inline-flex items-center gap-1.5">
-                  &ldquo;{currentFilters.search}&rdquo; <X size={11} />
+                <FilterChip active onClick={() => updateFilter("search", "")} className="hv inline-flex items-center gap-1.5">
+                  &ldquo;{currentFilters.search}&rdquo; <span className="ia ia-x90"><X size={11} /></span>
                 </FilterChip>
               )}
               {(currentFilters.status || currentFilters.webhookId || currentFilters.mode || currentFilters.source || currentFilters.search) && (
-                <Button variant="ghost" size="sm" onClick={() => router.push("?", { scroll: false })} className="gap-1">
-                  <X size={14} /> {tc("reset")}
+                <Button variant="ghost" size="sm" onClick={() => router.push("?", { scroll: false })} className="hv gap-1">
+                  <span className="ia ia-x90"><X size={14} /></span> {tc("reset")}
                 </Button>
               )}
             </div>
           </div>
+          </div>
         </Card>
       </div>
 
-      {/* Logs list — terminal style */}
+      {/* Logs table — .rtable: real table on desktop, stacked labeled
+          cards below 768px (each td carries data-label). */}
       {logsData.logs.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div aria-hidden="true" className="mx-auto mb-4 font-mono text-[40px] leading-none text-fg-tertiary select-none">
-            {">_<"}
-          </div>
-          <p className="text-fg-secondary text-lg">{t("noLogs")}</p>
-        </Card>
+        hasActiveFilters ? (
+          <EmptyState
+            icon={
+              <span className="hv">
+                <span className="ia ia-scan">
+                  <Search size={22} />
+                </span>
+              </span>
+            }
+            title={t("noMatchTitle")}
+            description={t("noMatchDesc")}
+            action={
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => router.push("?", { scroll: false })}
+                className="hv gap-1.5"
+              >
+                <span className="ia ia-x90">
+                  <X size={14} />
+                </span>{" "}
+                {tc("reset")}
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={
+              <span className="hv">
+                <span className="ia ia-rewind">
+                  <History size={22} />
+                </span>
+              </span>
+            }
+            title={t("noLogs")}
+            description={t("emptyDesc")}
+          />
+        )
       ) : (
         <div className="space-y-2">
-          {logsData.logs.map((log, i) => {
-            const sc = statusConfig[log.status];
-            return (
-              <div key={log.id} className="stagger-in" style={staggerStyle(Math.min(i, 12))}>
-                <Card hover className="p-4">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div className="flex items-center gap-3 flex-1 min-w-[220px]">
-                      <Badge variant={sc.variant} dot className="flex-shrink-0">
-                        {t(`status.${log.status}`)}
-                      </Badge>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-sm truncate">{log.webhookNameSnapshot}</div>
+          <div className="panel overflow-hidden">
+            <table className="rtable">
+              <thead>
+                <tr>
+                  <th scope="col">{t("colStatus")}</th>
+                  <th scope="col">{t("colTarget")}</th>
+                  <th scope="col">{t("colMode")}</th>
+                  <th scope="col">{t("colLatency")}</th>
+                  <th scope="col">{t("colTime")}</th>
+                  <th scope="col">
+                    <span className="sr-only">{t("colAction")}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {logsData.logs.map((log) => {
+                  const sc = statusConfig[log.status];
+                  return (
+                    <tr key={log.id}>
+                      <td data-label={t("colStatus")}>
+                        <Badge variant={sc.variant} dot className="flex-shrink-0">
+                          {t(`status.${log.status}`)}
+                        </Badge>
+                      </td>
+                      <td data-label={t("colTarget")}>
+                        <div className="font-semibold text-sm">
+                          {log.webhookNameSnapshot}
+                        </div>
                         <div className="font-mono text-xs text-fg-tertiary mt-0.5">
-                          {new Date(log.createdAt).toLocaleString(locale)} · #{log.id.slice(0, 8)}
+                          #{log.id.slice(0, 8)} ·{" "}
+                          {t(
+                            `source.${log.source as "send" | "edit" | "delete" | "resend"}`,
+                          )}
                         </div>
-                        <div className="text-xs text-fg-secondary mt-0.5">
-                          {t(`mode.${log.mode as "normal" | "embed" | "both"}`)} · {t(`source.${log.source as "send" | "edit" | "delete" | "resend"}`)}
-                          {log.httpStatus && ` · HTTP ${log.httpStatus}`}
-                          {log.latencyMs != null && ` · ${log.latencyMs}ms`}
-                        </div>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedLog(log)}
-                      className="gap-1.5"
-                    >
-                      <Eye size={14} />
-                      {t("detail.title")}
-                    </Button>
-                  </div>
-                </Card>
-              </div>
-            );
-          })}
+                      </td>
+                      <td data-label={t("colMode")}>
+                        {t(`mode.${log.mode as "normal" | "embed" | "both"}`)}
+                      </td>
+                      <td data-label={t("colLatency")}>
+                        <span className="font-mono">
+                          {log.latencyMs != null ? `${log.latencyMs}ms` : "—"}
+                        </span>
+                        {log.httpStatus != null && (
+                          <span className="font-mono text-xs text-fg-tertiary">
+                            {" "}
+                            · HTTP {log.httpStatus}
+                          </span>
+                        )}
+                      </td>
+                      <td data-label={t("colTime")}>
+                        <span className="font-mono text-xs">
+                          {new Date(log.createdAt).toLocaleString(locale)}
+                        </span>
+                      </td>
+                      <td data-label={t("colAction")}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedLog(log)}
+                          className="hv gap-1.5"
+                        >
+                          <span className="ia ia-nudge">
+                            <ChevronRight size={14} />
+                          </span>
+                          {t("detail.title")}
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
           {/* Pagination */}
           {logsData.totalPages > 1 && (
@@ -447,9 +547,12 @@ export function LogsView({
                 size="sm"
                 onClick={() => handlePageChange(logsData.page + 1)}
                 disabled={logsData.page >= logsData.totalPages}
-                className="gap-1"
+                className="hv gap-1"
               >
-                {tc("next")} <ChevronRight size={16} />
+                {tc("next")}{" "}
+                <span className="ia ia-nudge">
+                  <ChevronRight size={16} />
+                </span>
               </Button>
             </div>
           )}
@@ -472,8 +575,8 @@ export function LogsView({
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-display text-xl font-bold uppercase">{t("detail.title")}</h2>
               <Tooltip content={t("detail.close")} position="bottom">
-                <Button variant="ghost" size="sm" onClick={() => setSelectedLog(null)}>
-                  <X size={18} />
+                <Button variant="ghost" size="sm" onClick={() => setSelectedLog(null)} className="hv">
+                  <span className="ia ia-x90"><X size={18} /></span>
                 </Button>
               </Tooltip>
             </div>
@@ -529,7 +632,7 @@ export function LogsView({
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="gap-1.5"
+                    className="hv gap-1.5"
                     onClick={() => loadIntoEditor(selectedLog.payload)}
                   >
                     <Copy size={14} /> {t("detail.duplicate")}
@@ -538,7 +641,7 @@ export function LogsView({
                     <Button
                       variant="primary"
                       size="sm"
-                      className="gap-1.5"
+                      className="hv gap-1.5"
                       disabled={pending}
                       onClick={doResend}
                     >
@@ -550,26 +653,26 @@ export function LogsView({
                       <Button
                         variant="secondary"
                         size="sm"
-                        className="gap-1.5"
+                        className="hv gap-1.5"
                         onClick={() => loadIntoEditor(selectedLog.payload, selectedLog.id)}
                       >
-                        <Pencil size={14} /> {t("detail.editMessage")}
+                        <span className="ia ia-scribble"><Pencil size={14} /></span> {t("detail.editMessage")}
                       </Button>
                       <Button
                         variant="destructive"
                         size="sm"
-                        className="gap-1.5"
+                        className="hv gap-1.5"
                         disabled={!selectedLog.discordMessageId || pending}
                         onClick={() => setConfirmDeleteOpen(true)}
                       >
-                        <Trash2 size={14} /> {t("detail.deleteMessage")}
+                        <span className="ia ia-shake"><Trash2 size={14} /></span> {t("detail.deleteMessage")}
                       </Button>
                     </>
                   )}
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="gap-1.5"
+                    className="hv gap-1.5"
                     disabled={!selectedLog.payload || pending}
                     onClick={() => {
                       startTransition(async () => {

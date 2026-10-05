@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -13,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { FilterChip } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
@@ -45,6 +47,7 @@ import {
   LayoutTemplate,
   ChevronLeft,
   ChevronRight,
+  MoreHorizontal,
 } from "lucide-react";
 
 type Template = {
@@ -65,6 +68,83 @@ type Folder = {
 };
 
 type ConfirmTarget = { kind: "template" | "folder"; id: string; name?: string } | null;
+
+/**
+ * Always-visible folder actions menu (touch-accessible).
+ * Replaces the old hover-only rename/delete buttons.
+ */
+function FolderMenu({
+  onRename,
+  onDelete,
+}: {
+  onRename: () => void;
+  onDelete: () => void;
+}) {
+  const t = useTranslations("templates");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open ]);
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <Tooltip content={t("folders.actions")}>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={t("folders.actions")}
+          className="hv inline-flex p-1.5 text-fg-tertiary hover:text-fg cursor-pointer rounded-lg"
+        >
+          <MoreHorizontal size={14} />
+        </button>
+      </Tooltip>
+      {open && (
+        <div role="menu" className="panel absolute right-0 top-full mt-1 z-30 min-w-40 p-1.5">
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onRename();
+            }}
+            className="hv w-full flex items-center gap-2 px-2.5 py-2 text-xs font-semibold rounded-lg text-fg-secondary hover:text-fg hover:bg-surface-hover cursor-pointer"
+          >
+            <Pencil size={13} className="ia-pencil" />
+            {t("folders.rename")}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onDelete();
+            }}
+            className="hv w-full flex items-center gap-2 px-2.5 py-2 text-xs font-semibold rounded-lg text-error hover:bg-surface-hover cursor-pointer"
+          >
+            <Trash2 size={13} className="ia-trash" />
+            {t("folders.delete")}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function TemplatesList({
   templates: initial,
@@ -135,6 +215,11 @@ export function TemplatesList({
 
   function selectFolder(id: string) {
     pushParams({ folder: id === "all" ? undefined : id });
+  }
+
+  function resetAllFilters() {
+    setSearch("");
+    router.push("/templates", { scroll: false });
   }
 
   function handleDelete(id: string) {
@@ -251,6 +336,11 @@ export function TemplatesList({
     setConfirmTarget({ kind: "folder", id, name });
   }
 
+  function startRenameFolder(folder: Folder) {
+    setRenamingId(folder.id);
+    setRenameValue(folder.name);
+  }
+
   function handleMoveTemplate(templateId: string, folderId: string) {
     startTransition(async () => {
       const fd = new FormData();
@@ -292,124 +382,54 @@ export function TemplatesList({
     </button>
   );
 
+  const newFolderForm = (
+    <div className="flex gap-1">
+      <Input
+        value={newFolderName}
+        onChange={(e) => setNewFolderName(e.target.value)}
+        placeholder={t("folders.namePlaceholder")}
+        className="h-8 text-sm"
+        onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
+        autoFocus
+      />
+      <Tooltip content={t("folders.create")}>
+        <Button size="sm" onClick={handleCreateFolder} disabled={pending} className="hv">
+          <Check size={14} className="ia-check" />
+        </Button>
+      </Tooltip>
+    </div>
+  );
+
+  const renameForm = (folder: Folder, compact = false) => (
+    <div className={`flex gap-1 ${compact ? "shrink-0" : "px-1"}`}>
+      <Input
+        value={renameValue}
+        onChange={(e) => setRenameValue(e.target.value)}
+        className={`h-8 text-sm ${compact ? "w-32" : ""}`}
+        onKeyDown={(e) => e.key === "Enter" && handleRenameFolder(folder.id)}
+        autoFocus
+      />
+      <Tooltip content={tc("save")}>
+        <Button size="sm" onClick={() => handleRenameFolder(folder.id)} disabled={pending} className="hv">
+          <Check size={14} className="ia-check" />
+        </Button>
+      </Tooltip>
+      <Tooltip content={tc("cancel")}>
+        <Button size="sm" variant="ghost" onClick={() => setRenamingId(null)} className="hv">
+          <X size={14} className="ia-x" />
+        </Button>
+      </Tooltip>
+    </div>
+  );
+
   return (
     <div className="flex gap-8 flex-col lg:flex-row">
-      {/* Folder sidebar */}
-      <aside className="w-full lg:w-64 shrink-0">
-        <div className="lg:sticky lg:top-4 space-y-1 panel p-4">
-          <div className="flex items-center justify-between mb-2 gap-2">
-            <h2 className="label flex items-center gap-1.5 truncate">
-              <Folder size={14} className="shrink-0" />
-              <span className="truncate">{t("folders.title")}</span>
-            </h2>
-            <Tooltip content={t("folders.new")}>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowNewFolder((v) => !v)}
-                className="gap-1"
-              >
-                <FolderPlus size={14} />
-              </Button>
-            </Tooltip>
-          </div>
-
-          {showNewFolder && (
-            <div className="flex gap-1 mb-2">
-              <Input
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder={t("folders.namePlaceholder")}
-                className="h-8 text-sm"
-                onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
-                autoFocus
-              />
-              <Tooltip content={t("folders.create")}>
-                <Button size="sm" onClick={handleCreateFolder} disabled={pending}>
-                  <Check size={14} />
-                </Button>
-              </Tooltip>
-            </div>
-          )}
-
-          {folderButton("all", t("folders.all"), <LayoutGrid size={15} />, initial.length)}
-          {folderButton(
-            "unfiled",
-            t("folders.unfiled"),
-            <FileQuestion size={15} />,
-          )}
-
-          {folders.map((folder) =>
-            renamingId === folder.id ? (
-              <div key={folder.id} className="flex gap-1 px-1">
-                <Input
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  className="h-8 text-sm"
-                  onKeyDown={(e) => e.key === "Enter" && handleRenameFolder(folder.id)}
-                  autoFocus
-                />
-                <Tooltip content={tc("save")}>
-                  <Button size="sm" onClick={() => handleRenameFolder(folder.id)} disabled={pending}>
-                    <Check size={14} />
-                  </Button>
-                </Tooltip>
-                <Tooltip content={tc("cancel")}>
-                  <Button size="sm" variant="ghost" onClick={() => setRenamingId(null)}>
-                    <X size={14} />
-                  </Button>
-                </Tooltip>
-              </div>
-            ) : (
-              <div key={folder.id} className="group flex items-center">
-                <div className="flex-1 min-w-0">
-                  {folderButton(
-                    folder.id,
-                    folder.name,
-                    activeFolder === folder.id ? <FolderOpen size={15} /> : <Folder size={15} />,
-                    folder.templateCount,
-                  )}
-                </div>
-                <div className="hidden group-hover:flex shrink-0">
-                  <Tooltip content={t("folders.rename")}>
-                    <button
-                      onClick={() => {
-                        setRenamingId(folder.id);
-                        setRenameValue(folder.name);
-                      }}
-                      className="p-1.5 text-fg-tertiary hover:text-fg cursor-pointer"
-                    >
-                      <Pencil size={13} />
-                    </button>
-                  </Tooltip>
-                  <Tooltip content={t("folders.delete")}>
-                    <button
-                      onClick={() => handleDeleteFolder(folder.id, folder.name)}
-                      className="p-1.5 text-fg-tertiary hover:text-error cursor-pointer"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </Tooltip>
-                </div>
-              </div>
-            ),
-          )}
-        </div>
-      </aside>
-
-      {/* Main content */}
+      {/* Main content FIRST in DOM: title (page header) + search, then folder chips */}
       <div className="flex-1 min-w-0 space-y-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap stagger-in">
-          <div>
-            <div className="label mb-2">{t("title")}</div>
-            <h2 className="uppercase">{t("title")}</h2>
-          </div>
-        </div>
-
         {/* Search */}
-        <div className="flex gap-2 flex-wrap items-center">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-tertiary" size={16} />
+        <div className="flex gap-2 flex-wrap items-center stagger-in">
+          <div className="hv relative flex-1 min-w-[200px]">
+            <Search size={16} className="ia-search absolute left-3 top-1/2 -translate-y-1/2 text-fg-tertiary" />
             <Input
               placeholder={t("searchPlaceholder")}
               value={search}
@@ -417,6 +437,59 @@ export function TemplatesList({
               className="pl-9"
             />
           </div>
+        </div>
+
+        {/* Folder chips — horizontal scroll rail on mobile (sidebar takes over on lg) */}
+        <div className="lg:hidden stagger-in">
+          <div
+            className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1"
+            role="group"
+            aria-label={t("folders.title")}
+          >
+            <FilterChip
+              active={activeFolder === "all"}
+              onClick={() => selectFolder("all")}
+              className="shrink-0"
+            >
+              {t("folders.all")} · {initial.length}
+            </FilterChip>
+            <FilterChip
+              active={activeFolder === "unfiled"}
+              onClick={() => selectFolder("unfiled")}
+              className="shrink-0"
+            >
+              {t("folders.unfiled")}
+            </FilterChip>
+            {folders.map((folder) =>
+              renamingId === folder.id ? (
+                <div key={folder.id} className="shrink-0">
+                  {renameForm(folder, true)}
+                </div>
+              ) : (
+                <div key={folder.id} className="flex items-center shrink-0">
+                  <FilterChip
+                    active={activeFolder === folder.id}
+                    onClick={() => selectFolder(folder.id)}
+                  >
+                    {folder.name} · {folder.templateCount}
+                  </FilterChip>
+                  <FolderMenu
+                    onRename={() => startRenameFolder(folder)}
+                    onDelete={() => handleDeleteFolder(folder.id, folder.name)}
+                  />
+                </div>
+              ),
+            )}
+            <button
+              type="button"
+              onClick={() => setShowNewFolder((v) => !v)}
+              className="shrink-0 inline-flex items-center gap-1.5 px-4 py-1.5 font-mono text-[11px] font-medium uppercase tracking-wide leading-none rounded-full border border-dashed border-border-ink text-fg-secondary hover:text-accent hover:border-accent cursor-pointer transition-colors press"
+            >
+              <FolderPlus size={13} />
+              {t("folders.new")}
+            </button>
+          </div>
+          {showNewFolder && <div className="mt-1 max-w-xs">{newFolderForm}</div>}
         </div>
 
         {/* Tag filter */}
@@ -437,163 +510,221 @@ export function TemplatesList({
         {/* Templates grid */}
         {initial.length === 0 ? (
           hasActiveFilter ? (
-            <Card className="p-12 text-center animate-fade-in">
-              <div className="mx-auto mb-4 w-12 h-12 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
-                <Search size={22} className="text-accent" />
-              </div>
-              <p className="text-fg-secondary text-lg">{t("noSearchResults")}</p>
-            </Card>
+            <EmptyState
+              icon={<Search />}
+              title={t("noSearchResults")}
+              description={t("noSearchResultsHint")}
+              action={
+                <Button variant="secondary" onClick={resetAllFilters} className="hv gap-2">
+                  <X size={14} className="ia-x" />
+                  {tc("reset")}
+                </Button>
+              }
+            />
           ) : (
-            <Card className="p-12 text-center animate-fade-in">
-              <div className="mx-auto mb-4 w-12 h-12 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
-                <LayoutTemplate size={22} className="text-accent" />
-              </div>
-              <p className="text-fg-secondary text-lg">{t("noTemplates")}</p>
-              <p className="text-sm text-fg-tertiary mt-2">{t("noTemplatesHint")}</p>
-            </Card>
+            <EmptyState
+              icon={<LayoutTemplate />}
+              title={t("noTemplates")}
+              description={t("noTemplatesHint")}
+              action={
+                <Link
+                  href={`/${locale}/editor`}
+                  className={buttonClasses("primary", "sm", "hv gap-2 no-underline")}
+                >
+                  <Plus size={16} className="ia-plus" />
+                  {t("createTemplate")}
+                </Link>
+              }
+            />
           )
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {initial.map((template, i) => (
-              <div
-                key={template.id}
-                className="stagger-in"
-                style={{ "--stagger-index": i } as React.CSSProperties}
-              >
-              <Card
-                className="p-5 h-full hover:border-border-strong transition-colors"
-                hover
-              >
-                {editingId === template.id ? (
-                  <div className="space-y-3">
-                    <div>
-                      <Label>{t("name")}</Label>
-                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
-                    </div>
-                    <div>
-                      <Label>{t("description")}</Label>
-                      <Textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={2} />
-                    </div>
-                    <div>
-                      <Label>{t("tags")}</Label>
-                      <Input value={editTags} onChange={(e) => setEditTags(e.target.value)} placeholder={t("tagsPlaceholder")} />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => handleSaveEdit(template.id)} className="gap-1.5">
-                        <Check size={14} /> {t("save")}
-                      </Button>
-                      <Tooltip content={tc("cancel")}>
-                        <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                          <X size={14} />
-                        </Button>
-                      </Tooltip>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    {/* Card header */}
-                    <div className="flex items-start gap-3 mb-2">
-                      <div className="shrink-0 w-10 h-10 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
-                        <LayoutTemplate size={18} className="text-accent" />
+            {initial.map((template, i) => {
+              const folderName = template.folderId
+                ? folders.find((f) => f.id === template.folderId)?.name
+                : undefined;
+              return (
+                <div
+                  key={template.id}
+                  className="stagger-in"
+                  style={{ "--stagger-index": i } as React.CSSProperties}
+                >
+                  <Card className="p-5 h-full">
+                    {editingId === template.id ? (
+                      <div className="space-y-3">
+                        <div>
+                          <Label>{t("name")}</Label>
+                          <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                        </div>
+                        <div>
+                          <Label>{t("description")}</Label>
+                          <Textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={2} />
+                        </div>
+                        <div>
+                          <Label>{t("tags")}</Label>
+                          <Input value={editTags} onChange={(e) => setEditTags(e.target.value)} placeholder={t("tagsPlaceholder")} />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => handleSaveEdit(template.id)} className="hv gap-1.5">
+                            <Check size={14} className="ia-check" /> {t("save")}
+                          </Button>
+                          <Tooltip content={tc("cancel")}>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="hv">
+                              <X size={14} className="ia-x" />
+                            </Button>
+                          </Tooltip>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-display text-lg uppercase leading-tight truncate">{template.name}</h3>
-                        <p className="text-xs text-fg-tertiary font-mono mt-0.5">
+                    ) : (
+                      <div>
+                        {/* Card header: icon box + name + badges */}
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="hv w-10 h-10 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center shrink-0"
+                            aria-hidden="true"
+                          >
+                            <LayoutTemplate size={18} className="ia-file text-accent" />
+                          </div>
+                          <h3 className="flex-1 min-w-0 font-display text-lg uppercase leading-tight truncate">
+                            {template.name}
+                          </h3>
+                          {folderName && (
+                            <Badge variant="default" className="gap-1 shrink-0">
+                              <Folder size={11} />
+                              {folderName}
+                            </Badge>
+                          )}
+                        </div>
+                        {/* Meta block */}
+                        <p className="font-mono text-xs text-fg-tertiary mt-2.5">
                           {new Date(template.updatedAt).toLocaleDateString(
                             locale === "en" ? "en-US" : "id-ID",
                           )}
                         </p>
-                      </div>
-                    </div>
-                    {template.description && (
-                      <p className="text-sm text-fg-secondary mb-2">{template.description}</p>
-                    )}
-                    {template.tags && template.tags.length > 0 && (
-                      <div className="flex gap-1 flex-wrap mb-3">
-                        {template.tags.map((tag) => (
-                          <Badge key={tag} variant="default" className="text-xs">{tag}</Badge>
-                        ))}
-                      </div>
-                    )}
-                    {/* Move to folder */}
-                    {folders.length > 0 && (
-                      <div className="mb-3">
-                        <Select
-                          value={template.folderId ?? "unfiled"}
-                          onChange={(e) => handleMoveTemplate(template.id, e.target.value)}
-                          disabled={pending}
-                          className="h-9 text-xs font-bold uppercase tracking-[0.05em]"
-                          title={t("folders.moveTo")}
-                        >
-                          <option value="unfiled">{t("folders.unfiled")}</option>
-                          {folders.map((f) => (
-                            <option key={f.id} value={f.id}>
-                              {f.name}
-                            </option>
-                          ))}
-                        </Select>
-                      </div>
-                    )}
-                    <div className="flex gap-1 flex-wrap">
-                      <Button size="sm" variant="primary" onClick={() => handleLoad(template.id)} className="gap-1.5">
-                        <Plus size={14} /> {t("load")}
-                      </Button>
-                      <Tooltip content={tc("edit")}>
-                        <Button size="sm" variant="ghost" onClick={() => startEdit(template)} className="gap-1">
-                          <Pencil size={14} />
-                        </Button>
-                      </Tooltip>
-                      <Tooltip content={tc("duplicate")}>
-                        <Button size="sm" variant="ghost" onClick={() => handleDuplicate(template.id)} className="gap-1">
-                          <Copy size={14} />
-                        </Button>
-                      </Tooltip>
-                      <Tooltip content={t("shareLink")}>
-                        <Button size="sm" variant="ghost" onClick={() => handleShare(template.id)} className="gap-1">
-                          <Share2 size={14} />
-                        </Button>
-                      </Tooltip>
-                      <Tooltip content={tc("delete")}>
-                        <Button size="sm" variant="ghost" onClick={() => handleDelete(template.id)} className="text-error gap-1">
-                          <Trash2 size={14} />
-                        </Button>
-                      </Tooltip>
-                    </div>
-                    {shared?.templateId === template.id && (
-                      <div className="mt-3 p-2 bg-sunken border border-border-ink rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <Input
-                            readOnly
-                            value={`${window.location.origin}/t/${shared.slug}`}
-                            className="text-xs h-8 font-mono"
-                          />
-                          <Tooltip content={t("copyShareLink")}>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => {
-                                navigator.clipboard.writeText(`${window.location.origin}/t/${shared.slug}`);
-                                toast.success(t("shareLinkCopied"));
-                              }}
+                        {template.description && (
+                          <p className="text-sm text-fg-secondary mt-1.5 line-clamp-2">
+                            {template.description}
+                          </p>
+                        )}
+                        {template.tags && template.tags.length > 0 && (
+                          <div className="flex gap-1 flex-wrap mt-2">
+                            {template.tags.map((tag) => (
+                              <Badge key={tag} variant="default" className="text-xs">{tag}</Badge>
+                            ))}
+                          </div>
+                        )}
+                        {/* Move to folder */}
+                        {folders.length > 0 && (
+                          <div className="mt-2.5">
+                            <Select
+                              value={template.folderId ?? "unfiled"}
+                              onChange={(e) => handleMoveTemplate(template.id, e.target.value)}
+                              disabled={pending}
+                              className="h-9 text-xs font-bold uppercase tracking-[0.05em]"
+                              title={t("folders.moveTo")}
                             >
-                              <Copy size={12} />
+                              <option value="unfiled">{t("folders.unfiled")}</option>
+                              {folders.map((f) => (
+                                <option key={f.id} value={f.id}>
+                                  {f.name}
+                                </option>
+                              ))}
+                            </Select>
+                          </div>
+                        )}
+                        {/* Action row: icon-buttons */}
+                        <div className="flex gap-1 mt-3 pt-3 border-t border-border-ink flex-wrap">
+                          <Tooltip content={t("load")}>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleLoad(template.id)}
+                              className="hv"
+                            >
+                              <Plus size={16} className="ia-plus" />
                             </Button>
                           </Tooltip>
-                          <a href={`/t/${shared.slug}`} target="_blank" rel="noopener noreferrer">
-                            <Tooltip content={t("openShareLink")}>
-                              <Button size="sm" variant="ghost">
-                                <ExternalLink size={14} />
-                              </Button>
-                            </Tooltip>
-                          </a>
+                          <Tooltip content={tc("edit")}>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => startEdit(template)}
+                              className="hv"
+                            >
+                              <Pencil size={16} className="ia-pencil" />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip content={tc("duplicate")}>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDuplicate(template.id)}
+                              disabled={pending}
+                              className="hv"
+                            >
+                              <Copy size={16} />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip content={t("shareLink")}>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleShare(template.id)}
+                              disabled={pending}
+                              className="hv"
+                            >
+                              <Share2 size={16} />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip content={tc("delete")}>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDelete(template.id)}
+                              disabled={pending}
+                              className="hv text-error"
+                            >
+                              <Trash2 size={16} className="ia-trash" />
+                            </Button>
+                          </Tooltip>
                         </div>
+                        {shared?.templateId === template.id && (
+                          <div className="mt-3 p-2 bg-sunken border border-border-ink rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                readOnly
+                                value={`${window.location.origin}/t/${shared.slug}`}
+                                className="text-xs h-8 font-mono"
+                              />
+                              <Tooltip content={t("copyShareLink")}>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/t/${shared.slug}`);
+                                    toast.success(t("shareLinkCopied"));
+                                  }}
+                                  className="hv"
+                                >
+                                  <Copy size={12} />
+                                </Button>
+                              </Tooltip>
+                              <a href={`/t/${shared.slug}`} target="_blank" rel="noopener noreferrer">
+                                <Tooltip content={t("openShareLink")}>
+                                  <Button size="sm" variant="ghost" className="hv">
+                                    <ExternalLink size={14} />
+                                  </Button>
+                                </Tooltip>
+                              </a>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
-              </Card>
-              </div>
-            ))}
+                  </Card>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -605,7 +736,7 @@ export function TemplatesList({
               size="sm"
               onClick={() => goToPage(pagination.page - 1)}
               disabled={pagination.page <= 1}
-              className="gap-1"
+              className="hv gap-1"
             >
               <ChevronLeft size={16} /> {tc("prev")}
             </Button>
@@ -617,13 +748,61 @@ export function TemplatesList({
               size="sm"
               onClick={() => goToPage(pagination.page + 1)}
               disabled={pagination.page >= pagination.totalPages}
-              className="gap-1"
+              className="hv gap-1"
             >
               {tc("next")} <ChevronRight size={16} />
             </Button>
           </div>
         )}
       </div>
+
+      {/* Folder sidebar — desktop only, visually first via order */}
+      <aside className="hidden lg:block lg:order-first w-64 shrink-0">
+        <div className="lg:sticky lg:top-4 space-y-1 panel p-4">
+          <div className="flex items-center justify-between mb-2 gap-2">
+            <h2 className="label flex items-center gap-1.5 truncate">
+              <Folder size={14} className="shrink-0" />
+              <span className="truncate">{t("folders.title")}</span>
+            </h2>
+            <Tooltip content={t("folders.new")}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowNewFolder((v) => !v)}
+                className="hv gap-1"
+              >
+                <FolderPlus size={14} className="ia-plus" />
+              </Button>
+            </Tooltip>
+          </div>
+
+          {showNewFolder && <div className="mb-2">{newFolderForm}</div>}
+
+          {folderButton("all", t("folders.all"), <LayoutGrid size={15} />, initial.length)}
+          {folderButton("unfiled", t("folders.unfiled"), <FileQuestion size={15} />)}
+
+          {folders.map((folder) =>
+            renamingId === folder.id ? (
+              <div key={folder.id}>{renameForm(folder)}</div>
+            ) : (
+              <div key={folder.id} className="flex items-center">
+                <div className="flex-1 min-w-0">
+                  {folderButton(
+                    folder.id,
+                    folder.name,
+                    activeFolder === folder.id ? <FolderOpen size={15} /> : <Folder size={15} />,
+                    folder.templateCount,
+                  )}
+                </div>
+                <FolderMenu
+                  onRename={() => startRenameFolder(folder)}
+                  onDelete={() => handleDeleteFolder(folder.id, folder.name)}
+                />
+              </div>
+            ),
+          )}
+        </div>
+      </aside>
 
       <ConfirmDialog
         open={confirmTarget !== null}
