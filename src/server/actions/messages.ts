@@ -161,7 +161,38 @@ export async function sendMessageAction(prevState: unknown, formData: FormData) 
         results.push({ id: wh[0].id, name: wh[0].name, success: false, error: t("webhookInvalid") });
         continue;
       }
-      
+
+      // Per-target idempotency: if this attempt already logged this target
+      // (e.g. a double-submitted batch), reuse the recorded outcome instead
+      // of sending a duplicate message to Discord.
+      const targetKey = idempotencyKey ? `${idempotencyKey}:${targetId}` : null;
+      if (targetKey) {
+        const prev = await db
+          .select({
+            status: messageLogs.status,
+            discordMessageId: messageLogs.discordMessageId,
+            error: messageLogs.error,
+          })
+          .from(messageLogs)
+          .where(
+            and(
+              eq(messageLogs.userId, user.id),
+              eq(messageLogs.idempotencyKey, targetKey),
+            ),
+          )
+          .limit(1);
+        if (prev.length > 0) {
+          results.push({
+            id: wh[0].id,
+            name: wh[0].name,
+            success: prev[0].status === "sent",
+            messageId: prev[0].discordMessageId ?? undefined,
+            error: prev[0].error ?? undefined,
+          });
+          continue;
+        }
+      }
+
       const targetUrl = decryptWebhookUrl(wh[0].urlEncrypted, wh[0].keyVersion);
       const processedPayload = substitutePayloadVariables(payload, customVars);
       const start = Date.now();
@@ -173,19 +204,28 @@ export async function sendMessageAction(prevState: unknown, formData: FormData) 
       else if (result.rateLimited) status = "rate_limited";
       else status = "failed";
 
-      await db.insert(messageLogs).values({
-        userId: user.id,
-        webhookId: wh[0].id,
-        webhookNameSnapshot: wh[0].name,
-        mode,
-        payload: savePayload ? processedPayload : null,
-        status,
-        httpStatus: result.httpStatus,
-        latencyMs,
-        discordMessageId: result.messageId,
-        error: result.error,
-        source: "send",
-      });
+      await db
+        .insert(messageLogs)
+        .values({
+          userId: user.id,
+          webhookId: wh[0].id,
+          webhookNameSnapshot: wh[0].name,
+          mode,
+          payload: savePayload ? processedPayload : null,
+          status,
+          httpStatus: result.httpStatus,
+          latencyMs,
+          discordMessageId: result.messageId,
+          error: result.error,
+          source: "send",
+          idempotencyKey: targetKey,
+        })
+        // Residual race guard: the pre-send check above covers retries, but
+        // two truly concurrent requests can still collide here — skip the
+        // duplicate log row instead of throwing a unique-violation 500.
+        .onConflictDoNothing({
+          target: [messageLogs.userId, messageLogs.idempotencyKey],
+        });
 
       // Update webhook
       await db.update(webhooks).set({ lastUsedAt: new Date() }).where(eq(webhooks.id, wh[0].id));
@@ -273,22 +313,55 @@ export async function sendMessageAction(prevState: unknown, formData: FormData) 
     manualUrlKeyVersion = enc.keyVersion;
   }
 
-  await db.insert(messageLogs).values({
-    userId: user.id,
-    webhookId: webhookRecord?.id ?? null,
-    webhookNameSnapshot: webhookRecord?.name ?? "Manual URL",
-    manualUrlEncrypted,
-    manualUrlKeyVersion,
-    mode,
-    payload: savePayload ? processedPayload : null,
-    status,
-    httpStatus: result.httpStatus,
-    latencyMs,
-    discordMessageId: result.messageId,
-    error: result.error,
-    source: "send",
-    idempotencyKey: idempotencyKey ?? null,
-  });
+  const inserted = await db
+    .insert(messageLogs)
+    .values({
+      userId: user.id,
+      webhookId: webhookRecord?.id ?? null,
+      webhookNameSnapshot: webhookRecord?.name ?? "Manual URL",
+      manualUrlEncrypted,
+      manualUrlKeyVersion,
+      mode,
+      payload: savePayload ? processedPayload : null,
+      status,
+      httpStatus: result.httpStatus,
+      latencyMs,
+      discordMessageId: result.messageId,
+      error: result.error,
+      source: "send",
+      idempotencyKey: idempotencyKey ?? null,
+    })
+    // Race guard: the early check above and this insert are not atomic, so
+    // two concurrent requests with the same key can both pass the check.
+    // The loser skips its log row and returns the winner's outcome instead
+    // of throwing a unique-violation 500.
+    .onConflictDoNothing({
+      target: [messageLogs.userId, messageLogs.idempotencyKey],
+    })
+    .returning({ id: messageLogs.id });
+
+  if (idempotencyKey && inserted.length === 0) {
+    const prev = await db
+      .select()
+      .from(messageLogs)
+      .where(
+        and(
+          eq(messageLogs.userId, user.id),
+          eq(messageLogs.idempotencyKey, idempotencyKey),
+        ),
+      )
+      .limit(1);
+    revalidatePath("/logs");
+    if (prev.length > 0 && prev[0].status === "sent") {
+      return {
+        success: true,
+        messageId: prev[0].discordMessageId ?? undefined,
+        message: t("messageSentDuplicate"),
+        deduplicated: true,
+      };
+    }
+    return { error: prev[0]?.error ?? "Pengiriman sebelumnya gagal" };
+  }
 
   // Update webhook lastUsedAt
   if (webhookRecord) {

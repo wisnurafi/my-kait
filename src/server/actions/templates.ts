@@ -9,7 +9,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { templates, templateShares, templateReports, users } from "@/lib/schema";
-import { eq, and, desc, ilike, or, sql, count, arrayContains } from "drizzle-orm";
+import { eq, and, desc, ilike, or, sql, count, arrayContains, notInArray } from "drizzle-orm";
 import { requireAuth, auth } from "@/lib/auth";
 import { templateSchema, reportTemplateSchema } from "@/lib/validations";
 import { generateSlug } from "@/lib/utils";
@@ -313,6 +313,45 @@ export async function createShareLinkAction(formData: FormData) {
     templateId,
     slug,
   });
+
+  // Self-heal the check-then-insert race: two concurrent requests can both
+  // see "no active share" and insert one each. Keep the oldest, deactivate
+  // the rest. Deterministic (same keeper for every concurrent caller), so
+  // all of them converge on and return the same slug.
+  // (A partial unique index would also fix this, but the Neon HTTP driver
+  // used here does not support transactions for a lock-based alternative.)
+  const actives = await db
+    .select({
+      id: templateShares.id,
+      slug: templateShares.slug,
+    })
+    .from(templateShares)
+    .where(
+      and(
+        eq(templateShares.templateId, templateId),
+        eq(templateShares.isActive, true),
+      ),
+    )
+    .orderBy(templateShares.createdAt, templateShares.id);
+
+  if (actives.length > 1) {
+    const keeper = actives[0];
+    await db
+      .update(templateShares)
+      .set({ isActive: false })
+      .where(
+        and(
+          eq(templateShares.templateId, templateId),
+          eq(templateShares.isActive, true),
+          notInArray(
+            templateShares.id,
+            [keeper.id],
+          ),
+        ),
+      );
+    revalidatePath("/templates");
+    return { success: true, slug: keeper.slug };
+  }
 
   revalidatePath("/templates");
   return { success: true, slug };
