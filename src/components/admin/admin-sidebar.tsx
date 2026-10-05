@@ -58,7 +58,7 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
       <header className="sticky top-0 z-40 md:hidden flex items-center justify-between gap-2 px-4 py-2.5 bg-surface border-b border-border-ink">
         <Link href="/admin" className="flex items-center gap-2 no-underline min-w-0">
           <HookLogo size={24} />
-          <span className="font-display font-bold text-base tracking-tight text-fg truncate">
+          <span className="font-display font-bold text-base tracking-tight text-fg truncate hidden min-[400px]:inline">
             my-kait
           </span>
           <Badge variant="danger" className="ml-1 font-mono text-[9px] shrink-0">

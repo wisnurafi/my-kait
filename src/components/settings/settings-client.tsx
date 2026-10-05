@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,12 @@ export function SettingsClient({
   user: { name?: string | null; image?: string | null } | null;
 }) {
   const t = useTranslations("settings");
-  const [savePayload, setSavePayload] = useState(readSavePayload);
+  const [savePayload, setSavePayload] = useState(true);
+  // Sync from localStorage after mount — reading it in useState would
+  // mismatch SSR HTML when the user previously set OFF (hydration flicker).
+  useEffect(() => {
+    setSavePayload(readSavePayload());
+  }, []);
   const [confirming, setConfirming] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [exporting, setExporting] = useState(false);
