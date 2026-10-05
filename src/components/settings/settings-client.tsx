@@ -5,9 +5,10 @@ import { useTranslations } from "next-intl";
 import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Toggle } from "@/components/ui/toggle";
+import { ThemeLanguageSwitcher } from "@/components/app/theme-language-switcher";
+import { toast } from "@/components/ui/toast";
 import { signOut } from "next-auth/react";
 import { deleteAccountAction } from "@/server/actions/messages";
 import { exportUserDataAction } from "@/server/actions/export";
@@ -18,16 +19,35 @@ function staggerStyle(i: number) {
   return { "--stagger-index": i } as React.CSSProperties;
 }
 
+/** Baca preferensi savePayload dari localStorage. Default true. */
+function readSavePayload(): boolean {
+  try {
+    const v = localStorage.getItem("mykait-save-payload");
+    return v === null ? true : v === "1";
+  } catch {
+    return true;
+  }
+}
+
 export function SettingsClient({
   user,
 }: {
   user: { name?: string | null; image?: string | null } | null;
 }) {
   const t = useTranslations("settings");
-  const [savePayload, setSavePayload] = useState(true);
+  const [savePayload, setSavePayload] = useState(readSavePayload);
   const [confirming, setConfirming] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [exporting, setExporting] = useState(false);
+
+  const handleSavePayloadChange = (v: boolean) => {
+    try {
+      localStorage.setItem("mykait-save-payload", v ? "1" : "0");
+    } catch {
+      // localStorage tidak tersedia — tetap update state lokal
+    }
+    setSavePayload(v);
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -45,7 +65,11 @@ export function SettingsClient({
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+      } else {
+        toast.error(t("exportFailed"));
       }
+    } catch {
+      toast.error(t("exportFailed"));
     } finally {
       setExporting(false);
     }
@@ -95,9 +119,8 @@ export function SettingsClient({
             <div className="space-y-4">
               <div>
                 <Label>{t("language")}</Label>
-                <div className="flex gap-2 mt-2">
-                  <Badge variant="info">ID</Badge>
-                  <Badge variant="default">EN</Badge>
+                <div className="mt-2">
+                  <ThemeLanguageSwitcher />
                 </div>
               </div>
               <div>
@@ -106,7 +129,7 @@ export function SettingsClient({
               </div>
               <Toggle
                 checked={savePayload}
-                onChange={setSavePayload}
+                onChange={handleSavePayloadChange}
                 label={t("savePayload")}
                 description={t("savePayloadDesc")}
               />
@@ -157,8 +180,12 @@ export function SettingsClient({
                     variant="destructive"
                     disabled={confirmText !== "DELETE"}
                     onClick={async () => {
-                      await deleteAccountAction();
-                      await signOut({ redirectTo: "/" });
+                      try {
+                        await deleteAccountAction();
+                        await signOut({ redirectTo: "/" });
+                      } catch {
+                        toast.error(t("deleteFailed"));
+                      }
                     }}
                   >
                     {t("deleteAccountButton")}

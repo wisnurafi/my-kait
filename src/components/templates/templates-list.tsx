@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { useSearchParams } from "next/navigation";
@@ -19,6 +19,7 @@ import {
   deleteTemplateAction,
   duplicateTemplateAction,
   createShareLinkAction,
+  updateTemplateAction,
 } from "@/server/actions/templates";
 import {
   createFolderAction,
@@ -45,7 +46,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { useState as useReactState } from "react";
 
 type Template = {
   id: string;
@@ -83,12 +83,12 @@ export function TemplatesList({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
-  const [search, setSearch] = useReactState("");
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editTags, setEditTags] = useState("");
-  const [shareSlug, setShareSlug] = useState<string | null>(null);
+  const [shared, setShared] = useState<{ templateId: string; slug: string } | null>(null);
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -98,6 +98,9 @@ export function TemplatesList({
   function pushParams(patch: Record<string, string | undefined>) {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
+    // Preserve active tag unless the patch changes it
+    const tag = searchParams.get("tag");
+    if (tag) params.set("tag", tag);
     for (const [k, v] of Object.entries(patch)) {
       if (v) params.set(k, v);
       else params.delete(k);
@@ -107,11 +110,22 @@ export function TemplatesList({
 
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
     setSearch(e.target.value);
-    const params = new URLSearchParams();
-    if (e.target.value) params.set("search", e.target.value);
-    if (activeFolder !== "all") params.set("folder", activeFolder);
-    router.push(`/templates?${params.toString()}`);
   }
+
+  // Debounce search — preserve folder/tag filters, reset page
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const current = searchParams.get("search") ?? "";
+      if (search !== current) {
+        const params = new URLSearchParams(searchParams.toString());
+        if (search) params.set("search", search);
+        else params.delete("search");
+        params.delete("page");
+        router.push(`/templates?${params.toString()}`);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   function selectFolder(id: string) {
     pushParams({ folder: id === "all" ? undefined : id });
@@ -154,7 +168,7 @@ export function TemplatesList({
       fd.set("templateId", id);
       const result = await createShareLinkAction(fd);
       if (result.success && result.slug) {
-        setShareSlug(result.slug);
+        setShared({ templateId: id, slug: result.slug });
       }
     });
   }
@@ -182,7 +196,7 @@ export function TemplatesList({
       fd.set("name", editName);
       fd.set("description", editDesc);
       fd.set("tags", editTags);
-      await (await import("@/server/actions/templates")).updateTemplateAction(fd);
+      await updateTemplateAction(fd);
       setEditingId(null);
       toast.success(t("updated"));
     });
@@ -239,6 +253,12 @@ export function TemplatesList({
       await moveTemplateToFolderAction(fd);
     });
   }
+
+  const activeTag = searchParams.get("tag");
+  const hasActiveFilter =
+    (searchParams.get("search") ?? "") !== "" ||
+    activeTag !== null ||
+    activeFolder !== "all";
 
   const allTags = [...new Set(initial.flatMap((t) => t.tags ?? []))];
 
@@ -392,7 +412,11 @@ export function TemplatesList({
         {allTags.length > 0 && (
           <div className="flex gap-2 flex-wrap">
             {allTags.map((tag) => (
-              <FilterChip key={tag} onClick={() => pushParams({ tag })}>
+              <FilterChip
+                key={tag}
+                active={activeTag === tag}
+                onClick={() => pushParams({ tag: activeTag === tag ? undefined : tag })}
+              >
                 {tag}
               </FilterChip>
             ))}
@@ -401,13 +425,22 @@ export function TemplatesList({
 
         {/* Templates grid */}
         {initial.length === 0 ? (
-          <Card className="p-12 text-center animate-fade-in">
-            <div className="mx-auto mb-4 w-12 h-12 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
-              <LayoutTemplate size={22} className="text-accent" />
-            </div>
-            <p className="text-fg-secondary text-lg">{t("noTemplates")}</p>
-            <p className="text-sm text-fg-tertiary mt-2">{t("noTemplatesHint")}</p>
-          </Card>
+          hasActiveFilter ? (
+            <Card className="p-12 text-center animate-fade-in">
+              <div className="mx-auto mb-4 w-12 h-12 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
+                <Search size={22} className="text-accent" />
+              </div>
+              <p className="text-fg-secondary text-lg">{t("noSearchResults")}</p>
+            </Card>
+          ) : (
+            <Card className="p-12 text-center animate-fade-in">
+              <div className="mx-auto mb-4 w-12 h-12 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center">
+                <LayoutTemplate size={22} className="text-accent" />
+              </div>
+              <p className="text-fg-secondary text-lg">{t("noTemplates")}</p>
+              <p className="text-sm text-fg-tertiary mt-2">{t("noTemplatesHint")}</p>
+            </Card>
+          )
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {initial.map((template, i) => (
@@ -453,7 +486,9 @@ export function TemplatesList({
                       <div className="min-w-0 flex-1">
                         <h3 className="font-display text-lg uppercase leading-tight truncate">{template.name}</h3>
                         <p className="text-xs text-fg-tertiary font-mono mt-0.5">
-                          {new Date(template.updatedAt).toLocaleDateString("id-ID")}
+                          {new Date(template.updatedAt).toLocaleDateString(
+                            locale === "en" ? "en-US" : "id-ID",
+                          )}
                         </p>
                       </div>
                     </div>
@@ -503,12 +538,12 @@ export function TemplatesList({
                         <Trash2 size={14} />
                       </Button>
                     </div>
-                    {shareSlug && (
+                    {shared?.templateId === template.id && (
                       <div className="mt-3 p-2 bg-sunken border border-border-ink rounded-lg">
                         <div className="flex items-center gap-2">
                           <Input
                             readOnly
-                            value={`${window.location.origin}/t/${shareSlug}`}
+                            value={`${window.location.origin}/t/${shared.slug}`}
                             className="text-xs h-8 font-mono"
                           />
                           <Tooltip content={t("copyShareLink")}>
@@ -516,14 +551,14 @@ export function TemplatesList({
                               size="sm"
                               variant="secondary"
                               onClick={() => {
-                                navigator.clipboard.writeText(`${window.location.origin}/t/${shareSlug}`);
+                                navigator.clipboard.writeText(`${window.location.origin}/t/${shared.slug}`);
                                 toast.success(t("shareLinkCopied"));
                               }}
                             >
                               <Copy size={12} />
                             </Button>
                           </Tooltip>
-                          <a href={`/t/${shareSlug}`} target="_blank" rel="noopener noreferrer">
+                          <a href={`/t/${shared.slug}`} target="_blank" rel="noopener noreferrer">
                             <Tooltip content={t("openShareLink")}>
                               <Button size="sm" variant="ghost">
                                 <ExternalLink size={14} />

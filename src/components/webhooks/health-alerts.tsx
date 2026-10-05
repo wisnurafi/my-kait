@@ -6,7 +6,7 @@
  */
 
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useFormatter } from "next-intl";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,7 @@ export function HealthAlerts({
   initialAlerts: { alerts: Alert[]; unacknowledgedCount: number };
 }) {
   const t = useTranslations("webhooks");
+  const format = useFormatter();
   const [pending, startTransition] = useTransition();
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
@@ -94,6 +95,9 @@ export function HealthAlerts({
                 <span className="flex-1 min-w-0">
                   <strong>{alert.webhookName}</strong>
                   {alert.message && <span className="text-fg-secondary"> — {alert.message}</span>}
+                </span>
+                <span className="text-xs text-fg-tertiary font-mono shrink-0">
+                  {format.dateTime(alert.createdAt, { dateStyle: "medium", timeStyle: "short" })}
                 </span>
                 <Button variant="ghost" size="sm" onClick={() => dismiss(alert.id)} disabled={pending} className="shrink-0">
                   <X size={14} />

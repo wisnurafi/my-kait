@@ -91,6 +91,17 @@ interface EditorState {
 /* --- Helpers --- */
 
 const DRAFT_KEY = "mykait-editor-draft";
+const SAVE_PAYLOAD_KEY = "mykait-save-payload";
+
+/** Baca preferensi savePayload dari localStorage. Default true. */
+function readSavePayloadDefault(): boolean {
+  try {
+    const v = localStorage.getItem(SAVE_PAYLOAD_KEY);
+    return v === null ? true : v === "1";
+  } catch {
+    return true;
+  }
+}
 
 function createEmptyEmbed(): Embed {
   return {
@@ -155,12 +166,12 @@ export function Editor({
     embeds: [],
   });
 
-  const [sendConfig, setSendConfig] = useState({
+  const [sendConfig, setSendConfig] = useState(() => ({
     webhookId: "",
     manualUrl: "",
-    savePayload: true,
+    savePayload: readSavePayloadDefault(),
     multiTarget: [] as string[],
-  });
+  }));
 
   // Custom template variables detected in the payload (e.g. {nama_event}).
   // Values are filled in the send form and substituted server-side at send time.

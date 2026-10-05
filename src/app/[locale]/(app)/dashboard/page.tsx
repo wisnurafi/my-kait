@@ -1,4 +1,4 @@
-import { setRequestLocale, getTranslations } from "next-intl/server";
+import { setRequestLocale, getTranslations, getFormatter } from "next-intl/server";
 import { getWebhooks } from "@/server/actions/webhooks";
 import { getLogs } from "@/server/actions/messages";
 import { getDashboardStats } from "@/server/actions/stats";
@@ -35,9 +35,14 @@ export default async function DashboardPage({
   setRequestLocale(locale);
   const t = await getTranslations("dashboard");
 
-  const webhooks = await getWebhooks();
-  const logsData = await getLogs({ perPage: 5 });
-  const stats = await getDashboardStats();
+  const tLogs = await getTranslations("logs");
+  const format = await getFormatter();
+
+  const [webhooks, logsData, stats] = await Promise.all([
+    getWebhooks(),
+    getLogs({ perPage: 5 }),
+    getDashboardStats(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -64,8 +69,9 @@ export default async function DashboardPage({
 
       <StatCards
         webhooks={webhooks.length}
-        sent={logsData.summary.sent}
-        successRate={logsData.summary.successRate}
+        sent={stats.totals.sent}
+        successRate={stats.totals.successRate}
+        caption={t("stats.last30days")}
       />
 
       <div>
@@ -129,7 +135,7 @@ export default async function DashboardPage({
                             className={`status-dot ${statusDot[log.status] ?? "bg-fg-tertiary"}`}
                           />
                           <Badge variant={statusVariants[log.status] ?? "default"}>
-                            {log.status.replace(/_/g, " ")}
+                            {tLogs(`status.${log.status}`)}
                           </Badge>
                         </span>
                       </td>
@@ -143,7 +149,10 @@ export default async function DashboardPage({
                         {log.latencyMs != null ? `${log.latencyMs}ms` : "—"}
                       </td>
                       <td className="px-5 py-3.5 font-mono text-xs text-fg-tertiary text-right whitespace-nowrap">
-                        {new Date(log.createdAt).toLocaleString()}
+                        {format.dateTime(log.createdAt, {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
                       </td>
                     </tr>
                   ))}
