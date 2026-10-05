@@ -444,7 +444,23 @@ export function Editor({
     }, 0);
   }, [state.embeds]);
 
-  const canSend = state.content.length <= 2000 && totalEmbedChars <= 6000 && state.embeds.length <= 10;
+  const canSend = (() => {
+    // In edit mode the target is the original webhook, not the selector.
+    const hasTarget =
+      editMessageId !== null ||
+      sendConfig.webhookId !== "" ||
+      sendConfig.manualUrl.trim() !== "" ||
+      sendConfig.multiTarget.length > 0;
+    const hasContent =
+      state.content.trim() !== "" || state.embeds.length > 0;
+    return (
+      hasTarget &&
+      hasContent &&
+      state.content.length <= 2000 &&
+      totalEmbedChars <= 6000 &&
+      state.embeds.length <= 10
+    );
+  })();
 
   /* --- Render --- */
 
