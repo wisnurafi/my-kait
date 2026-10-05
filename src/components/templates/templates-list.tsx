@@ -111,7 +111,7 @@ export function TemplatesList({
     }
     // A changed filter can shrink the result set — never land on an empty page
     params.delete("page");
-    router.push(`/templates?${params.toString()}`);
+    router.push(`/templates?${params.toString()}`, { scroll: false });
   }
 
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
@@ -127,7 +127,7 @@ export function TemplatesList({
         if (search) params.set("search", search);
         else params.delete("search");
         params.delete("page");
-        router.push(`/templates?${params.toString()}`);
+        router.push(`/templates?${params.toString()}`, { scroll: false });
       }
     }, 400);
     return () => clearTimeout(timer);
@@ -192,7 +192,7 @@ export function TemplatesList({
     const params = new URLSearchParams(searchParams.toString());
     if (newPage <= 1) params.delete("page");
     else params.set("page", String(newPage));
-    router.push(`/templates?${params.toString()}`);
+    router.push(`/templates?${params.toString()}`, { scroll: false });
   }
 
   function handleSaveEdit(id: string) {

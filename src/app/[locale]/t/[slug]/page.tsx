@@ -2,7 +2,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getSharedTemplateBySlug } from "@/server/actions/templates";
 import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { buttonClasses } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DiscordPreview } from "@/components/editor/discord-preview";
 import { ReportButton } from "@/components/templates/report-button";
@@ -47,8 +47,8 @@ export default async function SharedTemplatePage({
           <div className="flex items-center gap-2">
             <LandingLocaleToggle />
             <LandingThemeToggle />
-            <Link href="/">
-              <Button variant="ghost" size="sm">My Kait</Button>
+            <Link href="/" className={buttonClasses("ghost", "sm")}>
+              My Kait
             </Link>
           </div>
         </div>

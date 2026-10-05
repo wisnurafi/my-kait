@@ -3,7 +3,7 @@ import { getWebhooks } from "@/server/actions/webhooks";
 import { getLogs } from "@/server/actions/messages";
 import { getDashboardStats } from "@/server/actions/stats";
 import { Link } from "@/i18n/routing";
-import { Button } from "@/components/ui/button";
+import { buttonClasses } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Mascot } from "@/components/mascot";
 import { CommandPaletteButton } from "@/components/app/command-palette";
@@ -58,11 +58,9 @@ export default async function DashboardPage({
         </div>
         <div className="flex items-center gap-2.5">
           <CommandPaletteButton />
-          <Link href="/editor">
-            <Button className="gap-2">
-              <Plus size={16} />
-              {t("createMessage")}
-            </Button>
+          <Link href="/editor" className={buttonClasses("primary", "md")}>
+            <Plus size={16} />
+            {t("createMessage")}
           </Link>
         </div>
       </div>
@@ -140,7 +138,13 @@ export default async function DashboardPage({
                         </span>
                       </td>
                       <td className="px-4 py-3.5 font-medium truncate max-w-[220px]">
-                        {log.webhookNameSnapshot}
+                        <Link
+                          href={`/logs?search=${encodeURIComponent(log.discordMessageId ?? log.webhookNameSnapshot)}`}
+                          className="hover:text-link hover:underline"
+                          title={t("viewInLogs")}
+                        >
+                          {log.webhookNameSnapshot}
+                        </Link>
                       </td>
                       <td className="px-4 py-3.5 font-mono text-xs text-fg-secondary">
                         {tLogs(`mode.${log.mode as "normal" | "embed" | "both"}`)}

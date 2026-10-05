@@ -95,7 +95,7 @@ export function LogsView({
     // Changing any filter can shrink the result set — drop the page param
     // so we never land on an empty page. Page navigation itself is exempt.
     if (key !== "page") params.delete("page");
-    router.push(`?${params.toString()}`);
+    router.push(`?${params.toString()}`, { scroll: false });
   }
 
   // Debounce search
@@ -287,6 +287,19 @@ export function LogsView({
               </Select>
             </div>
             <div>
+              <Label>{t("filterSource")}</Label>
+              <Select
+                value={currentFilters.source ?? ""}
+                onChange={(e) => updateFilter("source", e.target.value)}
+              >
+                <option value="">{t("filterAll")}</option>
+                <option value="send">{t("source.send")}</option>
+                <option value="edit">{t("source.edit")}</option>
+                <option value="delete">{t("source.delete")}</option>
+                <option value="resend">{t("source.resend")}</option>
+              </Select>
+            </div>
+            <div>
               <Label>{t("filterDate")}</Label>
               <Select
                 value={currentFilters.datePreset ?? "30d"}
@@ -332,13 +345,23 @@ export function LogsView({
                   {t(`mode.${currentFilters.mode as "normal" | "embed" | "both"}`)} <X size={11} />
                 </FilterChip>
               )}
+              {currentFilters.webhookId && (
+                <FilterChip active onClick={() => updateFilter("webhookId", "")} className="inline-flex items-center gap-1.5">
+                  {webhooks.find((w) => w.id === currentFilters.webhookId)?.name ?? currentFilters.webhookId} <X size={11} />
+                </FilterChip>
+              )}
+              {currentFilters.source && (
+                <FilterChip active onClick={() => updateFilter("source", "")} className="inline-flex items-center gap-1.5">
+                  {t(`source.${currentFilters.source as "send" | "edit" | "delete" | "resend"}`)} <X size={11} />
+                </FilterChip>
+              )}
               {currentFilters.search && (
                 <FilterChip active onClick={() => updateFilter("search", "")} className="inline-flex items-center gap-1.5">
                   &ldquo;{currentFilters.search}&rdquo; <X size={11} />
                 </FilterChip>
               )}
-              {(currentFilters.status || currentFilters.webhookId || currentFilters.mode || currentFilters.search) && (
-                <Button variant="ghost" size="sm" onClick={() => router.push("?")} className="gap-1">
+              {(currentFilters.status || currentFilters.webhookId || currentFilters.mode || currentFilters.source || currentFilters.search) && (
+                <Button variant="ghost" size="sm" onClick={() => router.push("?", { scroll: false })} className="gap-1">
                   <X size={14} /> {tc("reset")}
                 </Button>
               )}
