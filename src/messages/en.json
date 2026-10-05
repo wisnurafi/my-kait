@@ -169,7 +169,7 @@
     "heroSubtitle": "Write messages, see a pixel-perfect Discord preview, then send to many servers in one click. No bot to deploy, no code to write, no drama.",
     "ctaStart": "Start free",
     "ctaGallery": "Browse gallery",
-    "scrollHint": "SCROLL",
+    "curveHintLabel": "live demo",
     "statsSent": "messages sent",
     "statsRate": "success rate",
     "statsWebhooks": "webhooks managed",

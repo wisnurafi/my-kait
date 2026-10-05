@@ -130,22 +130,31 @@
 .ld-root .ld-mstat .v .unit{ font-size:16px; color:var(--fg-tertiary); font-weight:500; }
 .ld-root .ld-mstat .l{ font-size:12.5px; color:var(--fg-tertiary); margin-top:5px; }
 
-/* scroll hint — in-flow antara hero copy & stage (seperti preview) */
-.ld-root .ld-scrollhint{
-  display:flex; flex-direction:column; align-items:center; gap:9px;
-  width:fit-content; margin:54px auto 0; position:relative; z-index:2;
-  transition: opacity .6s;
+/* curve hint — panah melengkung ala blueprint, ngarah ke live demo */
+.ld-root .ld-curve-hint{
+  display:flex; flex-direction:column; align-items:center;
+  width:fit-content; margin:44px auto 0; position:relative; z-index:2;
+  transition: opacity .5s;
 }
-.ld-root .ld-scrollhint.hide{ opacity:0; }
-.ld-root .ld-scrollhint .mouse{
-  width:24px; height:38px; border:1.5px solid var(--fg-tertiary); border-radius:14px;
-  position:relative;
+.ld-root .ld-curve-hint.hide{ opacity:0; pointer-events:none; }
+.ld-root .ld-curve-hint .ld-ca-label{
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.3em;
+  color:var(--fg-tertiary); margin-bottom:6px; text-transform:uppercase;
 }
-.ld-root .ld-scrollhint .wheel{
-  position:absolute; left:50%; top:7px; width:3px; height:8px; margin-left:-1.5px;
-  border-radius:3px; background:var(--ld-lime); animation:ld-wheel 1.8s ease-in-out infinite;
+.ld-root .ld-curve-hint svg{
+  display:block; overflow:visible;
+  animation:ld-ca-bob 3.2s ease-in-out 2.4s infinite;
 }
-.ld-root .ld-scrollhint span{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.28em; color:var(--fg-tertiary); }
+.ld-root .ld-curve-hint .ld-ca-draw{
+  stroke-dasharray:100; stroke-dashoffset:100;
+  animation:ld-ca-draw 1.5s cubic-bezier(.5,0,.2,1) .35s forwards;
+}
+.ld-root .ld-curve-hint .ld-ca-head{
+  opacity:0; animation:ld-ca-fade .45s ease 1.85s forwards;
+}
+@keyframes ld-ca-draw{ to{ stroke-dashoffset:0 } }
+@keyframes ld-ca-fade{ to{ opacity:1 } }
+@keyframes ld-ca-bob{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(7px) } }
 
 /* ============ TILT STAGE (hero demo) ============ */
 .ld-root .ld-stage{ perspective:1700px; position:relative; z-index:2; margin-top:70px; }
@@ -406,7 +415,6 @@
 .ld-root .ld-steps-rail .ld-p3{ animation-delay:2.5s }
 @keyframes ld-rail-drop{ from{ top:-1% } to{ top:101% } }
 @keyframes ld-pulse{ 50%{ opacity:.45 } }
-@keyframes ld-wheel{ 0%{ opacity:1; top:7px } 65%{ opacity:0; top:20px } 100%{ opacity:0; top:7px } }
 /* Discord panel: dark di dark mode, ikut terang di light mode */
 .ld-root .ld-dp{ background:#111113; border-color:#2e2e33; }
 [data-theme="light"] .ld-root .ld-dp{ background:#ffffff; border-color:var(--ld-line); }
