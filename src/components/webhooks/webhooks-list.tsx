@@ -186,6 +186,7 @@ export function WebhooksList({
           <option value="">{t("allStatuses")}</option>
           <option value="active">{t("status.active")}</option>
           <option value="invalid">{t("status.invalid")}</option>
+          <option value="rate_limited">{t("status.rate_limited")}</option>
           <option value="unchecked">{t("status.unchecked")}</option>
         </Select>
       </div>
@@ -202,6 +203,11 @@ export function WebhooksList({
           {filteredWebhooks.map((wh, i) => {
           const sc = statusConfig[wh.lastStatus];
           const isExpanded = expandedId === wh.id;
+          // The folder may have been deleted (stale folderId) — only show
+          // the badge when the folder still exists, never an empty badge.
+          const folderName = wh.folderId
+            ? folders.find((f) => f.id === wh.folderId)?.name
+            : undefined;
           return (
             <div
               key={wh.id}
@@ -227,10 +233,10 @@ export function WebhooksList({
                     <Badge variant={sc.variant} pulse={sc.pulse} dot={!sc.pulse}>
                       {t(`status.${wh.lastStatus}`)}
                     </Badge>
-                    {wh.folderId && (
+                    {folderName && (
                       <Badge variant="default" className="gap-1">
                         <Folder size={11} />
-                        {folders.find((f) => f.id === wh.folderId)?.name}
+                        {folderName}
                       </Badge>
                     )}
                   </div>
