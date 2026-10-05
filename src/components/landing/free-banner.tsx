@@ -20,11 +20,11 @@ export function FreeBanner() {
 
   return (
     <section className="border-t border-border-ink bg-accent text-[#0a0a0b]">
-      <div className="mx-auto max-w-4xl px-6 py-24 text-center">
+      <div className="mx-auto max-w-4xl px-6 py-16 text-center sm:py-24">
         <div className="label mb-4" style={{ color: "rgba(10,10,11,0.6)" }}>
           pricing plan
         </div>
-        <h2 className="font-display text-5xl font-bold leading-none tracking-tight md:text-6xl">
+        <h2 className="font-display text-4xl font-bold leading-none tracking-tight sm:text-5xl md:text-6xl">
           {t("freeTitle")}
           <br />
           {t("freeTitle2")}
