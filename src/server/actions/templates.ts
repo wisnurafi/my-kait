@@ -14,7 +14,7 @@ import { requireAuth, auth } from "@/lib/auth";
 import { templateSchema, reportTemplateSchema } from "@/lib/validations";
 import { generateSlug } from "@/lib/utils";
 import { getActionT } from "@/server/i18n";
-import { checkRateLimit } from "@/lib/ratelimit";
+import { checkRateLimit, getClientIp } from "@/lib/ratelimit";
 import { notifyAdminNewReport } from "@/server/admin-notify";
 
 /* --- Create template --- */
@@ -444,9 +444,7 @@ export async function reportTemplateAction(
   const t = await getActionT("errors");
 
   // Rate limit: 5 reports/hour per IP (spam protection)
-  const ip =
-    (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "unknown";
+  const ip = await getClientIp();
   const rl = await checkRateLimit("report", `report:${ip}`);
   if (!rl.success) {
     return { error: t("rateLimited") };
