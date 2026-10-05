@@ -142,8 +142,7 @@ export function HowItWorks() {
                     setActive(i);
                   }
                 }}
-                className={`ld-step ld-reveal${active === i ? " active" : ""}`}
-                data-d={String(Math.min(i + 1, 3))}
+                className={`ld-step${active === i ? " active" : ""}`}
               >
                 <div className="ld-kicker">
                   {t("stepKicker")} {i + 1}

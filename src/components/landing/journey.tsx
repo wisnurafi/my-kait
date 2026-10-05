@@ -168,8 +168,7 @@ export function Journey() {
             {steps.map((s, idx) => (
               <div
                 key={s.key}
-                className={`ld-jnode ld-pop${idx === lit ? " lit" : ""}`}
-                data-d={String(idx + 1)}
+                className={`ld-jnode${idx === lit ? " lit" : ""}`}
               >
                 <span className="ld-n">
                   <s.icon />
