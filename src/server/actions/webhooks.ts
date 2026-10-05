@@ -386,6 +386,11 @@ export async function pingAllWebhooksAction() {
   const results: { id: string; name: string; status: string }[] = [];
 
   for (const wh of allWebhooks) {
+    // Enforce the same ping quota as the single-webhook ping action
+    // (20/min); stop early and return partial results when limited.
+    const rl = await checkRateLimit("ping", user.id);
+    if (!rl.success) break;
+
     const url = decryptWebhookUrl(wh.urlEncrypted, wh.keyVersion);
     const result = await pingWebhook(url);
 
