@@ -11,6 +11,7 @@
  * - template_shares
  * - template_reports
  * - message_logs
+ * - api_keys (public REST API keys, SHA-256 hash only — raw key never stored)
  */
 
 import {
@@ -257,6 +258,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   templates: many(templates),
   templateFolders: many(templateFolders),
   messageLogs: many(messageLogs),
+  apiKeys: many(apiKeys),
 }));
 
 export const webhooksRelations = relations(webhooks, ({ one, many }) => ({
@@ -296,6 +298,40 @@ export const webhookHealthAlerts = pgTable(
 export const webhookHealthAlertsRelations = relations(webhookHealthAlerts, ({ one }) => ({
   user: one(users, { fields: [webhookHealthAlerts.userId], references: [users.id] }),
   webhook: one(webhooks, { fields: [webhookHealthAlerts.webhookId], references: [webhooks.id] }),
+}));
+
+/* --- API keys (public REST API auth) ---
+ *
+ * Only the SHA-256 hash of the key is stored. The raw key (mk_live_...)
+ * is shown to the user ONCE at creation and never persisted or logged.
+ */
+
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    keyHash: text("key_hash").notNull().unique(),
+    keyPrefix: text("key_prefix").notNull(),
+    name: text("name").notNull(),
+    scopes: text("scopes")
+      .array()
+      .notNull()
+      .$defaultFn(() => ["send"]),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("api_keys_user_id_idx").on(table.userId),
+  }),
+);
+
+export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
+  user: one(users, { fields: [apiKeys.userId], references: [users.id] }),
 }));
 
 export const templateFoldersRelations = relations(templateFolders, ({ one, many }) => ({
