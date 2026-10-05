@@ -169,7 +169,7 @@
     "heroSubtitle": "Tulis pesan, lihat preview persis seperti di Discord, lalu kirim ke banyak server dalam satu klik. Tanpa deploy bot, tanpa nulis kode, tanpa drama.",
     "ctaStart": "Mulai gratis",
     "ctaGallery": "Lihat galeri",
-    "scrollHint": "SCROLL",
+    "curveHintLabel": "demo langsung",
     "statsSent": "pesan terkirim",
     "statsRate": "success rate",
     "statsWebhooks": "webhook dikelola",

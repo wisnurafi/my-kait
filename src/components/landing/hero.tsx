@@ -617,7 +617,7 @@ function MiniStats({ stats }: { stats: PublicStats }) {
 /* ------------------------------------------------------------------ */
 /* Scroll hint                                                         */
 /* ------------------------------------------------------------------ */
-function ScrollHint() {
+function CurveHint() {
   const t = useTranslations("landing");
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -633,11 +633,32 @@ function ScrollHint() {
   }, []);
 
   return (
-    <div ref={ref} className="ld-scrollhint" aria-hidden="true">
-      <div className="mouse">
-        <div className="wheel" />
-      </div>
-      <span>{t("scrollHint")}</span>
+    <div ref={ref} className="ld-curve-hint" aria-hidden="true">
+      <span className="ld-ca-label">{t("curveHintLabel")}</span>
+      <svg
+        width="110"
+        height="180"
+        viewBox="0 0 110 180"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          className="ld-ca-draw"
+          pathLength={100}
+          d="M55 6 C54 44 90 52 88 90 C86 128 30 124 34 162"
+          stroke="rgba(163,230,53,.55)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path
+          className="ld-ca-head"
+          d="M26 152 L34 164 L42 152"
+          stroke="rgba(163,230,53,.75)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
     </div>
   );
 }
@@ -695,7 +716,7 @@ export function LandingHero({ stats }: { stats: PublicStats }) {
             </div>
             <MiniStats stats={stats} />
           </div>
-          <ScrollHint />
+          <CurveHint />
           <DemoStage />
         </div>
       </section>
