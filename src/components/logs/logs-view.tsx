@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Tooltip } from "@/components/ui/tooltip";
 import { toast } from "@/components/ui/toast";
+import { Mascot } from "@/components/mascot";
 import { clearLogsAction, deleteMessageAction } from "@/server/actions/messages";
 import { saveAsTemplateAction } from "@/server/actions/templates";
 import {
@@ -327,7 +328,7 @@ export function LogsView({
       {/* Logs list — terminal style */}
       {logsData.logs.length === 0 ? (
         <Card className="p-12 text-center">
-          <Terminal size={40} className="mx-auto mb-4 text-fg-tertiary" />
+          <Mascot mini size={56} className="mx-auto mb-4" />
           <p className="text-fg-secondary text-lg">{t("noLogs")}</p>
         </Card>
       ) : (
