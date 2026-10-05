@@ -92,6 +92,9 @@ export function LogsView({
     const params = new URLSearchParams(currentFilters as Record<string, string>);
     if (value) params.set(key, value);
     else params.delete(key);
+    // Changing any filter can shrink the result set — drop the page param
+    // so we never land on an empty page. Page navigation itself is exempt.
+    if (key !== "page") params.delete("page");
     router.push(`?${params.toString()}`);
   }
 
