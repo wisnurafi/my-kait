@@ -129,6 +129,20 @@ export function Navbar() {
             </Link>
           );
         })}
+        {/* Logout — mirrors admin mobile nav (sidebar footer is desktop-only) */}
+        <button
+          type="button"
+          onClick={() => signOut({ redirectTo: "/" })}
+          aria-label={t("logout")}
+          className={cn(
+            "relative flex flex-col items-center gap-1 px-2 py-2",
+            "font-mono text-[9px] uppercase tracking-[0.12em]",
+            "transition-colors duration-150 text-fg-secondary active:text-fg cursor-pointer",
+          )}
+        >
+          <LogOut size={18} />
+          {t("logout")}
+        </button>
       </nav>
     </>
   );
