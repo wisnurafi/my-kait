@@ -902,6 +902,18 @@
     "s2": "Only SHA-256 hashes are stored — a database leak cannot be turned back into usable keys.",
     "s3": "Keys are never written to logs; only the key id and prefix appear there.",
     "s4": "Give each integration its own key with an expiry date, so a leak has a blast radius of one.",
-    "s5": "A key can only send through your own webhooks — it cannot read or change anything else."
+    "s5": "A key can only send through your own webhooks — it cannot read or change anything else.",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "required": "required",
+    "optional": "optional",
+    "oneOf": "one of",
+    "thParam": "Parameter",
+    "thReq": "Required?",
+    "thDesc": "Description",
+    "thCode": "Code",
+    "thError": "Error",
+    "thMeaning": "Meaning",
+    "tocLabel": "Table of contents"
   }
 }

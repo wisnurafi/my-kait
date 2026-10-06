@@ -902,6 +902,18 @@
     "s2": "Yang disimpan hanya hash SHA-256 — database yang bocor tidak bisa diubah jadi key yang bisa dipakai.",
     "s3": "Key tidak pernah ditulis ke log; yang muncul di sana hanya id dan prefix key.",
     "s4": "Kasih tiap integrasi key sendiri-sendiri dengan tanggal kedaluwarsa, supaya kalau bocor dampaknya terbatas satu.",
-    "s5": "Sebuah key hanya bisa kirim lewat webhook milik lu — tidak bisa baca atau ubah hal lain."
+    "s5": "Sebuah key hanya bisa kirim lewat webhook milik lu — tidak bisa baca atau ubah hal lain.",
+    "copy": "Salin",
+    "copied": "Disalin!",
+    "required": "wajib",
+    "optional": "opsional",
+    "oneOf": "salah satu",
+    "thParam": "Parameter",
+    "thReq": "Wajib?",
+    "thDesc": "Deskripsi",
+    "thCode": "Kode",
+    "thError": "Error",
+    "thMeaning": "Arti",
+    "tocLabel": "Daftar isi"
   }
 }
