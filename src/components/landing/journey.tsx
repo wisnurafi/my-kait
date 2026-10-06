@@ -134,13 +134,16 @@ export function Journey() {
     ).matches;
     const dot = travelerRef.current;
     if (reduced || !dot) return;
-    // satu clock untuk dot & node: dot jalan, node nyala pas dot nyentuh
+    // satu clock untuk dot & node: dot jalan, node nyala pas dot nyentuh.
+    // Posisi tengah node ≈ p 0 / 0.32 / 0.68 / 1 dari jalur dot
+    // (line 12%–88% track, node 150px space-between) — jangan pakai
+    // floor(p*4): batangnya di 0.25/0.5/0.75 bikin node nyala duluan.
     const CYCLE = 4500;
     let raf = 0;
     const frame = (now: number) => {
       const p = (now % CYCLE) / CYCLE;
       dot.style.left = `${(p * 100).toFixed(2)}%`;
-      const idx = Math.min(steps.length - 1, Math.floor(p * steps.length));
+      const idx = p >= 0.985 ? 3 : p >= 0.66 ? 2 : p >= 0.32 ? 1 : 0;
       if (idx !== litRef.current) {
         litRef.current = idx;
         setLit(idx);
