@@ -40,7 +40,8 @@
     "logs": "Riwayat",
     "settings": "Pengaturan",
     "logout": "Keluar",
-    "apiKeys": "API Keys"
+    "apiKeys": "API Keys",
+    "scheduled": "Terjadwal"
   },
   "templates": {
     "title": "Template",
@@ -511,7 +512,10 @@
     "removeEmbed": "Hapus embed",
     "removeField": "Hapus field",
     "tabWrite": "Tulis",
-    "tabPreview": "Pratinjau"
+    "tabPreview": "Pratinjau",
+    "scheduleButton": "Jadwalkan",
+    "scheduleHint": "Jadwalkan pesan ini untuk nanti (satu target saja)",
+    "viewScheduled": "Lihat terjadwal →"
   },
   "logs": {
     "title": "Riwayat Pengiriman",
@@ -654,7 +658,11 @@
     "apiKeyNameRequired": "Kasih nama buat key-nya.",
     "apiKeyNameTooLong": "Nama key kepanjangan (maks 50 karakter).",
     "apiKeyLimitReached": "Lu sudah punya 10 key aktif. Cabut satu dulu.",
-    "apiKeyNotFound": "API key tidak ditemukan."
+    "apiKeyNotFound": "API key tidak ditemukan.",
+    "scheduledInvalidDate": "Tanggal tidak valid.",
+    "scheduledTooSoon": "Jadwalkan minimal 1 menit ke depan.",
+    "scheduledTooFar": "Tidak bisa jadwalkan lebih dari 1 tahun ke depan.",
+    "scheduledNotFound": "Pesan terjadwal tidak ditemukan."
   },
   "ping": {
     "active": "Webhook aktif",
@@ -922,5 +930,37 @@
     "thError": "Error",
     "thMeaning": "Arti",
     "tocLabel": "Daftar isi"
+  },
+  "scheduled": {
+    "title": "Terjadwal",
+    "desc": "Pesan yang menunggu dikirim. Cron job mengambilnya tiap menit — toleransi telat ~1 menit dari waktu yang dipilih.",
+    "dialogTitle": "Jadwalkan pesan",
+    "dateLabel": "Kirim pada",
+    "quick1h": "+1 jam",
+    "quick3h": "+3 jam",
+    "quickTomorrow9": "Besok 09.00",
+    "granularityNote": "Scheduler jalan tiap menit, jadi pesan bisa terkirim sampai ~1 menit setelah waktu yang dipilih.",
+    "cancel": "Batal",
+    "confirmButton": "Jadwalkan",
+    "scheduling": "Menjadwalkan…",
+    "scheduledOk": "Pesan dijadwalkan",
+    "scheduleFailed": "Gagal menjadwalkan pesan",
+    "invalidDate": "Pilih tanggal dan jam yang valid.",
+    "loading": "Memuat…",
+    "empty": "Belum ada yang dijadwalkan. Tulis pesan di editor lalu tekan Jadwalkan.",
+    "filterUpcoming": "Akan datang",
+    "filterHistory": "Riwayat",
+    "filterAll": "Semua",
+    "cancelButton": "Batalkan",
+    "cancelConfirmButton": "Ya, batalkan",
+    "cancelConfirm": "Klik batalkan sekali lagi untuk konfirmasi. Tidak bisa dibatalkan lagi.",
+    "cancelledOk": "Jadwal dibatalkan",
+    "cancelFailed": "Gagal membatalkan",
+    "loadFailed": "Gagal memuat pesan terjadwal",
+    "status_pending": "Menunggu",
+    "status_sending": "Mengirim",
+    "status_sent": "Terkirim",
+    "status_failed": "Gagal",
+    "status_cancelled": "Dibatalkan"
   }
 }
