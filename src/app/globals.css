@@ -1032,12 +1032,6 @@ html {
   font-family: var(--font-mono);
   color: var(--accent-primary);
 }
-.chart-tip .tt-note {
-  margin-top: 6px;
-  font-size: 10px;
-  line-height: 1.5;
-  color: var(--fg-tertiary);
-}
 
 /* ---------- Tabel responsif → kartu ----------
    Di ≤767px: thead disembunyikan, tiap baris jadi kartu tumpuk.

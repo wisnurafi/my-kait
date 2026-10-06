@@ -149,7 +149,6 @@
       "deleted": "Dihapus",
       "total": "Total",
       "successRate": "Success rate",
-      "deletedNote": "Pesan yang dihapus tidak memengaruhi success rate.",
       "tipHint": "arahkan kursor / fokus ke tiap bar",
       "whTipHint": "hover untuk detail",
       "barAria": "{date}: {sent} terkirim, {failed} gagal",

@@ -212,9 +212,6 @@ function TipRows({
         <span>{t("chart.successRate")}</span>
         <b>{rate}%</b>
       </div>
-      {deleted > 0 && (
-        <div className="tt-note">{t("chart.deletedNote")}</div>
-      )}
     </>
   );
 }

@@ -149,7 +149,6 @@
       "deleted": "Deleted",
       "total": "Total",
       "successRate": "Success rate",
-      "deletedNote": "Deleted messages don't affect the success rate.",
       "tipHint": "hover or focus each bar",
       "whTipHint": "hover for details",
       "barAria": "{date}: {sent} sent, {failed} failed",
