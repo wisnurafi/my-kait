@@ -10,13 +10,14 @@ import { messageLogs } from "@/lib/schema";
 import { eq, and, gte, sql, desc } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
 
-export type DailyStat = { date: string; total: number; sent: number; failed: number };
+export type DailyStat = { date: string; total: number; sent: number; failed: number; deleted: number };
 export type WebhookStat = {
   webhookId: string | null;
   name: string;
   total: number;
   sent: number;
   failed: number;
+  deleted: number;
 };
 export type StatusStat = { status: string; count: number };
 
@@ -36,6 +37,7 @@ export async function getDashboardStats(): Promise<{
       total: sql<number>`count(*)::int`,
       sent: sql<number>`count(*) filter (where ${messageLogs.status} in ('sent','edited'))::int`,
       failed: sql<number>`count(*) filter (where ${messageLogs.status} in ('failed','rate_limited'))::int`,
+      deleted: sql<number>`count(*) filter (where ${messageLogs.status} = 'deleted')::int`,
     })
     .from(messageLogs)
     .where(
@@ -59,6 +61,7 @@ export async function getDashboardStats(): Promise<{
       total: row?.total ?? 0,
       sent: row?.sent ?? 0,
       failed: row?.failed ?? 0,
+      deleted: row?.deleted ?? 0,
     });
   }
 
@@ -70,6 +73,7 @@ export async function getDashboardStats(): Promise<{
       total: sql<number>`count(*)::int`,
       sent: sql<number>`count(*) filter (where ${messageLogs.status} in ('sent','edited'))::int`,
       failed: sql<number>`count(*) filter (where ${messageLogs.status} in ('failed','rate_limited'))::int`,
+      deleted: sql<number>`count(*) filter (where ${messageLogs.status} = 'deleted')::int`,
     })
     .from(messageLogs)
     .where(
@@ -88,6 +92,7 @@ export async function getDashboardStats(): Promise<{
     total: r.total,
     sent: r.sent,
     failed: r.failed,
+    deleted: r.deleted,
   }));
 
   // Status breakdown (last 30 days)
