@@ -74,6 +74,8 @@ export default async function DashboardPage({
         webhooks={webhooks.length}
         sent={stats.totals.sent}
         successRate={stats.totals.successRate}
+        templates={stats.deltas.templates}
+        deltas={stats.deltas}
         caption={t("stats.last30days")}
         daily={stats.daily}
       />
