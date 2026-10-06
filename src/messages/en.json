@@ -103,7 +103,8 @@
     "noSearchResults": "No templates match your search.",
     "eyebrow": "template library",
     "createTemplate": "Create template",
-    "noSearchResultsHint": "Try a different keyword or reset the filters."
+    "noSearchResultsHint": "Try a different keyword or reset the filters.",
+    "backToGallery": "Back to Gallery"
   },
   "dashboard": {
     "greeting": "Hey, {name}! 👋",

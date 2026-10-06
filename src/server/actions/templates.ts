@@ -435,9 +435,12 @@ export async function getSharedTemplateBySlug(slug: string) {
       payload: templates.payload,
       shareId: templateShares.id,
       importCount: templateShares.importCount,
+      author: users.username,
+      sharedAt: templateShares.createdAt,
     })
     .from(templateShares)
     .innerJoin(templates, eq(templateShares.templateId, templates.id))
+    .innerJoin(users, eq(templates.userId, users.id))
     .where(
       and(
         eq(templateShares.slug, slug),
