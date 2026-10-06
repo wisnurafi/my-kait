@@ -52,7 +52,7 @@ export default async function AdminAuditPage({
   ).includes(cat ?? "")
     ? (cat as AuditCategory)
     : "all";
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 15;
   const requested = Math.max(1, parseInt(rawPage ?? "", 10) || 1);
   const first = await getAuditLogs(active, requested, PAGE_SIZE);
   // Kalau page di URL melebihi total, jatuh ke halaman terakhir.

@@ -485,7 +485,7 @@ export type AuditCategory = "all" | "report" | "share" | "template" | "user" | "
 export async function getAuditLogs(
   category?: AuditCategory,
   page = 1,
-  pageSize = 20,
+  pageSize = 15,
 ): Promise<{ logs: AuditEntry[]; total: number; page: number; totalPages: number }> {
   await requireAdmin();
   const safePage = Math.max(1, Math.floor(page) || 1);
