@@ -134,13 +134,33 @@ export function Journey() {
     ).matches;
     const dot = travelerRef.current;
     if (reduced || !dot) return;
-    // satu clock untuk dot & node: dot jalan, node nyala pas dot nyentuh
-    const CYCLE = 4500;
+    // satu clock untuk dot & node: dot jalan linear, node nyala pas dot nyentuh.
+    // Posisi tengah node ≈ pos 0 / 0.32 / 0.68 / 1 dari jalur dot
+    // (line 12%–88% track, node 150px space-between) — jangan pakai
+    // floor(p*4): batangnya di 0.25/0.5/0.75 bikin node nyala duluan.
+    // Di ujung: dot tiba → Delivered glow → dot fade out → teleport balik
+    // ke Write sambil fade in. Tanpa jeda kaku, tanpa loncatan kasat mata.
+    const CYCLE = 5200;
+    const TRAVEL = 0.78; // fraksi siklus untuk dot 0→1
+    const FADE = 0.1; // fraksi siklus untuk fade out/in di titik loop
     let raf = 0;
     const frame = (now: number) => {
       const p = (now % CYCLE) / CYCLE;
-      dot.style.left = `${(p * 100).toFixed(2)}%`;
-      const idx = Math.min(steps.length - 1, Math.floor(p * steps.length));
+      let pos: number;
+      let alpha: number;
+      if (p < TRAVEL) {
+        pos = p / TRAVEL;
+        alpha = 1;
+      } else if (p < TRAVEL + FADE) {
+        pos = 1;
+        alpha = 1 - (p - TRAVEL) / FADE;
+      } else {
+        pos = 0;
+        alpha = (p - TRAVEL - FADE) / (1 - TRAVEL - FADE);
+      }
+      dot.style.left = `${(pos * 100).toFixed(2)}%`;
+      dot.style.opacity = alpha.toFixed(2);
+      const idx = pos >= 0.99 ? 3 : pos >= 0.66 ? 2 : pos >= 0.32 ? 1 : 0;
       if (idx !== litRef.current) {
         litRef.current = idx;
         setLit(idx);
