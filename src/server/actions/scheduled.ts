@@ -7,7 +7,7 @@
 
 import { db } from "@/lib/db";
 import { scheduledMessages, webhooks } from "@/lib/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray, count, sql } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
 import { getActionT } from "@/server/i18n";
 import { sendRequestSchema } from "@/lib/validations";
@@ -25,12 +25,32 @@ function toPublic(s: typeof scheduledMessages.$inferSelect) {
     webhookNameSnapshot: s.webhookNameSnapshot,
     isManualUrl: !s.webhookId,
     mode: s.mode,
+    preview: payloadPreview(s.payload),
     scheduledAt: s.scheduledAt.toISOString(),
     status: s.status,
     attempts: s.attempts,
     lastError: s.lastError,
     createdAt: s.createdAt.toISOString(),
   };
+}
+
+/** Short human-readable excerpt of the payload for list rows. */
+function payloadPreview(payload: unknown): string {
+  if (!payload || typeof payload !== "object") return "";
+  const p = payload as Record<string, unknown>;
+  const content = typeof p.content === "string" ? p.content.trim() : "";
+  if (content) return content.slice(0, 90);
+  const embeds = Array.isArray(p.embeds)
+    ? (p.embeds as Array<Record<string, unknown>>)
+    : [];
+  const e0 = embeds[0];
+  if (e0 && typeof e0 === "object") {
+    const title = typeof e0.title === "string" ? e0.title.trim() : "";
+    const desc = typeof e0.description === "string" ? e0.description.trim() : "";
+    const joined = (title + (title && desc ? " — " : "") + desc).trim();
+    if (joined) return joined.slice(0, 90);
+  }
+  return "";
 }
 
 export type ScheduledPublic = ReturnType<typeof toPublic>;
@@ -123,14 +143,57 @@ export async function scheduleMessageAction(input: {
 }
 
 /* --- List my scheduled messages --- */
-export async function listScheduledAction(): Promise<ScheduledPublic[]> {
+export type ScheduledFilter = "upcoming" | "history" | "all";
+
+const SCHEDULED_PAGE_SIZE = 10;
+
+function filterCondition(filter: ScheduledFilter) {
+  if (filter === "upcoming")
+    return inArray(scheduledMessages.status, ["pending", "sending"]);
+  if (filter === "history")
+    return inArray(scheduledMessages.status, ["sent", "failed", "cancelled"]);
+  return undefined;
+}
+
+export async function listScheduledAction(filter: ScheduledFilter = "upcoming", page = 1) {
   const user = await requireAuth();
+  const owner = eq(scheduledMessages.userId, user.id);
+  const cond = filterCondition(filter);
+  const where = cond ? and(owner, cond) : owner;
+
+  const [{ n }] = await db.select({ n: count() }).from(scheduledMessages).where(where);
+  const total = Number(n);
+  const totalPages = Math.max(1, Math.ceil(total / SCHEDULED_PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, Math.floor(page) || 1), totalPages);
+
   const rows = await db
     .select()
     .from(scheduledMessages)
-    .where(eq(scheduledMessages.userId, user.id))
-    .orderBy(desc(scheduledMessages.scheduledAt));
-  return rows.map(toPublic);
+    .where(where)
+    .orderBy(desc(scheduledMessages.scheduledAt))
+    .limit(SCHEDULED_PAGE_SIZE)
+    .offset((safePage - 1) * SCHEDULED_PAGE_SIZE);
+
+  // Chip counts for all three filters in one round trip.
+  const [c] = await db
+    .select({
+      upcoming: sql<number>`count(*) filter (where ${scheduledMessages.status} in ('pending', 'sending'))`,
+      history: sql<number>`count(*) filter (where ${scheduledMessages.status} in ('sent', 'failed', 'cancelled'))`,
+    })
+    .from(scheduledMessages)
+    .where(owner);
+  const counts = {
+    upcoming: Number(c?.upcoming ?? 0),
+    history: Number(c?.history ?? 0),
+  };
+
+  return {
+    items: rows.map(toPublic),
+    total,
+    page: safePage,
+    totalPages,
+    counts: { ...counts, all: counts.upcoming + counts.history },
+  };
 }
 
 /* --- Cancel a pending schedule --- */

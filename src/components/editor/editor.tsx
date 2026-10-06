@@ -960,6 +960,7 @@ export function Editor({
           }}
           onScheduled={() => {
             setResult(null);
+            resetEditor();
           }}
         />
       )}

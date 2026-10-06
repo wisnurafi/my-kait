@@ -947,13 +947,10 @@
     "scheduleFailed": "Failed to schedule message",
     "invalidDate": "Pick a valid date and time.",
     "loading": "Loading…",
-    "empty": "Nothing scheduled. Compose a message in the editor and hit Schedule.",
     "filterUpcoming": "Upcoming",
     "filterHistory": "History",
     "filterAll": "All",
-    "cancelButton": "Cancel",
-    "cancelConfirmButton": "Confirm cancel",
-    "cancelConfirm": "Click cancel again to confirm. This cannot be undone.",
+    "cancelButton": "Cancel scheduled",
     "cancelledOk": "Schedule cancelled",
     "cancelFailed": "Failed to cancel",
     "loadFailed": "Failed to load scheduled messages",
@@ -961,6 +958,11 @@
     "status_sending": "Sending",
     "status_sent": "Sent",
     "status_failed": "Failed",
-    "status_cancelled": "Cancelled"
+    "status_cancelled": "Cancelled",
+    "emptyUpcoming": "Nothing scheduled yet. Compose a message in the editor and hit Schedule.",
+    "emptyHistory": "No history yet. Sent, failed and cancelled schedules will appear here.",
+    "cancelTitle": "Cancel scheduled message",
+    "cancelMessage": "Stop \"{name}\" from being sent? This cannot be undone.",
+    "cancelConfirmLabel": "Confirm cancel scheduled"
   }
 }

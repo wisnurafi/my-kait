@@ -947,13 +947,10 @@
     "scheduleFailed": "Gagal menjadwalkan pesan",
     "invalidDate": "Pilih tanggal dan jam yang valid.",
     "loading": "Memuat…",
-    "empty": "Belum ada yang dijadwalkan. Tulis pesan di editor lalu tekan Jadwalkan.",
     "filterUpcoming": "Akan datang",
     "filterHistory": "Riwayat",
     "filterAll": "Semua",
-    "cancelButton": "Batalkan",
-    "cancelConfirmButton": "Ya, batalkan",
-    "cancelConfirm": "Klik batalkan sekali lagi untuk konfirmasi. Tidak bisa dibatalkan lagi.",
+    "cancelButton": "Batalkan jadwal",
     "cancelledOk": "Jadwal dibatalkan",
     "cancelFailed": "Gagal membatalkan",
     "loadFailed": "Gagal memuat pesan terjadwal",
@@ -961,6 +958,11 @@
     "status_sending": "Mengirim",
     "status_sent": "Terkirim",
     "status_failed": "Gagal",
-    "status_cancelled": "Dibatalkan"
+    "status_cancelled": "Dibatalkan",
+    "emptyUpcoming": "Belum ada yang dijadwalkan. Tulis pesan di editor lalu tekan Jadwalkan.",
+    "emptyHistory": "Belum ada riwayat. Jadwal yang terkirim, gagal, dan dibatalkan muncul di sini.",
+    "cancelTitle": "Batalkan pesan terjadwal",
+    "cancelMessage": "Batalkan pengiriman \"{name}\"? Tidak bisa dibatalkan lagi.",
+    "cancelConfirmLabel": "Konfirmasi batalkan jadwal"
   }
 }

@@ -1,30 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Badge, FilterChip } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/toast";
 import {
   listScheduledAction,
   cancelScheduledAction,
   type ScheduledPublic,
+  type ScheduledFilter,
 } from "@/server/actions/scheduled";
-import { CalendarClock, Ban, Inbox } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { CalendarClock, Ban, Inbox, ChevronLeft, ChevronRight } from "lucide-react";
 
-type Filter = "upcoming" | "history" | "all";
-
-const statusVariant: Record<string, "info" | "warning" | "success" | "error" | "default"> = {
-  pending: "info",
-  sending: "warning",
-  sent: "success",
-  failed: "error",
-  cancelled: "default",
+type PageData = {
+  items: ScheduledPublic[];
+  total: number;
+  page: number;
+  totalPages: number;
+  counts: Record<ScheduledFilter, number>;
 };
 
-function formatDateTime(iso: string, locale: string): string {
+function staggerStyle(i: number) {
+  return { "--stagger-index": i } as React.CSSProperties;
+}
+
+function formatAbsolute(iso: string, locale: string): string {
   try {
     return new Date(iso).toLocaleString(locale, {
       day: "numeric",
@@ -37,58 +40,86 @@ function formatDateTime(iso: string, locale: string): string {
   }
 }
 
+/** Locale-aware relative time: "in 25 minutes", "2 hours ago". */
+function formatRelative(iso: string, locale: string): string {
+  try {
+    const diffMs = new Date(iso).getTime() - Date.now();
+    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+    const abs = Math.abs(diffMs);
+    const minute = 60_000;
+    const hour = 3_600_000;
+    const day = 86_400_000;
+    if (abs < minute) return rtf.format(Math.round(diffMs / 1000), "second");
+    if (abs < hour) return rtf.format(Math.round(diffMs / minute), "minute");
+    if (abs < day) return rtf.format(Math.round(diffMs / hour), "hour");
+    return rtf.format(Math.round(diffMs / day), "day");
+  } catch {
+    return iso;
+  }
+}
+
+const statusVariant: Record<string, "info" | "warning" | "success" | "error" | "default"> = {
+  pending: "info",
+  sending: "warning",
+  sent: "success",
+  failed: "error",
+  cancelled: "default",
+};
+
 export function ScheduledList() {
   const t = useTranslations("scheduled");
+  const tc = useTranslations("common");
   const locale = useLocale();
-  const [items, setItems] = useState<ScheduledPublic[] | null>(null);
-  const [filter, setFilter] = useState<Filter>("upcoming");
-  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [data, setData] = useState<PageData | null>(null);
+  const [filter, setFilter] = useState<ScheduledFilter>("upcoming");
+  const [page, setPage] = useState(1);
+  const [cancelTarget, setCancelTarget] = useState<ScheduledPublic | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
-  const load = async () => {
-    try {
-      setItems(await listScheduledAction());
-    } catch {
-      toast.error(t("loadFailed"));
-      setItems([]);
-    }
-  };
+  const load = useCallback(
+    async (f: ScheduledFilter, p: number) => {
+      try {
+        const res = await listScheduledAction(f, p);
+        setData(res);
+        // If the current page went empty (e.g. last item cancelled), step back.
+        if (res.items.length === 0 && res.page > 1) setPage(res.page - 1);
+      } catch {
+        toast.error(t("loadFailed"));
+        setData({ items: [], total: 0, page: 1, totalPages: 1, counts: { upcoming: 0, history: 0, all: 0 } });
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    load(filter, page);
+  }, [filter, page, load]);
 
-  const handleCancel = async (id: string) => {
-    if (confirmId !== id) {
-      setConfirmId(id);
-      return;
-    }
+  const selectFilter = (f: ScheduledFilter) => {
+    setFilter(f);
+    setPage(1);
+  };
+
+  const handleCancel = async () => {
+    if (!cancelTarget) return;
     setCancelling(true);
     try {
-      const res = await cancelScheduledAction(id);
+      const res = await cancelScheduledAction(cancelTarget.id);
       if ("error" in res) {
         toast.error(res.error);
       } else {
         toast.success(t("cancelledOk"));
-        await load();
+        await load(filter, page);
       }
     } catch {
       toast.error(t("cancelFailed"));
     } finally {
       setCancelling(false);
-      setConfirmId(null);
+      setCancelTarget(null);
     }
   };
 
-  const filtered = (items ?? []).filter((s) => {
-    if (filter === "upcoming") return s.status === "pending" || s.status === "sending";
-    if (filter === "history")
-      return s.status === "sent" || s.status === "failed" || s.status === "cancelled";
-    return true;
-  });
-
-  const filters: Array<[Filter, string]> = [
+  const filters: Array<[ScheduledFilter, string]> = [
     ["upcoming", t("filterUpcoming")],
     ["history", t("filterHistory")],
     ["all", t("filterAll")],
@@ -96,73 +127,117 @@ export function ScheduledList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap stagger-in" role="group" aria-label={t("title")}>
         {filters.map(([f, label]) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setFilter(f)}
-            className={cn(
-              "px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-[0.12em] border transition-colors",
-              filter === f
-                ? "bg-accent-soft text-accent border-accent/30"
-                : "text-fg-secondary border-border-ink hover:text-fg hover:border-border-strong",
-            )}
-          >
-            {label}
-          </button>
+          <FilterChip key={f} active={filter === f} onClick={() => selectFilter(f)}>
+            {label} <span className="opacity-60">{data?.counts[f] ?? 0}</span>
+          </FilterChip>
         ))}
       </div>
 
-      {items === null ? (
+      {data === null ? (
         <p className="text-sm text-fg-tertiary">{t("loading")}</p>
-      ) : filtered.length === 0 ? (
+      ) : data.items.length === 0 ? (
         <Card>
           <CardBody className="flex flex-col items-center gap-2 py-10 text-center">
             <Inbox size={28} className="text-fg-tertiary" />
-            <p className="text-sm text-fg-secondary">{t("empty")}</p>
+            <p className="text-sm text-fg-secondary">
+              {filter === "history" ? t("emptyHistory") : t("emptyUpcoming")}
+            </p>
           </CardBody>
         </Card>
       ) : (
-        <ul className="space-y-2">
-          {filtered.map((s) => (
-            <li key={s.id} className="panel p-3 flex items-center gap-3 flex-wrap">
-              <CalendarClock size={18} className="text-fg-tertiary shrink-0" />
-              <div className="flex-1 min-w-[180px]">
-                <div className="font-bold flex items-center gap-2 flex-wrap">
-                  {s.webhookNameSnapshot}
-                  <Badge variant={statusVariant[s.status] ?? "default"}>
-                    {t(`status_${s.status}`)}
-                  </Badge>
-                  <span className="font-mono text-xs text-fg-tertiary">{s.mode}</span>
-                </div>
-                <div className="text-xs text-fg-tertiary mt-1">
-                  {formatDateTime(s.scheduledAt, locale)}
-                  {s.lastError && (
-                    <span className="text-error"> · {s.lastError}</span>
+        <>
+          <ul className="space-y-2">
+            {data.items.map((s, i) => (
+              <li
+                key={s.id}
+                className="panel p-4 flex items-center gap-3 stagger-in"
+                style={staggerStyle(i)}
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+                  <CalendarClock size={16} />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold truncate">{s.webhookNameSnapshot}</span>
+                    <Badge
+                      variant={statusVariant[s.status] ?? "default"}
+                      pulse={s.status === "sending"}
+                    >
+                      {t(`status_${s.status}`)}
+                    </Badge>
+                  </div>
+                  {s.preview && (
+                    <p className="text-sm text-fg-secondary truncate mt-0.5">
+                      {s.preview}
+                    </p>
                   )}
+                  <div className="text-xs text-fg-tertiary mt-1 flex items-center gap-2 flex-wrap">
+                    <span title={formatAbsolute(s.scheduledAt, locale)}>
+                      {formatRelative(s.scheduledAt, locale)}
+                    </span>
+                    <span className="font-mono">{s.mode}</span>
+                    {s.lastError && (
+                      <span className="text-error truncate">· {s.lastError}</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              {s.status === "pending" && (
-                <Button
-                  variant={confirmId === s.id ? "destructive" : "ghost"}
-                  onClick={() => handleCancel(s.id)}
-                  disabled={cancelling}
-                  className="gap-2"
-                >
-                  <Ban size={16} />
-                  {confirmId === s.id ? t("cancelConfirmButton") : t("cancelButton")}
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
+                {s.status === "pending" && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setCancelTarget(s)}
+                    className="gap-2 shrink-0"
+                  >
+                    <Ban size={16} />
+                    {t("cancelButton")}
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          {data.totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPage(data.page - 1)}
+                disabled={data.page <= 1}
+                className="gap-1"
+              >
+                <ChevronLeft size={16} /> {tc("prev")}
+              </Button>
+              <span className="text-sm text-fg-secondary font-mono">
+                {data.page} / {data.totalPages}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPage(data.page + 1)}
+                disabled={data.page >= data.totalPages}
+                className="hv gap-1"
+              >
+                {tc("next")}{" "}
+                <span className="ia ia-nudge">
+                  <ChevronRight size={16} />
+                </span>
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
-      {confirmId && (
-        <p className="text-sm text-error" role="alert">
-          {t("cancelConfirm")}
-        </p>
+      {cancelTarget && (
+        <ConfirmDialog
+          open={!!cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          onConfirm={handleCancel}
+          title={t("cancelTitle")}
+          message={t("cancelMessage", { name: cancelTarget.webhookNameSnapshot })}
+          confirmLabel={t("cancelConfirmLabel")}
+          loading={cancelling}
+        />
       )}
     </div>
   );
