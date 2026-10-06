@@ -103,7 +103,8 @@
     "noSearchResults": "Tidak ada template yang cocok dengan pencarian.",
     "eyebrow": "pustaka template",
     "createTemplate": "Buat template",
-    "noSearchResultsHint": "Coba kata kunci lain atau atur ulang filter."
+    "noSearchResultsHint": "Coba kata kunci lain atau atur ulang filter.",
+    "backToGallery": "Kembali ke Galeri"
   },
   "dashboard": {
     "greeting": "Hai, {name}! 👋",
