@@ -584,12 +584,28 @@ export type GalleryTemplate = {
   importCount: number;
   author: string;
   sharedAt: Date;
+  /** Cuplikan isi pesan (content / embed pertama), maks ~140 karakter. */
+  preview: string;
 };
+
+/** Ambil cuplikan teks dari payload Discord untuk preview kartu galeri. */
+function payloadPreview(payload: unknown): string {
+  if (!payload || typeof payload !== "object") return "";
+  const p = payload as Record<string, unknown>;
+  const content = typeof p.content === "string" ? p.content.trim() : "";
+  if (content) return content.slice(0, 140);
+  const embeds = Array.isArray(p.embeds) ? p.embeds : [];
+  const em = embeds[0] as Record<string, unknown> | undefined;
+  const title = typeof em?.title === "string" ? em.title.trim() : "";
+  const desc = typeof em?.description === "string" ? em.description.trim() : "";
+  return [title, desc].filter(Boolean).join(" — ").slice(0, 140);
+}
 
 export async function getGalleryTemplates(opts: {
   search?: string;
   sort?: "popular" | "latest";
   limit?: number;
+  tag?: string;
 }): Promise<GalleryTemplate[]> {
   // Public endpoint: throttle by IP so the gallery can't be scraped at will.
   const rl = await checkRateLimit("publicTemplate", await getClientIp());
@@ -598,7 +614,7 @@ export async function getGalleryTemplates(opts: {
     throw new Error(t("rateLimited"));
   }
 
-  const { search, sort = "popular", limit = 48 } = opts;
+  const { search, sort = "popular", limit = 48, tag } = opts;
 
   const conditions = [eq(templateShares.isActive, true)];
 
@@ -611,6 +627,11 @@ export async function getGalleryTemplates(opts: {
       sql`array_to_string(${templates.tags}, ' ') ilike ${pattern}`,
     );
     if (match) conditions.push(match);
+  }
+
+  const tg = tag?.trim();
+  if (tg) {
+    conditions.push(sql`${tg} = ANY(${templates.tags})`);
   }
 
   const orderBy =
@@ -627,6 +648,7 @@ export async function getGalleryTemplates(opts: {
       importCount: templateShares.importCount,
       author: users.username,
       sharedAt: templateShares.createdAt,
+      payload: templates.payload,
     })
     .from(templateShares)
     .innerJoin(templates, eq(templateShares.templateId, templates.id))
@@ -635,7 +657,16 @@ export async function getGalleryTemplates(opts: {
     .orderBy(orderBy)
     .limit(limit);
 
-  return rows;
+  return rows.map((r) => ({
+    slug: r.slug,
+    name: r.name,
+    description: r.description,
+    tags: r.tags,
+    importCount: r.importCount,
+    author: r.author,
+    sharedAt: r.sharedAt,
+    preview: payloadPreview(r.payload),
+  }));
 }
 
 /* --- Distinct tags across ALL user templates (for the filter chips) --- */
