@@ -947,7 +947,6 @@
     "scheduleFailed": "Failed to schedule message",
     "invalidDate": "Pick a valid date and time.",
     "loading": "Loading…",
-    "empty": "Nothing scheduled. Compose a message in the editor and hit Schedule.",
     "filterUpcoming": "Upcoming",
     "filterHistory": "History",
     "filterAll": "All",
@@ -961,6 +960,8 @@
     "status_sending": "Sending",
     "status_sent": "Sent",
     "status_failed": "Failed",
-    "status_cancelled": "Cancelled"
+    "status_cancelled": "Cancelled",
+    "emptyUpcoming": "Nothing scheduled yet. Compose a message in the editor and hit Schedule.",
+    "emptyHistory": "No history yet. Sent, failed and cancelled schedules will appear here."
   }
 }

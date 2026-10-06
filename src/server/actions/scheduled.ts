@@ -25,12 +25,32 @@ function toPublic(s: typeof scheduledMessages.$inferSelect) {
     webhookNameSnapshot: s.webhookNameSnapshot,
     isManualUrl: !s.webhookId,
     mode: s.mode,
+    preview: payloadPreview(s.payload),
     scheduledAt: s.scheduledAt.toISOString(),
     status: s.status,
     attempts: s.attempts,
     lastError: s.lastError,
     createdAt: s.createdAt.toISOString(),
   };
+}
+
+/** Short human-readable excerpt of the payload for list rows. */
+function payloadPreview(payload: unknown): string {
+  if (!payload || typeof payload !== "object") return "";
+  const p = payload as Record<string, unknown>;
+  const content = typeof p.content === "string" ? p.content.trim() : "";
+  if (content) return content.slice(0, 90);
+  const embeds = Array.isArray(p.embeds)
+    ? (p.embeds as Array<Record<string, unknown>>)
+    : [];
+  const e0 = embeds[0];
+  if (e0 && typeof e0 === "object") {
+    const title = typeof e0.title === "string" ? e0.title.trim() : "";
+    const desc = typeof e0.description === "string" ? e0.description.trim() : "";
+    const joined = (title + (title && desc ? " — " : "") + desc).trim();
+    if (joined) return joined.slice(0, 90);
+  }
+  return "";
 }
 
 export type ScheduledPublic = ReturnType<typeof toPublic>;

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Badge, FilterChip } from "@/components/ui/badge";
 import { toast } from "@/components/ui/toast";
 import {
   listScheduledAction,
@@ -12,7 +12,6 @@ import {
   type ScheduledPublic,
 } from "@/server/actions/scheduled";
 import { CalendarClock, Ban, Inbox } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 type Filter = "upcoming" | "history" | "all";
 
@@ -24,7 +23,11 @@ const statusVariant: Record<string, "info" | "warning" | "success" | "error" | "
   cancelled: "default",
 };
 
-function formatDateTime(iso: string, locale: string): string {
+function staggerStyle(i: number) {
+  return { "--stagger-index": i } as React.CSSProperties;
+}
+
+function formatAbsolute(iso: string, locale: string): string {
   try {
     return new Date(iso).toLocaleString(locale, {
       day: "numeric",
@@ -32,6 +35,24 @@ function formatDateTime(iso: string, locale: string): string {
       hour: "2-digit",
       minute: "2-digit",
     });
+  } catch {
+    return iso;
+  }
+}
+
+/** Locale-aware relative time: "in 25 minutes", "2 hours ago". */
+function formatRelative(iso: string, locale: string): string {
+  try {
+    const diffMs = new Date(iso).getTime() - Date.now();
+    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+    const abs = Math.abs(diffMs);
+    const minute = 60_000;
+    const hour = 3_600_000;
+    const day = 86_400_000;
+    if (abs < minute) return rtf.format(Math.round(diffMs / 1000), "second");
+    if (abs < hour) return rtf.format(Math.round(diffMs / minute), "minute");
+    if (abs < day) return rtf.format(Math.round(diffMs / hour), "hour");
+    return rtf.format(Math.round(diffMs / day), "day");
   } catch {
     return iso;
   }
@@ -81,6 +102,16 @@ export function ScheduledList() {
     }
   };
 
+  const counts = {
+    upcoming: 0,
+    history: 0,
+    all: (items ?? []).length,
+  };
+  for (const s of items ?? []) {
+    if (s.status === "pending" || s.status === "sending") counts.upcoming++;
+    else counts.history++;
+  }
+
   const filtered = (items ?? []).filter((s) => {
     if (filter === "upcoming") return s.status === "pending" || s.status === "sending";
     if (filter === "history")
@@ -96,21 +127,11 @@ export function ScheduledList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap stagger-in" role="group" aria-label={t("title")}>
         {filters.map(([f, label]) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setFilter(f)}
-            className={cn(
-              "px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-[0.12em] border transition-colors",
-              filter === f
-                ? "bg-accent-soft text-accent border-accent/30"
-                : "text-fg-secondary border-border-ink hover:text-fg hover:border-border-strong",
-            )}
-          >
-            {label}
-          </button>
+          <FilterChip key={f} active={filter === f} onClick={() => setFilter(f)}>
+            {label} <span className="opacity-60">{counts[f]}</span>
+          </FilterChip>
         ))}
       </div>
 
@@ -120,26 +141,44 @@ export function ScheduledList() {
         <Card>
           <CardBody className="flex flex-col items-center gap-2 py-10 text-center">
             <Inbox size={28} className="text-fg-tertiary" />
-            <p className="text-sm text-fg-secondary">{t("empty")}</p>
+            <p className="text-sm text-fg-secondary">
+              {filter === "history" ? t("emptyHistory") : t("emptyUpcoming")}
+            </p>
           </CardBody>
         </Card>
       ) : (
         <ul className="space-y-2">
-          {filtered.map((s) => (
-            <li key={s.id} className="panel p-3 flex items-center gap-3 flex-wrap">
-              <CalendarClock size={18} className="text-fg-tertiary shrink-0" />
-              <div className="flex-1 min-w-[180px]">
-                <div className="font-bold flex items-center gap-2 flex-wrap">
-                  {s.webhookNameSnapshot}
-                  <Badge variant={statusVariant[s.status] ?? "default"}>
+          {filtered.map((s, i) => (
+            <li
+              key={s.id}
+              className="panel p-4 flex items-center gap-3 stagger-in"
+              style={staggerStyle(i)}
+            >
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+                <CalendarClock size={16} />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold truncate">{s.webhookNameSnapshot}</span>
+                  <Badge
+                    variant={statusVariant[s.status] ?? "default"}
+                    pulse={s.status === "sending"}
+                  >
                     {t(`status_${s.status}`)}
                   </Badge>
-                  <span className="font-mono text-xs text-fg-tertiary">{s.mode}</span>
                 </div>
-                <div className="text-xs text-fg-tertiary mt-1">
-                  {formatDateTime(s.scheduledAt, locale)}
+                {s.preview && (
+                  <p className="text-sm text-fg-secondary truncate mt-0.5">
+                    {s.preview}
+                  </p>
+                )}
+                <div className="text-xs text-fg-tertiary mt-1 flex items-center gap-2 flex-wrap">
+                  <span title={formatAbsolute(s.scheduledAt, locale)}>
+                    {formatRelative(s.scheduledAt, locale)}
+                  </span>
+                  <span className="font-mono">{s.mode}</span>
                   {s.lastError && (
-                    <span className="text-error"> · {s.lastError}</span>
+                    <span className="text-error truncate">· {s.lastError}</span>
                   )}
                 </div>
               </div>
@@ -148,7 +187,7 @@ export function ScheduledList() {
                   variant={confirmId === s.id ? "destructive" : "ghost"}
                   onClick={() => handleCancel(s.id)}
                   disabled={cancelling}
-                  className="gap-2"
+                  className="gap-2 shrink-0"
                 >
                   <Ban size={16} />
                   {confirmId === s.id ? t("cancelConfirmButton") : t("cancelButton")}

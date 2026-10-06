@@ -1,5 +1,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { ScheduledList } from "@/components/scheduled/scheduled-list";
+import { PageHeader } from "@/components/ui/page-header";
+import { Mascot } from "@/components/mascot";
 
 export default async function ScheduledPage({
   params,
@@ -9,14 +11,16 @@ export default async function ScheduledPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("scheduled");
+  const tn = await getTranslations("nav");
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div>
-        <div className="label mb-2">{t("title")}</div>
-        <h2 className="uppercase">{t("title")}</h2>
-        <p className="text-sm text-fg-secondary mt-2">{t("desc")}</p>
-      </div>
+      <PageHeader
+        eyebrow={tn("scheduled")}
+        title={t("title")}
+        description={t("desc")}
+        media={<Mascot mini size={52} />}
+      />
       <ScheduledList />
     </div>
   );
