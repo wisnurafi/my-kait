@@ -10,11 +10,12 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { createPortal } from "react-dom";
+import { useLocale, useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { Link2, SendHorizontal, TrendingUp } from "lucide-react";
+import { Link2, SendHorizontal, TrendingUp, LayoutTemplate } from "lucide-react";
 import type { DailyStat, WebhookStat } from "@/server/actions/stats";
 
 /* --- Animated count-up: rAF, easeOutCubic, 800ms --- */
@@ -57,6 +58,12 @@ function parseLocalDate(iso: string): Date {
      flips left if the right side would clip — never below (the legend lives
      there) and never a centered overlay
    - final pass: hard-clamp into the viewport on both axes
+   The tooltip is portaled to document.body with position:fixed (viewport
+   coords). This escapes ancestor stacking contexts — e.g. the .stagger-in
+   wrappers whose slide-in-up animation (fill:forwards, translateY(0))
+   permanently creates one, which used to let the donut card paint OVER the
+   bar-chart tooltip. useChartTip hides the tooltip on scroll/resize so the
+   fixed position never detaches from its anchor.
    No tooltip animation exists, so prefers-reduced-motion needs no handling. */
 type TipPlacement = "bar" | "donut";
 
@@ -93,6 +100,19 @@ function useChartTip() {
     });
   };
   const hide = () => setTip(null);
+
+  // With the tooltip portaled to <body> (see ChartTip), it no longer moves
+  // with the page — hide it on scroll/resize like a native tooltip would.
+  useEffect(() => {
+    const onScroll = () => setTip(null);
+    window.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll, { capture: true });
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
   return { containerRef, tip, show, hide };
 }
 
@@ -101,7 +121,8 @@ const TIP_VIEWPORT_MARGIN = 8; // min px between tooltip and viewport edge
 
 function ChartTip({ tip }: { tip: NonNullable<TipState> }) {
   const ref = useRef<HTMLDivElement>(null);
-  // Container-relative coords, set after the tooltip measures itself.
+  // Viewport coords (the tooltip is position:fixed via portal), set after
+  // the tooltip measures itself.
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
 
   useLayoutEffect(() => {
@@ -112,7 +133,7 @@ function ChartTip({ tip }: { tip: NonNullable<TipState> }) {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const M = TIP_VIEWPORT_MARGIN;
-    const { anchor, container, placement } = tip;
+    const { anchor, placement } = tip;
 
     let leftV = anchor.cx - tw / 2; // viewport/client coords
     let topV: number;
@@ -142,17 +163,21 @@ function ChartTip({ tip }: { tip: NonNullable<TipState> }) {
     leftV = Math.max(M, Math.min(vw - tw - M, leftV));
     topV = Math.max(M, Math.min(vh - th - M, topV));
 
-    // Convert viewport coords to container-relative (tooltip is absolutely
-    // positioned inside the relative container).
-    setPos({ left: leftV - container.left, top: topV - container.top });
+    setPos({ left: leftV, top: topV });
   }, [tip]);
 
-  return (
+  // Portal to <body>: escapes ancestor stacking contexts (see contract above).
+  // Client-only by construction — tip state is only ever set from events.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div
       ref={ref}
       className="chart-tip"
       role="status"
       style={{
+        // Inline (JS-side): overrides .chart-tip's position:absolute so the
+        // portal actually floats above everything, incl. sibling cards.
+        position: "fixed",
         left: pos?.left ?? 0,
         top: pos?.top ?? 0,
         // Hidden until measured so there's no one-frame jump from (0,0).
@@ -160,7 +185,8 @@ function ChartTip({ tip }: { tip: NonNullable<TipState> }) {
       }}
     >
       {tip.content}
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -202,20 +228,47 @@ function TipRows({
 }
 
 /* --- 3 count cards: mono big number, micro label, animated icon box --- */
+type StatDelta = { text: string; tone: "up" | "down" } | null;
+
 export function StatCards({
   webhooks,
   sent,
   successRate,
+  templates,
+  deltas,
   caption,
   daily,
 }: {
   webhooks: number;
   sent: number;
   successRate: number;
+  templates: number;
+  deltas: {
+    sentPct: number | null;
+    rateDelta: number | null;
+    webhooksNew: number;
+    templatesNew: number;
+  };
   caption?: string;
   daily?: DailyStat[];
 }) {
   const t = useTranslations("dashboard");
+
+  // Delta vs minggu lalu (null/0 = tidak ditampilkan, biar tidak noise).
+  const deltaWeek = (v: number | null, decimals = 0): StatDelta => {
+    if (v === null || v === 0) return null;
+    const up = v > 0;
+    const val = decimals > 0 ? Math.abs(v).toFixed(decimals) : String(Math.abs(v));
+    return {
+      text: t("statDeltaWeek", { arrow: up ? "▲" : "▼", v: val }),
+      tone: up ? "up" : "down",
+    };
+  };
+  const deltaMonth = (n: number): StatDelta => {
+    if (n <= 0) return null;
+    return { text: t("statDeltaMonth", { arrow: "▲", n }), tone: "up" };
+  };
+
   const stats: {
     label: string;
     value: number;
@@ -225,8 +278,8 @@ export function StatCards({
     hint?: string;
     meter?: boolean;
     spark?: number[];
+    delta: StatDelta;
   }[] = [
-    { label: t("webhooksCount"), value: webhooks, suffix: "", icon: Link2, ia: "ia-swing" },
     {
       label: t("messagesSent"),
       value: sent,
@@ -234,6 +287,7 @@ export function StatCards({
       icon: SendHorizontal,
       ia: "ia-launch",
       spark: daily?.map((d) => d.sent),
+      delta: deltaWeek(deltas.sentPct),
     },
     {
       label: t("successRate"),
@@ -243,12 +297,29 @@ export function StatCards({
       ia: "ia-eq",
       hint: t("successRateHint"),
       meter: true,
+      delta: deltaWeek(deltas.rateDelta, 1),
+    },
+    {
+      label: t("activeWebhooks"),
+      value: webhooks,
+      suffix: "",
+      icon: Link2,
+      ia: "ia-swing",
+      delta: deltaMonth(deltas.webhooksNew),
+    },
+    {
+      label: t("templatesCount"),
+      value: templates,
+      suffix: "",
+      icon: LayoutTemplate,
+      ia: "ia-pop",
+      delta: deltaMonth(deltas.templatesNew),
     },
   ];
   return (
     <div className="space-y-2">
       {caption && <p className="text-[11px] text-fg-tertiary">{caption}</p>}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {stats.map((s, i) => (
           <StatCard
             key={s.label}
@@ -261,6 +332,7 @@ export function StatCards({
             hint={s.hint}
             meter={s.meter}
             spark={s.spark}
+            delta={s.delta}
           />
         ))}
       </div>
@@ -287,7 +359,7 @@ function Sparkline({ values }: { values: number[] }) {
       preserveAspectRatio="none"
       aria-hidden="true"
       focusable="false"
-      className="mt-4 h-[30px] w-full"
+      className="h-[30px] w-full"
     >
       <polyline
         points={pts}
@@ -312,6 +384,7 @@ function StatCard({
   hint,
   meter,
   spark,
+  delta,
 }: {
   label: string;
   value: number;
@@ -322,37 +395,56 @@ function StatCard({
   hint?: string;
   meter?: boolean;
   spark?: number[];
+  delta?: StatDelta;
 }) {
+  const locale = useLocale();
   const count = useCountUp(value);
+  // Pemisah ribuan ikut locale (1.284 / 1,284) seperti di referensi.
+  const grouped = count.toLocaleString(locale === "id" ? "id-ID" : "en-US");
   const card = (
-    <Card className={cn("stat-card p-5", hint && "cursor-help")}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="label mb-2">{label}</div>
-          <div className="font-mono text-5xl leading-none tabular-nums text-fg">
-            {count}
-            <span className="text-2xl text-fg-secondary ml-1">{suffix}</span>
-          </div>
-        </div>
-        <div className="hv rounded-xl p-3 bg-accent-soft border border-accent/20 shrink-0">
+    <Card className={cn("stat-card p-5 h-full flex flex-col", hint && "cursor-help")}>
+      <div className="flex items-center gap-3">
+        <div className="hv rounded-xl p-2.5 bg-accent-soft border border-accent/20 shrink-0">
           <span className={cn("ia", ia)}>
             <Icon size={20} className="text-accent" />
           </span>
         </div>
+        <div className="label">{label}</div>
       </div>
-      {meter && (
-        <div className="mt-4 h-1.5 rounded-full bg-sunken overflow-hidden" aria-hidden="true">
+      <div className="font-mono text-5xl leading-none tabular-nums text-fg mt-4">
+        {grouped}
+        {suffix && <span className="text-2xl text-fg-secondary ml-1">{suffix}</span>}
+      </div>
+      {/* mt-auto: visual + delta selalu rata bawah di semua card */}
+      <div className="mt-auto pt-4">
+        {meter && (
+          <div className="mb-3 h-1.5 rounded-full bg-sunken overflow-hidden" aria-hidden="true">
+            <div
+              className="h-full rounded-full bg-accent"
+              style={{ width: `${Math.min(100, Math.max(0, count))}%` }}
+            />
+          </div>
+        )}
+        {spark && spark.length > 1 && (
+          <div className="mb-3">
+            <Sparkline values={spark} />
+          </div>
+        )}
+        {delta && (
           <div
-            className="h-full rounded-full bg-accent"
-            style={{ width: `${Math.min(100, Math.max(0, count))}%` }}
-          />
-        </div>
-      )}
-      {spark && spark.length > 1 && <Sparkline values={spark} />}
+            className={cn(
+              "font-mono text-xs",
+              delta.tone === "up" ? "text-success" : "text-error",
+            )}
+          >
+            {delta.text}
+          </div>
+        )}
+      </div>
     </Card>
   );
   return (
-    <div className="stagger-in" style={{ "--stagger-index": index } as CSSProperties}>
+    <div className="stagger-in h-full" style={{ "--stagger-index": index } as CSSProperties}>
       {hint ? (
         <Tooltip content={hint} position="bottom">
           {card}

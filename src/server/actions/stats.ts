@@ -6,7 +6,7 @@
  */
 
 import { db } from "@/lib/db";
-import { messageLogs } from "@/lib/schema";
+import { messageLogs, webhooks as webhooksTable, templates as templatesTable } from "@/lib/schema";
 import { eq, and, gte, sql, desc } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
 
@@ -25,6 +25,13 @@ export async function getDashboardStats(): Promise<{
   webhooks: WebhookStat[];
   byStatus: StatusStat[];
   totals: { total: number; sent: number; failed: number; successRate: number };
+  deltas: {
+    sentPct: number | null;
+    rateDelta: number | null;
+    webhooksNew: number;
+    templates: number;
+    templatesNew: number;
+  };
 }> {
   const user = await requireAuth();
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -121,6 +128,43 @@ export async function getDashboardStats(): Promise<{
     .reduce((a, b) => a + b.count, 0);
   const total = sent + failed;
 
+  /* --- Stat card deltas: week-over-week + new-this-month (cheap counts) --- */
+  const now = Date.now();
+  const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+  const twoWeeksAgo = new Date(now - 14 * 24 * 60 * 60 * 1000);
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const [wowRows, newCounts] = await Promise.all([
+    db
+      .select({
+        sentNow: sql<number>`count(*) filter (where ${messageLogs.createdAt} >= ${weekAgo} and ${messageLogs.status} in ('sent','edited'))::int`,
+        failedNow: sql<number>`count(*) filter (where ${messageLogs.createdAt} >= ${weekAgo} and ${messageLogs.status} in ('failed','rate_limited'))::int`,
+        sentPrev: sql<number>`count(*) filter (where ${messageLogs.createdAt} >= ${twoWeeksAgo} and ${messageLogs.createdAt} < ${weekAgo} and ${messageLogs.status} in ('sent','edited'))::int`,
+        failedPrev: sql<number>`count(*) filter (where ${messageLogs.createdAt} >= ${twoWeeksAgo} and ${messageLogs.createdAt} < ${weekAgo} and ${messageLogs.status} in ('failed','rate_limited'))::int`,
+      })
+      .from(messageLogs)
+      .where(eq(messageLogs.userId, user.id)),
+    Promise.all([
+      db
+        .select({ n: sql<number>`count(*) filter (where ${webhooksTable.createdAt} >= ${monthStart})::int` })
+        .from(webhooksTable)
+        .where(eq(webhooksTable.userId, user.id)),
+      db
+        .select({
+          total: sql<number>`count(*)::int`,
+          newThisMonth: sql<number>`count(*) filter (where ${templatesTable.createdAt} >= ${monthStart})::int`,
+        })
+        .from(templatesTable)
+        .where(eq(templatesTable.userId, user.id)),
+    ]),
+  ]);
+  const w = wowRows[0] ?? { sentNow: 0, failedNow: 0, sentPrev: 0, failedPrev: 0 };
+  const deliveredNow = w.sentNow + w.failedNow;
+  const deliveredPrev = w.sentPrev + w.failedPrev;
+  const rateNow = deliveredNow > 0 ? (w.sentNow / deliveredNow) * 100 : 0;
+  const ratePrev = deliveredPrev > 0 ? (w.sentPrev / deliveredPrev) * 100 : 0;
+
   return {
     daily,
     webhooks,
@@ -130,6 +174,15 @@ export async function getDashboardStats(): Promise<{
       sent,
       failed,
       successRate: total === 0 ? 0 : Math.round((sent / total) * 100),
+    },
+    deltas: {
+      // % change in sent messages vs previous 7 days (null = not enough data)
+      sentPct: w.sentPrev > 0 ? Math.round(((w.sentNow - w.sentPrev) / w.sentPrev) * 100) : null,
+      // success-rate change in points vs previous 7 days, 1 decimal
+      rateDelta: deliveredNow > 0 && deliveredPrev > 0 ? Math.round((rateNow - ratePrev) * 10) / 10 : null,
+      webhooksNew: newCounts[0][0]?.n ?? 0,
+      templates: newCounts[1][0]?.total ?? 0,
+      templatesNew: newCounts[1][0]?.newThisMonth ?? 0,
     },
   };
 }
