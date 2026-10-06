@@ -950,7 +950,7 @@
     "filterUpcoming": "Upcoming",
     "filterHistory": "History",
     "filterAll": "All",
-    "cancelButton": "Cancel",
+    "cancelButton": "Cancel scheduled",
     "cancelledOk": "Schedule cancelled",
     "cancelFailed": "Failed to cancel",
     "loadFailed": "Failed to load scheduled messages",
@@ -962,6 +962,7 @@
     "emptyUpcoming": "Nothing scheduled yet. Compose a message in the editor and hit Schedule.",
     "emptyHistory": "No history yet. Sent, failed and cancelled schedules will appear here.",
     "cancelTitle": "Cancel scheduled message",
-    "cancelMessage": "Stop \"{name}\" from being sent? This cannot be undone."
+    "cancelMessage": "Stop \"{name}\" from being sent? This cannot be undone.",
+    "cancelConfirmLabel": "Confirm cancel scheduled"
   }
 }

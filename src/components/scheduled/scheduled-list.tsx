@@ -202,7 +202,7 @@ export function ScheduledList() {
           onConfirm={handleCancel}
           title={t("cancelTitle")}
           message={t("cancelMessage", { name: cancelTarget.webhookNameSnapshot })}
-          confirmLabel={t("cancelButton")}
+          confirmLabel={t("cancelConfirmLabel")}
           loading={cancelling}
         />
       )}
