@@ -149,6 +149,7 @@
     "chart": {
       "sent": "Terkirim",
       "failed": "Gagal",
+      "deleted": "Dihapus",
       "total": "Total",
       "successRate": "Success rate",
       "tipHint": "arahkan kursor / fokus ke tiap bar",
