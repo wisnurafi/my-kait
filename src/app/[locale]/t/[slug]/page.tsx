@@ -11,11 +11,7 @@ import { ReportButton } from "@/components/templates/report-button";
 import { ImportTemplateButton } from "@/components/templates/import-template-button";
 import { Link } from "@/i18n/routing";
 import { DiscordLoginButton } from "@/components/auth/discord-login-button";
-import { LandingLocaleToggle } from "@/components/landing/locale-toggle";
-import {
-  LandingThemeToggle,
-  PublicThemeManager,
-} from "@/components/landing/theme-toggle";
+import { PublicThemeManager } from "@/components/landing/theme-toggle";
 import { auth } from "@/lib/auth";
 import { ArrowLeft } from "lucide-react";
 
@@ -89,8 +85,6 @@ export default async function SharedTemplatePage({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <LandingLocaleToggle />
-            <LandingThemeToggle />
             <Link href="/" className={buttonClasses("ghost", "sm")}>
               My Kait
             </Link>
