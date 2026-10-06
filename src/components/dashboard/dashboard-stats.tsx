@@ -536,7 +536,7 @@ function DailyChart({ daily }: { daily: DailyStat[] }) {
   };
 
   return (
-    <Card className="p-5">
+    <Card className="p-5 h-full">
       <div className="flex items-start justify-between gap-2 flex-wrap mb-4">
         <div>
           <h3 className="text-lg">{t("stats.perDay")}</h3>
@@ -767,7 +767,7 @@ function SuccessDonut({
   }, [target]);
 
   return (
-    <Card className="p-5 flex flex-col">
+    <Card className="p-5 h-full flex flex-col">
       <h3 className="text-lg mb-4">{t("stats.successRate")}</h3>
       {/* Donut block vertically centered in the stretched panel so the
           card doesn't end with dead space when the chart panel is taller. */}

@@ -28,7 +28,8 @@ export default function DashboardLoading() {
       {/* Stat cards + caption */}
       <div className="space-y-2">
         <Skeleton className="h-3 w-32" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <SkeletonStatCard />
           <SkeletonStatCard />
           <SkeletonStatCard />
           <SkeletonStatCard />
