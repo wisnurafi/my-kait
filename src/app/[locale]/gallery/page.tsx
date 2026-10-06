@@ -6,7 +6,7 @@ import { Mascot } from "@/components/mascot";
 import { HookLogo } from "@/components/hook-logo";
 import { Badge } from "@/components/ui/badge";
 import { DiscordLoginButton } from "@/components/auth/discord-login-button";
-import { Download, ArrowUpRight, Search } from "lucide-react";
+import { Download, ArrowUpRight, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PublicThemeManager } from "@/components/landing/theme-toggle";
 
@@ -15,23 +15,39 @@ export default async function GalleryPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ search?: string; sort?: string }>;
+  searchParams: Promise<{ search?: string; sort?: string; tag?: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("gallery");
 
-  const { search, sort } = await searchParams;
+  const { search, sort, tag } = await searchParams;
   const activeSort = sort === "latest" ? "latest" : "popular";
-  const templates = await getGalleryTemplates({ search, sort: activeSort });
+  const activeTag = tag?.trim() || undefined;
+  const templates = await getGalleryTemplates({
+    search,
+    sort: activeSort,
+    tag: activeTag,
+  });
   const session = await auth();
 
-  const sortHref = (s: "popular" | "latest") => {
+  // Bangun query string dengan patch parsial (null = hapus param).
+  const buildHref = (patch: {
+    search?: string | null;
+    sort?: "popular" | "latest";
+    tag?: string | null;
+  }) => {
     const sp = new URLSearchParams();
-    if (search) sp.set("search", search);
-    sp.set("sort", s);
+    const s = patch.search !== undefined ? patch.search : search;
+    const tg = patch.tag !== undefined ? patch.tag : activeTag;
+    if (s) sp.set("search", s);
+    if (tg) sp.set("tag", tg);
+    sp.set("sort", patch.sort ?? activeSort);
     return `?${sp.toString()}`;
   };
+  const tagHref = (tg: string) => buildHref({ tag: tg });
+
+  const hasFilter = Boolean(search?.trim() || activeTag);
 
   return (
     <div className="min-h-screen">
@@ -72,7 +88,7 @@ export default async function GalleryPage({
         </div>
 
         {/* search + sort */}
-        <div className="flex flex-wrap items-center gap-3 mb-8">
+        <div className="flex flex-wrap items-center gap-3 mb-4">
           <form method="GET" className="flex gap-2 flex-1 min-w-[240px] max-w-md">
             <div className="relative flex-1">
               <Search
@@ -90,6 +106,7 @@ export default async function GalleryPage({
             {activeSort !== "popular" && (
               <input type="hidden" name="sort" value={activeSort} />
             )}
+            {activeTag && <input type="hidden" name="tag" value={activeTag} />}
             <button
               type="submit"
               className="h-10 px-4 rounded-lg bg-accent text-[#0a0a0b] text-sm font-semibold hover:brightness-110 transition-all cursor-pointer"
@@ -106,7 +123,7 @@ export default async function GalleryPage({
             ).map((s) => (
               <Link
                 key={s.key}
-                href={sortHref(s.key)}
+                href={buildHref({ sort: s.key })}
                 className={cn(
                   "px-4 h-10 inline-flex items-center text-sm font-semibold transition-colors",
                   activeSort === s.key
@@ -120,35 +137,93 @@ export default async function GalleryPage({
           </div>
         </div>
 
+        {/* result count + active filters */}
+        <div className="flex flex-wrap items-center gap-2 mb-8">
+          <span className="font-mono text-xs text-fg-tertiary">
+            {templates.length === 1
+              ? t("resultOne")
+              : t("results", { count: templates.length })}
+          </span>
+          {search?.trim() && (
+            <Link
+              href={buildHref({ search: null })}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border-ink bg-surface pl-3 pr-2 py-1 text-xs text-fg-secondary hover:text-fg hover:border-border-strong transition-colors"
+            >
+              “{search.trim()}”
+              <X size={12} />
+            </Link>
+          )}
+          {activeTag && (
+            <Link
+              href={buildHref({ tag: null })}
+              className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft pl-3 pr-2 py-1 text-xs text-accent hover:brightness-110 transition-all"
+            >
+              #{activeTag}
+              <X size={12} />
+            </Link>
+          )}
+          {hasFilter && (
+            <Link
+              href={buildHref({ search: null, tag: null })}
+              className="text-xs font-medium text-fg-tertiary hover:text-fg transition-colors underline underline-offset-2"
+            >
+              {t("clearFilter")}
+            </Link>
+          )}
+        </div>
+
         {/* grid */}
         {templates.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {templates.map((tpl) => (
-              <Link
+              <div
                 key={tpl.slug}
-                href={`/t/${tpl.slug}`}
-                className="panel lift p-5 flex flex-col gap-3 no-underline group"
+                className="panel lift p-5 flex flex-col gap-3 group"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-[17px] leading-snug group-hover:text-accent transition-colors">
-                    {tpl.name}
-                  </h3>
-                  <ArrowUpRight
-                    size={16}
-                    className="text-fg-tertiary group-hover:text-accent shrink-0 mt-1 transition-colors"
-                  />
-                </div>
-                {tpl.description && (
-                  <p className="text-sm text-fg-secondary line-clamp-2">
-                    {tpl.description}
-                  </p>
-                )}
+                <Link
+                  href={`/t/${tpl.slug}`}
+                  className="no-underline flex flex-col gap-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-[17px] leading-snug group-hover:text-accent transition-colors">
+                      {tpl.name}
+                    </h3>
+                    <ArrowUpRight
+                      size={16}
+                      className="text-fg-tertiary group-hover:text-accent shrink-0 mt-1 transition-colors"
+                    />
+                  </div>
+                  {tpl.description && (
+                    <p className="text-sm text-fg-secondary line-clamp-2">
+                      {tpl.description}
+                    </p>
+                  )}
+                  {tpl.preview && (
+                    <p className="border-l-2 border-accent/40 pl-3 font-mono text-[12px] leading-relaxed text-fg-tertiary line-clamp-2">
+                      {tpl.preview}
+                    </p>
+                  )}
+                </Link>
                 {tpl.tags && tpl.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
-                    {tpl.tags.slice(0, 4).map((tag) => (
-                      <Badge key={tag} variant="default">
-                        {tag}
-                      </Badge>
+                    {tpl.tags.slice(0, 4).map((tg) => (
+                      <Link
+                        key={tg}
+                        href={tagHref(tg)}
+                        className="no-underline"
+                        aria-label={`#${tg}`}
+                      >
+                        <Badge
+                          variant="default"
+                          className={cn(
+                            "cursor-pointer transition-colors hover:border-accent/40 hover:text-accent",
+                            tg === activeTag &&
+                              "border-accent/40 bg-accent-soft text-accent",
+                          )}
+                        >
+                          #{tg}
+                        </Badge>
+                      </Link>
                     ))}
                   </div>
                 )}
@@ -161,7 +236,7 @@ export default async function GalleryPage({
                     {tpl.importCount}
                   </span>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         ) : (
@@ -171,6 +246,14 @@ export default async function GalleryPage({
               <h3 className="mb-1">{t("emptyTitle")}</h3>
               <p className="text-sm text-fg-secondary">{t("emptyDesc")}</p>
             </div>
+            {hasFilter && (
+              <Link
+                href={buildHref({ search: null, tag: null })}
+                className="text-sm font-semibold text-accent hover:brightness-110 transition-all"
+              >
+                {t("clearFilter")}
+              </Link>
+            )}
           </div>
         )}
       </main>

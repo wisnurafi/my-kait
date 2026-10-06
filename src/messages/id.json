@@ -675,7 +675,10 @@
     "latest": "Terbaru",
     "emptyTitle": "Template tidak ditemukan",
     "emptyDesc": "Coba kata kunci lain, atau jadi yang pertama membagikan.",
-    "loginDiscord": "Login dengan Discord"
+    "loginDiscord": "Login dengan Discord",
+    "resultOne": "1 template",
+    "results": "{count} template",
+    "clearFilter": "Hapus filter"
   },
   "palette": {
     "title": "Command palette",

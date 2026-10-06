@@ -675,7 +675,10 @@
     "latest": "Latest",
     "emptyTitle": "No templates found",
     "emptyDesc": "Try a different keyword, or be the first to share one.",
-    "loginDiscord": "Login with Discord"
+    "loginDiscord": "Login with Discord",
+    "resultOne": "1 template",
+    "results": "{count} templates",
+    "clearFilter": "Clear filter"
   },
   "palette": {
     "title": "Command palette",
