@@ -176,10 +176,24 @@ export async function getDashboardStats(): Promise<{
       successRate: total === 0 ? 0 : Math.round((sent / total) * 100),
     },
     deltas: {
-      // % change in sent messages vs previous 7 days (null = not enough data)
-      sentPct: w.sentPrev > 0 ? Math.round(((w.sentNow - w.sentPrev) / w.sentPrev) * 100) : null,
-      // success-rate change in points vs previous 7 days, 1 decimal
-      rateDelta: deliveredNow > 0 && deliveredPrev > 0 ? Math.round((rateNow - ratePrev) * 10) / 10 : null,
+      // % change in sent messages vs previous 7 days.
+      // null = no data at all; 100 = new activity (prev 0, now > 0).
+      sentPct:
+        w.sentPrev > 0
+          ? Math.round(((w.sentNow - w.sentPrev) / w.sentPrev) * 100)
+          : w.sentNow > 0
+            ? 100
+            : null,
+      // success-rate change in points vs previous 7 days, 1 decimal.
+      // null = no data at all; 100 = new activity (prev empty, now > 0).
+      rateDelta:
+        deliveredPrev > 0
+          ? deliveredNow > 0
+            ? Math.round((rateNow - ratePrev) * 10) / 10
+            : null
+          : deliveredNow > 0
+            ? 100
+            : null,
       webhooksNew: newCounts[0][0]?.n ?? 0,
       templates: newCounts[1][0]?.total ?? 0,
       templatesNew: newCounts[1][0]?.newThisMonth ?? 0,

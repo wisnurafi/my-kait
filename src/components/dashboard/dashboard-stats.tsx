@@ -353,6 +353,9 @@ function Sparkline({ values }: { values: number[] }) {
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
+  // Area fill di bawah garis: data jarang (banyak nol) tetap kelihatan
+  // seperti mini chart yang disengaja, bukan garis rusak.
+  const area = `0,${h} ${pts} ${w},${h}`;
   return (
     <svg
       viewBox={`0 0 ${w} ${h}`}
@@ -361,6 +364,7 @@ function Sparkline({ values }: { values: number[] }) {
       focusable="false"
       className="h-[30px] w-full"
     >
+      <polygon points={area} style={{ fill: "var(--accent-primary)" }} opacity={0.14} />
       <polyline
         points={pts}
         fill="none"
@@ -401,17 +405,30 @@ function StatCard({
   const count = useCountUp(value);
   // Pemisah ribuan ikut locale (1.284 / 1,284) seperti di referensi.
   const grouped = count.toLocaleString(locale === "id" ? "id-ID" : "en-US");
+  // Hint dipasang di label saja (bukan seluruh card): wrapper Tooltip memakai
+  // `inline-block` yang kalau membungkus Card akan merusak shrink-to-fit
+  // (angka + suffix ke-wrap, tinggi card tidak rata).
+  const labelNode = hint ? (
+    <Tooltip content={hint} position="top">
+      <span className="label cursor-help underline decoration-dotted decoration-fg-tertiary underline-offset-4">
+        {label}
+      </span>
+    </Tooltip>
+  ) : (
+    <div className="label">{label}</div>
+  );
   const card = (
-    <Card className={cn("stat-card p-5 h-full flex flex-col", hint && "cursor-help")}>
+    <Card className="stat-card p-5 h-full flex flex-col">
       <div className="flex items-center gap-3">
         <div className="hv rounded-xl p-2.5 bg-accent-soft border border-accent/20 shrink-0">
           <span className={cn("ia", ia)}>
             <Icon size={20} className="text-accent" />
           </span>
         </div>
-        <div className="label">{label}</div>
+        {labelNode}
       </div>
-      <div className="font-mono text-5xl leading-none tabular-nums text-fg mt-4">
+      {/* whitespace-nowrap: "87" + "%" tidak boleh pecah baris */}
+      <div className="font-mono text-5xl leading-none tabular-nums whitespace-nowrap text-fg mt-4">
         {grouped}
         {suffix && <span className="text-2xl text-fg-secondary ml-1">{suffix}</span>}
       </div>
@@ -445,13 +462,7 @@ function StatCard({
   );
   return (
     <div className="stagger-in h-full" style={{ "--stagger-index": index } as CSSProperties}>
-      {hint ? (
-        <Tooltip content={hint} position="bottom">
-          {card}
-        </Tooltip>
-      ) : (
-        card
-      )}
+      {card}
     </div>
   );
 }
