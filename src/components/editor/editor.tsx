@@ -44,8 +44,11 @@ import {
   ChevronUp,
   Save,
   SlidersHorizontal,
+  CalendarClock,
 } from "lucide-react";
 import { SaveTemplateModal } from "@/components/editor/save-template-modal";
+import { ScheduleDialog } from "@/components/editor/schedule-dialog";
+import { Link } from "@/i18n/routing";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
@@ -158,6 +161,7 @@ export function Editor({
   const [showJson, setShowJson] = useState(false);
   const [jsonText, setJsonText] = useState("");
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
 
   // Undo/redo history
   const [history, setHistory] = useState<EditorState[]>([]);
@@ -469,6 +473,10 @@ export function Editor({
       state.embeds.length <= 10
     );
   })();
+
+  // Scheduling is single-target only and not available in edit mode.
+  const canSchedule =
+    canSend && editMessageId === null && sendConfig.multiTarget.length === 0;
 
   /* --- Render --- */
 
@@ -905,6 +913,25 @@ export function Editor({
               <p className="text-center font-mono text-[11px] uppercase tracking-[0.14em] text-fg-tertiary">
                 {t("kbdSend", { mod: modKey })} · {t("kbdSave", { mod: modKey })}
               </p>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={pending || !canSchedule}
+                onClick={() => setShowSchedule(true)}
+                className="w-full gap-2"
+                title={t("scheduleHint")}
+              >
+                <CalendarClock size={18} />
+                {t("scheduleButton")}
+              </Button>
+              <div className="text-center">
+                <Link
+                  href="/scheduled"
+                  className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-tertiary hover:text-accent transition-colors"
+                >
+                  {t("viewScheduled")}
+                </Link>
+              </div>
             </form>
           </section>
         </div>
@@ -913,6 +940,28 @@ export function Editor({
       {/* Save as template modal */}
       {showSaveTemplate && (
         <SaveTemplateModal payload={payload} onClose={() => setShowSaveTemplate(false)} />
+      )}
+
+      {/* Schedule dialog */}
+      {showSchedule && (
+        <ScheduleDialog
+          open={showSchedule}
+          onClose={() => setShowSchedule(false)}
+          request={{
+            webhookId: sendConfig.webhookId,
+            manualUrl: sendConfig.manualUrl,
+            payload,
+            mode: state.mode,
+            customVars: showCustomVars
+              ? Object.fromEntries(
+                  customVarNames.map((n) => [n, varValues[n] ?? ""]),
+                )
+              : undefined,
+          }}
+          onScheduled={() => {
+            setResult(null);
+          }}
+        />
       )}
     </div>
   );

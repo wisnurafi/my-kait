@@ -12,6 +12,7 @@
  * - template_reports
  * - message_logs
  * - api_keys (public REST API keys, SHA-256 hash only — raw key never stored)
+ * - scheduled_messages (one-shot scheduled sends, dispatched by cron)
  */
 
 import {
@@ -55,6 +56,14 @@ export const reportStatusEnum = pgEnum("report_status", [
   "reviewed",
   "dismissed",
   "actioned",
+]);
+
+export const scheduledStatusEnum = pgEnum("scheduled_status", [
+  "pending",
+  "sending",
+  "sent",
+  "failed",
+  "cancelled",
 ]);
 
 /* --- Tables --- */
@@ -259,6 +268,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   templateFolders: many(templateFolders),
   messageLogs: many(messageLogs),
   apiKeys: many(apiKeys),
+  scheduledMessages: many(scheduledMessages),
 }));
 
 export const webhooksRelations = relations(webhooks, ({ one, many }) => ({
@@ -334,6 +344,54 @@ export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
   user: one(users, { fields: [apiKeys.userId], references: [users.id] }),
 }));
 
+/* --- Scheduled messages ---
+ *
+ * One-shot scheduled sends. A per-minute external cron (cron-job.org)
+ * hits /api/cron/dispatch-scheduled, which atomically claims due rows
+ * (pending -> sending) and sends them. Results are logged to
+ * message_logs with source='scheduled'.
+ */
+
+export const scheduledMessages = pgTable(
+  "scheduled_messages",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    webhookId: text("webhook_id").references(() => webhooks.id, {
+      onDelete: "set null",
+    }),
+    // For manual URL schedules: encrypted URL so dispatch works without a saved webhook
+    manualUrlEncrypted: text("manual_url_encrypted"),
+    manualUrlKeyVersion: text("manual_url_key_version"),
+    webhookNameSnapshot: text("webhook_name_snapshot").notNull(),
+    payload: jsonb("payload").notNull(),
+    mode: messageModeEnum("mode").notNull(),
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
+    status: scheduledStatusEnum("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
+    // Link to the message_logs row created by the dispatch run (no FK:
+    // logs are pruned after 30 days, schedules are kept)
+    sentLogId: text("sent_log_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("scheduled_messages_user_id_idx").on(table.userId),
+    dueIdx: index("scheduled_messages_due_idx").on(table.status, table.scheduledAt),
+  }),
+);
+
+export const scheduledMessagesRelations = relations(scheduledMessages, ({ one }) => ({
+  user: one(users, { fields: [scheduledMessages.userId], references: [users.id] }),
+  webhook: one(webhooks, {
+    fields: [scheduledMessages.webhookId],
+    references: [webhooks.id],
+  }),
+}));
+
 export const templateFoldersRelations = relations(templateFolders, ({ one, many }) => ({
   user: one(users, { fields: [templateFolders.userId], references: [users.id] }),
   templates: many(templates),
@@ -374,6 +432,7 @@ export type WebhookStatus = (typeof webhookStatusEnum.enumValues)[number];
 export type MessageStatus = (typeof messageStatusEnum.enumValues)[number];
 export type MessageMode = (typeof messageModeEnum.enumValues)[number];
 export type ReportStatus = (typeof reportStatusEnum.enumValues)[number];
+export type ScheduledStatus = (typeof scheduledStatusEnum.enumValues)[number];
 
 /* --- Types --- */
 

@@ -16,7 +16,7 @@ import { HookLogo } from "@/components/hook-logo";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { ThemeLanguageSwitcher } from "@/components/app/theme-language-switcher";
-import { LogOut, Home, Pencil, Link2, FileText, History, Settings, Globe, KeyRound } from "lucide-react";
+import { LogOut, Home, Pencil, Link2, FileText, History, Settings, Globe, KeyRound, CalendarClock } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", icon: Home, key: "dashboard", ia: "ia-pop" },
@@ -32,6 +32,7 @@ const navItems = [
 const desktopNavItems = [
   ...navItems,
   { href: "/api-keys", icon: KeyRound, key: "apiKeys", ia: "ia-jiggle" },
+  { href: "/scheduled", icon: CalendarClock, key: "scheduled", ia: "ia-ring" },
 ] as const;
 
 export function Navbar() {

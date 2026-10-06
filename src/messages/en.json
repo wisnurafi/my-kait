@@ -40,7 +40,8 @@
     "logs": "Logs",
     "settings": "Settings",
     "logout": "Log out",
-    "apiKeys": "API Keys"
+    "apiKeys": "API Keys",
+    "scheduled": "Scheduled"
   },
   "templates": {
     "title": "Templates",
@@ -511,7 +512,10 @@
     "removeEmbed": "Remove embed",
     "removeField": "Remove field",
     "tabWrite": "Write",
-    "tabPreview": "Preview"
+    "tabPreview": "Preview",
+    "scheduleButton": "Schedule",
+    "scheduleHint": "Schedule this message for later (single target only)",
+    "viewScheduled": "View scheduled →"
   },
   "logs": {
     "title": "Delivery History",
@@ -654,7 +658,11 @@
     "apiKeyNameRequired": "Give the key a name.",
     "apiKeyNameTooLong": "Key name is too long (max 50 characters).",
     "apiKeyLimitReached": "You already have 10 active keys. Revoke one first.",
-    "apiKeyNotFound": "API key not found."
+    "apiKeyNotFound": "API key not found.",
+    "scheduledInvalidDate": "Invalid date.",
+    "scheduledTooSoon": "Schedule at least 1 minute in the future.",
+    "scheduledTooFar": "Cannot schedule more than 1 year ahead.",
+    "scheduledNotFound": "Scheduled message not found."
   },
   "ping": {
     "active": "Webhook is active",
@@ -922,5 +930,37 @@
     "thError": "Error",
     "thMeaning": "Meaning",
     "tocLabel": "Table of contents"
+  },
+  "scheduled": {
+    "title": "Scheduled",
+    "desc": "Messages waiting to be sent. A cron job picks them up every minute — expect up to ~1 minute delay past the scheduled time.",
+    "dialogTitle": "Schedule message",
+    "dateLabel": "Send at",
+    "quick1h": "+1 hour",
+    "quick3h": "+3 hours",
+    "quickTomorrow9": "Tomorrow 09:00",
+    "granularityNote": "The scheduler runs every minute, so the message may go out up to ~1 minute after the chosen time.",
+    "cancel": "Cancel",
+    "confirmButton": "Schedule",
+    "scheduling": "Scheduling…",
+    "scheduledOk": "Message scheduled",
+    "scheduleFailed": "Failed to schedule message",
+    "invalidDate": "Pick a valid date and time.",
+    "loading": "Loading…",
+    "empty": "Nothing scheduled. Compose a message in the editor and hit Schedule.",
+    "filterUpcoming": "Upcoming",
+    "filterHistory": "History",
+    "filterAll": "All",
+    "cancelButton": "Cancel",
+    "cancelConfirmButton": "Confirm cancel",
+    "cancelConfirm": "Click cancel again to confirm. This cannot be undone.",
+    "cancelledOk": "Schedule cancelled",
+    "cancelFailed": "Failed to cancel",
+    "loadFailed": "Failed to load scheduled messages",
+    "status_pending": "Pending",
+    "status_sending": "Sending",
+    "status_sent": "Sent",
+    "status_failed": "Failed",
+    "status_cancelled": "Cancelled"
   }
 }
