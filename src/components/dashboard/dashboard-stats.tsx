@@ -41,7 +41,10 @@ function useCountUp(target: number, duration = 800) {
 
 /* --- Date helpers: parse "YYYY-MM-DD" as local date (no UTC shift) --- */
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
-const MONTH_KEYS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"] as const;
+// NOTE: kunci bulan mengikuti file locale (singkatan Indonesia: mei/agu/okt/des),
+// BUKAN singkatan Inggris — "oct"/"aug"/"may"/"dec" tidak ada di id.json/en.json
+// dan bikin key bocor ke UI (temuan tooltip Okt 2026).
+const MONTH_KEYS = ["jan", "feb", "mar", "mei", "jun", "jul", "agu", "sep", "okt", "nov", "des"] as const;
 
 function parseLocalDate(iso: string): Date {
   const [y, m, d] = iso.split("-").map(Number);
@@ -164,20 +167,26 @@ function ChartTip({ tip }: { tip: NonNullable<TipState> }) {
   );
 }
 
-/** Tooltip body: date row + Terkirim/Gagal/Total + success-rate foot. */
+/** Tooltip body: date row + Terkirim/Gagal/Dihapus/Total + success-rate foot.
+ *  - Baris Dihapus hanya tampil kalau > 0 (donut tidak punya data deleted).
+ *  - Success rate = sent / (sent + failed), SAMA dengan kartu Success Rate
+ *    dashboard (deleted = lifecycle event, bukan delivery failure). */
 function TipRows({
   date,
   sent,
   failed,
+  deleted = 0,
   total,
 }: {
   date: ReactNode;
   sent: number;
   failed: number;
+  deleted?: number;
   total: number;
 }) {
   const t = useTranslations("dashboard");
-  const rate = total > 0 ? Math.round((sent / total) * 100) : 0;
+  const delivered = sent + failed;
+  const rate = delivered > 0 ? Math.round((sent / delivered) * 100) : 0;
   return (
     <>
       <div className="tt-date">{date}</div>
@@ -189,6 +198,12 @@ function TipRows({
         <span>{t("chart.failed")}</span>
         <b className="err">{failed}</b>
       </div>
+      {deleted > 0 && (
+        <div className="tt-row">
+          <span>{t("chart.deleted")}</span>
+          <b className="text-fg-tertiary">{deleted}</b>
+        </div>
+      )}
       <div className="tt-row">
         <span>{t("chart.total")}</span>
         <b>{total}</b>
@@ -409,7 +424,7 @@ function DailyChart({ daily }: { daily: DailyStat[] }) {
   const showBar = (el: Element, d: DailyStat, i: number) => {
     setActive(i);
     const label = fullDate(d.date);
-    show(el, <TipRows date={label} sent={d.sent} failed={d.failed} total={d.total} />);
+    show(el, <TipRows date={label} sent={d.sent} failed={d.failed} deleted={d.deleted} total={d.total} />);
   };
   const hideBar = () => {
     setActive(null);
@@ -578,14 +593,14 @@ function WebhookChart({ webhooks }: { webhooks: WebhookStat[] }) {
                 onMouseEnter={(e) =>
                   show(
                     e.currentTarget,
-                    <TipRows date={w.name} sent={w.sent} failed={w.failed} total={w.total} />,
+                    <TipRows date={w.name} sent={w.sent} failed={w.failed} deleted={w.deleted} total={w.total} />,
                   )
                 }
                 onMouseLeave={hide}
                 onFocus={(e) =>
                   show(
                     e.currentTarget,
-                    <TipRows date={w.name} sent={w.sent} failed={w.failed} total={w.total} />,
+                    <TipRows date={w.name} sent={w.sent} failed={w.failed} deleted={w.deleted} total={w.total} />,
                   )
                 }
                 onBlur={hide}

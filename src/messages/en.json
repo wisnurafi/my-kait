@@ -146,6 +146,7 @@
     "chart": {
       "sent": "Sent",
       "failed": "Failed",
+      "deleted": "Deleted",
       "total": "Total",
       "successRate": "Success rate",
       "tipHint": "hover or focus each bar",
