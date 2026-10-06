@@ -841,6 +841,7 @@
     "whRateLimited": "Rate limited",
     "whUnchecked": "Belum dicek",
     "limitNote": "Menampilkan maksimal 200 data terbaru.",
+    "auditPageOf": "Halaman {page} dari {totalPages}",
     "errorTitle": "Terjadi kesalahan",
     "errorBody": "Gagal memuat halaman admin.",
     "retry": "Coba lagi",
