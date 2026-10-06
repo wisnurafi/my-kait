@@ -708,7 +708,8 @@
     "s5t": "Cookie",
     "s5d": "Cuma cookie sesi buat login (HttpOnly, Secure). Nggak ada tracker iklan, nggak ada analytics pihak ketiga yang ngikutin lu ke mana-mana.",
     "s6t": "Hak lu",
-    "s6d": "Mau ekspor data? Bisa. Mau hapus semuanya? Bisa, kapan aja, tanpa drama. Ada yang janggal atau mau nanya sesuatu? Hubungi gw langsung."
+    "s6d": "Mau ekspor data? Bisa. Mau hapus semuanya? Bisa, kapan aja, tanpa drama. Ada yang janggal atau mau nanya sesuatu? Hubungi gw langsung.",
+    "tocLabel": "Daftar isi"
   },
   "terms": {
     "eyebrow": "Legal",

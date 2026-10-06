@@ -708,7 +708,8 @@
     "s5t": "Cookies",
     "s5d": "Just a session cookie for login (HttpOnly, Secure). No ad trackers, no third-party analytics following you around.",
     "s6t": "Your rights",
-    "s6d": "Want to export your data? You can. Delete everything? Anytime, no drama. Something looks off or you have questions? Contact me directly."
+    "s6d": "Want to export your data? You can. Delete everything? Anytime, no drama. Something looks off or you have questions? Contact me directly.",
+    "tocLabel": "Table of contents"
   },
   "terms": {
     "eyebrow": "Legal",
