@@ -15,7 +15,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { Link2, SendHorizontal, TrendingUp, LayoutTemplate } from "lucide-react";
+import { Link2, SendHorizontal, TrendingUp, FileText } from "lucide-react";
 import type { DailyStat, WebhookStat } from "@/server/actions/stats";
 
 /* --- Animated count-up: rAF, easeOutCubic, 800ms --- */
@@ -326,7 +326,7 @@ export function StatCards({
       label: t("templatesCount"),
       value: templates,
       suffix: "",
-      icon: LayoutTemplate,
+      icon: FileText,
       ia: "ia-pop",
       delta: deltaMonth(deltas.templatesNew),
     },
