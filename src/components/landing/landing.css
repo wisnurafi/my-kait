@@ -371,7 +371,7 @@
 /* log bars */
 .ld-root .ld-logbar{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:11.5px;color:var(--fg-secondary)}
 .ld-root .ld-logbar .ld-track{flex:1;height:7px;background:var(--ld-card-2);border-radius:99px;overflow:hidden}
-.ld-root .ld-logbar .ld-fill{height:100%;border-radius:99px;background:var(--ld-lime);width:0;transition:width 1.4s cubic-bezier(.22,1,.36,1)}
+.ld-root .ld-logbar .ld-fill{display:block;height:100%;border-radius:99px;background:var(--ld-lime);width:0;transition:width 1.4s cubic-bezier(.22,1,.36,1)}
 .ld-root .ld-in .ld-logbar .ld-fill{width:var(--w)}
 .ld-root .ld-steps{padding:120px 0}
 .ld-root .ld-steps-grid{display:grid;grid-template-columns:1fr 1fr;gap:70px;align-items:start}

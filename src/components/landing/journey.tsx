@@ -135,15 +135,19 @@ export function Journey() {
     const dot = travelerRef.current;
     if (reduced || !dot) return;
     // satu clock untuk dot & node: dot jalan, node nyala pas dot nyentuh.
-    // Posisi tengah node ≈ p 0 / 0.32 / 0.68 / 1 dari jalur dot
+    // Posisi tengah node ≈ tp 0 / 0.32 / 0.68 / 1 dari jalur dot
     // (line 12%–88% track, node 150px space-between) — jangan pakai
     // floor(p*4): batangnya di 0.25/0.5/0.75 bikin node nyala duluan.
-    const CYCLE = 4500;
+    // Dot sampai ujung di 78% siklus, sisanya jeda di Delivered biar
+    // glow-nya kebaca (tanpa jeda cuma ~67ms, kelihatan kayak nggak nyala).
+    const CYCLE = 5200;
+    const TRAVEL_END = 0.78;
     let raf = 0;
     const frame = (now: number) => {
       const p = (now % CYCLE) / CYCLE;
-      dot.style.left = `${(p * 100).toFixed(2)}%`;
-      const idx = p >= 0.985 ? 3 : p >= 0.66 ? 2 : p >= 0.32 ? 1 : 0;
+      const tp = Math.min(1, p / TRAVEL_END);
+      dot.style.left = `${(tp * 100).toFixed(2)}%`;
+      const idx = tp >= 1 ? 3 : tp >= 0.66 ? 2 : tp >= 0.32 ? 1 : 0;
       if (idx !== litRef.current) {
         litRef.current = idx;
         setLit(idx);
