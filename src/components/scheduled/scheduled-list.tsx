@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge, FilterChip } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/toast";
 import {
   listScheduledAction,
@@ -63,7 +64,7 @@ export function ScheduledList() {
   const locale = useLocale();
   const [items, setItems] = useState<ScheduledPublic[] | null>(null);
   const [filter, setFilter] = useState<Filter>("upcoming");
-  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<ScheduledPublic | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
   const load = async () => {
@@ -80,14 +81,11 @@ export function ScheduledList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleCancel = async (id: string) => {
-    if (confirmId !== id) {
-      setConfirmId(id);
-      return;
-    }
+  const handleCancel = async () => {
+    if (!cancelTarget) return;
     setCancelling(true);
     try {
-      const res = await cancelScheduledAction(id);
+      const res = await cancelScheduledAction(cancelTarget.id);
       if ("error" in res) {
         toast.error(res.error);
       } else {
@@ -98,7 +96,7 @@ export function ScheduledList() {
       toast.error(t("cancelFailed"));
     } finally {
       setCancelling(false);
-      setConfirmId(null);
+      setCancelTarget(null);
     }
   };
 
@@ -184,13 +182,12 @@ export function ScheduledList() {
               </div>
               {s.status === "pending" && (
                 <Button
-                  variant={confirmId === s.id ? "destructive" : "ghost"}
-                  onClick={() => handleCancel(s.id)}
-                  disabled={cancelling}
+                  variant="ghost"
+                  onClick={() => setCancelTarget(s)}
                   className="gap-2 shrink-0"
                 >
                   <Ban size={16} />
-                  {confirmId === s.id ? t("cancelConfirmButton") : t("cancelButton")}
+                  {t("cancelButton")}
                 </Button>
               )}
             </li>
@@ -198,10 +195,16 @@ export function ScheduledList() {
         </ul>
       )}
 
-      {confirmId && (
-        <p className="text-sm text-error" role="alert">
-          {t("cancelConfirm")}
-        </p>
+      {cancelTarget && (
+        <ConfirmDialog
+          open={!!cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          onConfirm={handleCancel}
+          title={t("cancelTitle")}
+          message={t("cancelMessage", { name: cancelTarget.webhookNameSnapshot })}
+          confirmLabel={t("cancelButton")}
+          loading={cancelling}
+        />
       )}
     </div>
   );

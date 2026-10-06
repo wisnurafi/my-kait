@@ -951,8 +951,6 @@
     "filterHistory": "Riwayat",
     "filterAll": "Semua",
     "cancelButton": "Batalkan",
-    "cancelConfirmButton": "Ya, batalkan",
-    "cancelConfirm": "Klik batalkan sekali lagi untuk konfirmasi. Tidak bisa dibatalkan lagi.",
     "cancelledOk": "Jadwal dibatalkan",
     "cancelFailed": "Gagal membatalkan",
     "loadFailed": "Gagal memuat pesan terjadwal",
@@ -962,6 +960,8 @@
     "status_failed": "Gagal",
     "status_cancelled": "Dibatalkan",
     "emptyUpcoming": "Belum ada yang dijadwalkan. Tulis pesan di editor lalu tekan Jadwalkan.",
-    "emptyHistory": "Belum ada riwayat. Jadwal yang terkirim, gagal, dan dibatalkan muncul di sini."
+    "emptyHistory": "Belum ada riwayat. Jadwal yang terkirim, gagal, dan dibatalkan muncul di sini.",
+    "cancelTitle": "Batalkan pesan terjadwal",
+    "cancelMessage": "Batalkan pengiriman \"{name}\"? Tidak bisa dibatalkan lagi."
   }
 }
