@@ -273,7 +273,8 @@ export function StatCards({
   const deltaWeek = (v: number | null, decimals = 0): StatDelta => {
     if (v === null || v === 0) return null;
     const up = v > 0;
-    const val = decimals > 0 ? Math.abs(v).toFixed(decimals) : String(Math.abs(v));
+    // Nilai bulat (mis. 100 untuk aktivitas baru) tampil tanpa ".0".
+    const val = decimals > 0 && !Number.isInteger(v) ? Math.abs(v).toFixed(decimals) : String(Math.abs(v));
     return {
       text: t("statDeltaWeek", { arrow: up ? "▲" : "▼", v: val }),
       tone: up ? "up" : "down",
