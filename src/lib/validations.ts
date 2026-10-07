@@ -50,6 +50,27 @@ export const addWebhookSchema = (t: SchemaT) =>
       .max(100, t("nameTooLong")),
   });
 
+/**
+ * URL umum yang hanya mengizinkan protokol http/https.
+ * z.string().url() menerima `javascript:` dan `data:` URL (URL parser bawaan),
+ * yang menjadi stored XSS ketika di-render sebagai <a href> di preview & share page.
+ */
+export const httpUrlSchema = (t: SchemaT) =>
+  z
+    .string()
+    .url(t("urlInvalid"))
+    .refine(
+      (url) => {
+        try {
+          const protocol = new URL(url).protocol;
+          return protocol === "http:" || protocol === "https:";
+        } catch {
+          return false;
+        }
+      },
+      t("urlInvalid"),
+    );
+
 export const updateWebhookSchema = (t: SchemaT) =>
   z.object({
     id: z.string(),
@@ -68,42 +89,43 @@ export const embedFieldSchema = z.object({
   inline: z.boolean().optional().default(false),
 });
 
-export const embedSchema = z.object({
-  title: z.string().max(256).optional(),
-  url: z.string().url().optional().or(z.literal("")),
-  description: z.string().max(4096).optional(),
-  color: z.number().int().min(0).max(0xffffff).optional(),
-  author: z
-    .object({
-      name: z.string().max(256),
-      url: z.string().url().optional().or(z.literal("")),
-      icon_url: z.string().url().optional().or(z.literal("")),
-    })
-    .optional(),
-  thumbnail: z
-    .object({
-      url: z.string().url(),
-    })
-    .optional(),
-  image: z
-    .object({
-      url: z.string().url(),
-    })
-    .optional(),
-  fields: z.array(embedFieldSchema).max(25).optional(),
-  footer: z
-    .object({
-      text: z.string().max(2048),
-      icon_url: z.string().url().optional().or(z.literal("")),
-    })
-    .optional(),
-  timestamp: z.string().datetime().optional().or(z.boolean()),
-});
+export const embedSchema = (t: SchemaT) =>
+  z.object({
+    title: z.string().max(256).optional(),
+    url: httpUrlSchema(t).optional().or(z.literal("")),
+    description: z.string().max(4096).optional(),
+    color: z.number().int().min(0).max(0xffffff).optional(),
+    author: z
+      .object({
+        name: z.string().max(256),
+        url: httpUrlSchema(t).optional().or(z.literal("")),
+        icon_url: httpUrlSchema(t).optional().or(z.literal("")),
+      })
+      .optional(),
+    thumbnail: z
+      .object({
+        url: httpUrlSchema(t),
+      })
+      .optional(),
+    image: z
+      .object({
+        url: httpUrlSchema(t),
+      })
+      .optional(),
+    fields: z.array(embedFieldSchema).max(25).optional(),
+    footer: z
+      .object({
+        text: z.string().max(2048),
+        icon_url: httpUrlSchema(t).optional().or(z.literal("")),
+      })
+      .optional(),
+    timestamp: z.string().datetime().optional().or(z.boolean()),
+  });
 
 // Full embed array validation with total char limit
 export const embedsSchema = (t: SchemaT) =>
   z
-    .array(embedSchema)
+    .array(embedSchema(t))
     .max(10, t("maxEmbeds"))
     .refine(
       (embeds) => {
@@ -126,7 +148,7 @@ export const sendPayloadSchema = (t: SchemaT) =>
   z.object({
     content: z.string().max(2000).optional(),
     username: z.string().max(80).optional(),
-    avatar_url: z.string().url().optional().or(z.literal("")),
+    avatar_url: httpUrlSchema(t).optional().or(z.literal("")),
     tts: z.boolean().optional(),
     thread_id: z.string().optional(),
     allowed_mentions: z

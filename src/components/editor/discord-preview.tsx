@@ -14,6 +14,15 @@ import { cn } from "@/lib/utils";
 
 type DiscordTheme = "dark" | "light";
 
+/**
+ * Defense-in-depth lawan stored XSS: hanya render <a> untuk URL http(s).
+ * Validasi zod (httpUrlSchema) sudah menolak javascript:/data: URL saat input,
+ * tapi data lama / jalur lain tetap harus aman saat di-render.
+ */
+function isSafeLinkUrl(url: unknown): url is string {
+  return typeof url === "string" && /^https?:\/\//i.test(url);
+}
+
 const discordDark = {
   bg: "#313338",
   surface: "#1e1f22",
@@ -188,7 +197,7 @@ function EmbedPreview({
               <img src={author.icon_url} alt="" className="w-6 h-6" style={{ borderRadius: "50%" }} />
             )}
             <div className="flex items-center gap-1 text-sm">
-              {author.url ? (
+              {isSafeLinkUrl(author.url) ? (
                 <a href={author.url} className="font-bold hover:underline" style={{ color: colors.accent }}>
                   {author.name}
                 </a>
@@ -202,7 +211,7 @@ function EmbedPreview({
         {/* Title */}
         {title && (
           <div className="font-bold text-sm mb-1">
-            {titleUrl ? (
+            {isSafeLinkUrl(titleUrl) ? (
               <a href={titleUrl} className="hover:underline" style={{ color: colors.accent }}>
                 {title}
               </a>

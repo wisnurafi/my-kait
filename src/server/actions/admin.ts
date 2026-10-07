@@ -18,6 +18,7 @@ import {
   webhookChecks,
   adminAuditLogs,
   scheduledMessages,
+  apiKeys,
   type ReportStatus,
 } from "@/lib/schema";
 import { ADMIN_COOKIE_NAME, verifyAdminSession } from "@/lib/admin-session";
@@ -462,7 +463,9 @@ export async function deleteTemplate(
 /**
  * Suspend/unsuspend a user. Suspended users cannot sign in (enforced in
  * Auth.js callbacks) and all their public shares are unpublished at once.
- * Unsuspending does NOT re-publish shares — re-enable them manually.
+ * Suspending also revokes all their API keys and excludes their scheduled
+ * messages from dispatch (enforced in requireApiKey + dispatch-scheduled).
+ * Unsuspending does NOT re-publish shares or restore keys — re-enable them manually.
  */
 export async function setUserSuspended(
   userId: string,
@@ -487,6 +490,11 @@ export async function setUserSuspended(
       .where(
         sql`${templateShares.templateId} in (select ${templates.id} from ${templates} where ${templates.userId} = ${userId})`,
       );
+    // Revoke all their API keys — otherwise suspend is bypassable via /api/v1/send.
+    await db
+      .update(apiKeys)
+      .set({ revokedAt: new Date() })
+      .where(eq(apiKeys.userId, userId));
   }
   await logAdminAction(
     suspended ? "user.suspended" : "user.unsuspended",

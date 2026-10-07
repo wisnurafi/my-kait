@@ -19,7 +19,7 @@ import { toast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Mascot } from "@/components/mascot";
-import { clearLogsAction, deleteMessageAction, resendLogAction } from "@/server/actions/messages";
+import { clearLogsAction, deleteMessageAction, resendLogAction, getAllFilteredLogsAction } from "@/server/actions/messages";
 import { saveAsTemplateAction } from "@/server/actions/templates";
 import {
   Search,
@@ -92,6 +92,7 @@ export function LogsView({
   const [search, setSearch] = useState(currentFilters.search ?? "");
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Whether any result-narrowing filter is active — drives the "no match"
   // vs "no logs yet" empty state distinction.
@@ -205,6 +206,57 @@ export function LogsView({
     router.push("/editor");
   }
 
+  /** Filters currently active in the UI — shared by CSV/JSON export. */
+  function exportFilterParams() {
+    return {
+      status: currentFilters.status,
+      webhookId: currentFilters.webhookId,
+      mode: currentFilters.mode,
+      source: currentFilters.source,
+      search: search || undefined,
+      datePreset: currentFilters.datePreset,
+      dateFrom: currentFilters.dateFrom,
+      dateTo: currentFilters.dateTo,
+      sort: currentFilters.sort,
+    };
+  }
+
+  async function handleExportCsv() {
+    setExporting(true);
+    try {
+      const res = await getAllFilteredLogsAction(exportFilterParams());
+      const headers = [t("csvTime"), t("csvWebhook"), t("csvMode"), t("csvStatus"), t("csvHttp"), t("csvLatency"), t("csvError")];
+      const rows = res.logs.map((l) => ({
+        webhookNameSnapshot: l.webhookNameSnapshot,
+        mode: l.mode,
+        status: l.status,
+        httpStatus: l.httpStatus,
+        latencyMs: l.latencyMs,
+        error: l.error,
+        createdAt: l.createdAt instanceof Date ? l.createdAt : new Date(l.createdAt),
+      }));
+      downloadFile(exportToCsv(rows, headers), "logs.csv", "text/csv");
+      toast.success(t("toast.exported", { count: rows.length }));
+    } catch {
+      toast.error(t("toast.exportFailed"));
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleExportJson() {
+    setExporting(true);
+    try {
+      const res = await getAllFilteredLogsAction(exportFilterParams());
+      downloadFile(JSON.stringify(res.logs, null, 2), "logs.json", "application/json");
+      toast.success(t("toast.exported", { count: res.logs.length }));
+    } catch {
+      toast.error(t("toast.exportFailed"));
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -216,25 +268,20 @@ export function LogsView({
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => {
-                const headers = [t("csvTime"), t("csvWebhook"), t("csvMode"), t("csvStatus"), t("csvHttp"), t("csvLatency"), t("csvError")];
-                const csv = exportToCsv(logsData.logs, headers);
-                downloadFile(csv, "logs.csv", "text/csv");
-              }}
+              onClick={handleExportCsv}
+              disabled={exporting}
               className="hv gap-1.5"
             >
-              <span className="ia ia-drop"><Download size={14} /></span> CSV
+              <span className="ia ia-drop"><Download size={14} /></span> {exporting ? t("exporting") : "CSV"}
             </Button>
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => {
-                const json = JSON.stringify(logsData.logs, null, 2);
-                downloadFile(json, "logs.json", "application/json");
-              }}
+              onClick={handleExportJson}
+              disabled={exporting}
               className="hv gap-1.5"
             >
-              <span className="ia ia-drop"><Download size={14} /></span> JSON
+              <span className="ia ia-drop"><Download size={14} /></span> {exporting ? t("exporting") : "JSON"}
             </Button>
             <Button
               variant="ghost"

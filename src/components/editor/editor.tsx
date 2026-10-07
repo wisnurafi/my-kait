@@ -780,6 +780,17 @@ export function Editor({
                   ))}
                 </Select>
               </div>
+              {webhooks.length === 0 && (
+                <p className="text-sm text-fg-secondary">
+                  {t("noWebhooksHint")}{" "}
+                  <Link
+                    href="/webhooks"
+                    className="text-accent hover:underline font-medium"
+                  >
+                    {t("addFirstWebhook")}
+                  </Link>
+                </p>
+              )}
               {!sendConfig.webhookId && webhooks.length > 1 && (
                 <div>
                   <div className="flex items-center justify-between">

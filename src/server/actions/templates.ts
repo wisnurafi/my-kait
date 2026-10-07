@@ -181,6 +181,7 @@ export async function updateTemplateAction(formData: FormData) {
 export async function duplicateTemplateAction(formData: FormData) {
   const user = await requireAuth();
   const t = await getActionT("errors");
+  const tt = await getActionT("templates");
   const id = String(formData.get("id") ?? "");
 
   const existing = await db
@@ -198,7 +199,7 @@ export async function duplicateTemplateAction(formData: FormData) {
 
   await db.insert(templates).values({
     userId: user.id,
-    name: `${existing[0].name} (salinan)`,
+    name: `${existing[0].name}${tt("duplicateSuffix")}`,
     description: existing[0].description,
     tags: existing[0].tags,
     payload: existing[0].payload,

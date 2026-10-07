@@ -66,6 +66,19 @@ const statusVariant: Record<string, "info" | "warning" | "success" | "error" | "
   cancelled: "default",
 };
 
+/** Minutes after scheduled_at a still-pending row is flagged overdue. */
+const OVERDUE_MS = 10 * 60 * 1000;
+
+/**
+ * Dead-man's switch: if the external cron (cron-job.org) stops ticking,
+ * pending rows pile up silently. Flag them so the user notices.
+ */
+function isOverdue(s: ScheduledPublic): boolean {
+  if (s.status !== "pending") return false;
+  const at = new Date(s.scheduledAt).getTime();
+  return !Number.isNaN(at) && Date.now() - at > OVERDUE_MS;
+}
+
 export function ScheduledList() {
   const t = useTranslations("scheduled");
   const tc = useTranslations("common");
@@ -167,6 +180,7 @@ export function ScheduledList() {
                     >
                       {t(`status_${s.status}`)}
                     </Badge>
+                    {isOverdue(s) && <Badge variant="warning">{t("overdue")}</Badge>}
                   </div>
                   {s.preview && (
                     <p className="text-sm text-fg-secondary truncate mt-0.5">

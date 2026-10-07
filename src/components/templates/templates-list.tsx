@@ -27,6 +27,8 @@ import {
   deleteTemplateAction,
   duplicateTemplateAction,
   createShareLinkAction,
+  revokeShareLinkAction,
+  getShareLinks,
   updateTemplateAction,
 } from "@/server/actions/templates";
 import {
@@ -45,6 +47,7 @@ import {
   Check,
   X,
   Plus,
+  Ban,
   FolderPlus,
   Folder,
   FolderOpen,
@@ -179,6 +182,8 @@ export function TemplatesList({
   const [editDesc, setEditDesc] = useState("");
   const [editTags, setEditTags] = useState("");
   const [shared, setShared] = useState<{ templateId: string; slug: string } | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<{ templateId: string } | null>(null);
+  const [revoking, setRevoking] = useState(false);
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -244,25 +249,45 @@ export function TemplatesList({
     const target = confirmTarget;
     setConfirmTarget(null);
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("id", target.id);
-      if (target.kind === "template") {
-        await deleteTemplateAction(fd);
-        toast.success(t("deleted"));
-      } else {
-        await deleteFolderAction(fd);
-        if (activeFolder === target.id) selectFolder("all");
-        toast.success(t("folders.deleted"));
+      try {
+        const fd = new FormData();
+        fd.set("id", target.id);
+        if (target.kind === "template") {
+          const res = await deleteTemplateAction(fd);
+          if (res.error) {
+            toast.error(res.error);
+            return;
+          }
+          toast.success(t("deleted"));
+        } else {
+          const res = await deleteFolderAction(fd);
+          if (res.error) {
+            toast.error(res.error);
+            return;
+          }
+          if (activeFolder === target.id) selectFolder("all");
+          toast.success(t("folders.deleted"));
+        }
+      } catch {
+        toast.error(t("deleteFailed"));
       }
     });
   }
 
   function handleDuplicate(id: string) {
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("id", id);
-      await duplicateTemplateAction(fd);
-      toast.success(t("duplicated"));
+      try {
+        const fd = new FormData();
+        fd.set("id", id);
+        const res = await duplicateTemplateAction(fd);
+        if (res.error) {
+          toast.error(res.error);
+        } else {
+          toast.success(t("duplicated"));
+        }
+      } catch {
+        toast.error(t("duplicateFailed"));
+      }
     });
   }
 
@@ -319,13 +344,47 @@ export function TemplatesList({
 
   function handleShare(id: string) {
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("templateId", id);
-      const result = await createShareLinkAction(fd);
-      if (result.success && result.slug) {
-        setShared({ templateId: id, slug: result.slug });
+      try {
+        const fd = new FormData();
+        fd.set("templateId", id);
+        const result = await createShareLinkAction(fd);
+        if (result.error) {
+          toast.error(result.error);
+        } else if (result.success && result.slug) {
+          setShared({ templateId: id, slug: result.slug });
+        }
+      } catch {
+        toast.error(t("shareFailed"));
       }
     });
+  }
+
+  async function handleConfirmRevoke() {
+    if (!revokeTarget) return;
+    const { templateId } = revokeTarget;
+    setRevoking(true);
+    try {
+      const shares = await getShareLinks(templateId);
+      const active = shares.find((s) => s.isActive) ?? shares[0];
+      if (!active) {
+        toast.error(t("shareRevokeNone"));
+        return;
+      }
+      const fd = new FormData();
+      fd.set("shareId", active.id);
+      const res = await revokeShareLinkAction(fd);
+      if (res.error) {
+        toast.error(res.error);
+      } else {
+        toast.success(t("shareRevoked"));
+        setShared((s) => (s?.templateId === templateId ? null : s));
+      }
+    } catch {
+      toast.error(t("shareRevokeFailed"));
+    } finally {
+      setRevoking(false);
+      setRevokeTarget(null);
+    }
   }
 
   function handleLoad(id: string) {
@@ -829,6 +888,17 @@ export function TemplatesList({
                                   </Button>
                                 </Tooltip>
                               </a>
+                              <Tooltip content={t("revokeShareLink")}>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setRevokeTarget({ templateId: template.id })}
+                                  disabled={revoking}
+                                  className="hv text-error"
+                                >
+                                  <Ban size={14} />
+                                </Button>
+                              </Tooltip>
                             </div>
                           </div>
                         )}
@@ -929,6 +999,16 @@ export function TemplatesList({
         }
         confirmLabel={t("confirmAction")}
         loading={pending}
+      />
+
+      <ConfirmDialog
+        open={revokeTarget !== null}
+        onClose={() => setRevokeTarget(null)}
+        onConfirm={handleConfirmRevoke}
+        title={t("revokeShareTitle")}
+        message={t("revokeShareMessage")}
+        confirmLabel={t("revokeShareConfirm")}
+        loading={revoking}
       />
 
       {historyFor && (

@@ -9,7 +9,7 @@
 import { createHash, randomBytes } from "crypto";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
-import { apiKeys } from "@/lib/schema";
+import { apiKeys, users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/ratelimit";
 
@@ -88,6 +88,22 @@ export async function requireApiKey(requiredScope = "send"): Promise<ApiKeyAuth>
       403,
       "insufficient_scope",
       `This API key does not have the '${requiredScope}' scope.`,
+    );
+  }
+
+  // Suspended users lose API access too — otherwise suspend is cosmetic for
+  // anyone holding a key (the dashboard is blocked via session callbacks,
+  // but /api/v1/send would keep working forever).
+  const [owner] = await db
+    .select({ isSuspended: users.isSuspended })
+    .from(users)
+    .where(eq(users.id, key.userId))
+    .limit(1);
+  if (!owner || owner.isSuspended) {
+    throw new ApiAuthError(
+      403,
+      "account_suspended",
+      "This account has been suspended.",
     );
   }
 
