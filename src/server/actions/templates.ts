@@ -6,8 +6,8 @@
  */
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { templates, templateShares, templateReports, templateVersions, users } from "@/lib/schema";
 import { eq, and, desc, ilike, or, sql, count, arrayContains, notInArray } from "drizzle-orm";
 import { requireAuth, auth } from "@/lib/auth";
@@ -459,6 +459,14 @@ export async function importTemplateAction(formData: FormData) {
   const t = await getActionT("errors");
   const shareId = String(formData.get("shareId") ?? "");
 
+  // Rate limit: 10 imports/minute per user. importTemplateAction is reachable
+  // from the public share page — without this, anyone can spam-import to
+  // bloat the templates table and inflate importCount (gallery ranking).
+  const rl = await checkRateLimit("import", user.id);
+  if (!rl.success) {
+    return { error: t("rateLimited") };
+  }
+
   // Get the shared template
   const shared = await db
     .select({
@@ -549,8 +557,9 @@ export async function reportTemplateAction(
   });
 
   // Ping the admin on Discord (fire-and-forget; never breaks the report).
-  // Review link is built from the request host so it always matches the
-  // environment the report was filed on (env.AUTH_URL may be unset).
+  // Review link uses the canonical AUTH_URL from server env — never request
+  // headers, which are attacker-controlled. Building it from x-forwarded-host
+  // would let a reporter send the admin a phishing link to a lookalike domain.
   let reporterName: string | null = null;
   if (session?.user?.id) {
     const [u] = await db
@@ -560,13 +569,7 @@ export async function reportTemplateAction(
       .limit(1);
     reporterName = u?.username ?? null;
   }
-  const reqHeaders = await headers();
-  const reqHost =
-    reqHeaders.get("x-forwarded-host") ?? reqHeaders.get("host") ?? "";
-  const reqProto =
-    reqHeaders.get("x-forwarded-proto") ??
-    (reqHost.startsWith("localhost") ? "http" : "https");
-  const reviewUrl = `${reqProto}://${reqHost}/id/admin/reports?status=pending`;
+  const reviewUrl = `${env.AUTH_URL}/id/admin/reports?status=pending`;
   await notifyAdminNewReport(
     {
       templateName: template.name,

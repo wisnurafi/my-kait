@@ -22,7 +22,7 @@ import { sendRequestSchema, sendPayloadSchema, logFilterSchema } from "@/lib/val
 import type { LogFilter } from "@/lib/validations";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getActionT } from "@/server/i18n";
-import { substitutePayloadVariables } from "@/lib/template-vars";
+import { substitutePayloadVariables, parseCustomVars } from "@/lib/template-vars";
 import { logger } from "@/lib/logger";
 import { markWebhookInvalid } from "@/lib/webhook-health";
 type MessageStatus = "sent" | "failed" | "rate_limited" | "edited" | "deleted";
@@ -60,34 +60,9 @@ export async function sendMessageAction(prevState: unknown, formData: FormData) 
   const idempotencyKey = String(formData.get("idempotencyKey") ?? "") || undefined;
 
   // Custom template variables: {name} -> value pairs supplied by the user
-  // in the send form. Validated strictly; malformed input is ignored.
-  let customVars: Record<string, string> | undefined;
-  const customVarsRaw = String(formData.get("customVars") ?? "");
-  if (customVarsRaw) {
-    try {
-      const parsed: unknown = JSON.parse(customVarsRaw);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        const entries = Object.entries(parsed as Record<string, unknown>);
-        const valid =
-          entries.length > 0 &&
-          entries.length <= 20 &&
-          entries.every(
-            ([k, v]) =>
-              typeof v === "string" &&
-              v.length <= 500 &&
-              /^\{[^{}]+\}$/.test(k) &&
-              k.length <= 60,
-          );
-        if (valid) {
-          customVars = Object.fromEntries(
-            entries.map(([k, v]) => [k, v as string]),
-          );
-        }
-      }
-    } catch {
-      // ignore malformed customVars
-    }
-  }
+  // in the send form. Validated strictly (see parseCustomVars);
+  // malformed input is ignored.
+  const customVars = parseCustomVars(String(formData.get("customVars") ?? ""));
 
   // Idempotency check: if this key was already processed, return cached result
   if (idempotencyKey) {

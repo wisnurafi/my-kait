@@ -3,6 +3,7 @@ import {
   extractCustomVariables,
   substituteVariables,
   substitutePayloadVariables,
+  parseCustomVars,
 } from "./template-vars";
 
 describe("extractCustomVariables", () => {
@@ -71,5 +72,67 @@ describe("substitutePayloadVariables", () => {
   it("leaves non-string values untouched", () => {
     const payload = { n: 42, b: false };
     expect(substitutePayloadVariables(payload, {})).toEqual(payload);
+  });
+});
+
+describe("parseCustomVars", () => {
+  it("accepts a valid JSON string of {token} -> value pairs", () => {
+    expect(parseCustomVars('{"{nama}":"Budi","{kota}":"Jakarta"}')).toEqual({
+      "{nama}": "Budi",
+      "{kota}": "Jakarta",
+    });
+  });
+
+  it("accepts an already-parsed object (scheduled action path)", () => {
+    expect(parseCustomVars({ "{nama}": "Budi" })).toEqual({ "{nama}": "Budi" });
+  });
+
+  it("returns undefined for empty/missing input", () => {
+    expect(parseCustomVars("")).toBeUndefined();
+    expect(parseCustomVars(undefined)).toBeUndefined();
+    expect(parseCustomVars(null)).toBeUndefined();
+  });
+
+  it("returns undefined for malformed JSON", () => {
+    expect(parseCustomVars("{not json")).toBeUndefined();
+  });
+
+  it("returns undefined for non-object JSON", () => {
+    expect(parseCustomVars("[1,2]")).toBeUndefined();
+    expect(parseCustomVars('"str"')).toBeUndefined();
+    expect(parseCustomVars("123")).toBeUndefined();
+  });
+
+  // SECURITY: replaceAll("", X) splices X between every character — the
+  // empty-key case must never reach substitutePayloadVariables.
+  it("rejects an empty key (OOM vector)", () => {
+    expect(parseCustomVars({ "": "x".repeat(100) })).toBeUndefined();
+    expect(parseCustomVars('{"":"x"}')).toBeUndefined();
+  });
+
+  it("rejects keys without braces", () => {
+    expect(parseCustomVars({ nama: "Budi" })).toBeUndefined();
+  });
+
+  it("rejects keys longer than 60 chars", () => {
+    expect(parseCustomVars({ [`{${"a".repeat(60)}}`]: "x" })).toBeUndefined();
+  });
+
+  it("rejects values longer than 500 chars", () => {
+    expect(parseCustomVars({ "{nama}": "x".repeat(501) })).toBeUndefined();
+  });
+
+  it("rejects non-string values", () => {
+    expect(parseCustomVars({ "{nama}": 123 })).toBeUndefined();
+  });
+
+  it("rejects more than 20 entries", () => {
+    const big: Record<string, string> = {};
+    for (let i = 0; i < 21; i++) big[`{v${i}}`] = "x";
+    expect(parseCustomVars(big)).toBeUndefined();
+  });
+
+  it("rejects an empty object", () => {
+    expect(parseCustomVars({})).toBeUndefined();
   });
 });
