@@ -122,6 +122,20 @@
       "restoreConfirm": "Kembalikan versi",
       "restoreOk": "Versi dikembalikan",
       "keptNote": "Hanya {count} snapshot terbaru yang disimpan."
+    },
+    "bulk": {
+      "select": "Pilih",
+      "selectAll": "Pilih semua",
+      "selected": "{count} dipilih",
+      "moveTo": "Pindah ke…",
+      "delete": "Hapus",
+      "done": "Selesai",
+      "deleteTitle": "Hapus {count} template?",
+      "deleteMessage": "Tidak bisa dibatalkan.",
+      "deleteConfirm": "Hapus",
+      "deletedOk": "template terhapus: {count}",
+      "movedOk": "template dipindah: {count}",
+      "actionFailed": "Aksi bulk gagal"
     }
   },
   "dashboard": {
@@ -436,7 +450,21 @@
     "loadMore": "Muat lagi",
     "showingCount": "Menampilkan {shown} dari {total} webhook",
     "noWebhooksHint": "Tambahkan webhook Discord pertamamu untuk mulai mengirim pesan.",
-    "noResultsHint": "Coba ubah kata kunci atau atur ulang filter."
+    "noResultsHint": "Coba ubah kata kunci atau atur ulang filter.",
+    "bulk": {
+      "select": "Pilih",
+      "selectAll": "Pilih semua",
+      "selected": "{count} dipilih",
+      "moveTo": "Pindah ke…",
+      "delete": "Hapus",
+      "done": "Selesai",
+      "deleteTitle": "Hapus {count} webhook?",
+      "deleteMessage": "Tidak bisa dibatalkan.",
+      "deleteConfirm": "Hapus",
+      "deletedOk": "webhook terhapus: {count}",
+      "movedOk": "webhook dipindah: {count}",
+      "actionFailed": "Aksi bulk gagal"
+    }
   },
   "editor": {
     "title": "Editor Pesan",

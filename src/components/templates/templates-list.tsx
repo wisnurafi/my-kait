@@ -15,6 +15,11 @@ import { Select } from "@/components/ui/select";
 import { FilterChip } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { TemplateHistoryDialog } from "./template-history-dialog";
+import { BulkActionBar } from "@/components/ui/bulk-action-bar";
+import {
+  bulkDeleteTemplatesAction,
+  bulkMoveTemplatesAction,
+} from "@/server/actions/bulk";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -44,6 +49,7 @@ import {
   Folder,
   FolderOpen,
   History,
+  ListChecks,
   LayoutGrid,
   FileQuestion,
   LayoutTemplate,
@@ -179,6 +185,10 @@ export function TemplatesList({
   const [renameValue, setRenameValue] = useState("");
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget>(null);
   const [historyFor, setHistoryFor] = useState<{ id: string; name: string } | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   function pushParams(patch: Record<string, string | undefined>) {
     const params = new URLSearchParams();
@@ -254,6 +264,57 @@ export function TemplatesList({
       await duplicateTemplateAction(fd);
       toast.success(t("duplicated"));
     });
+  }
+
+  /* --- Bulk select mode --- */
+  const pageIds = initial.map((tmpl) => tmpl.id);
+  const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds([]);
+  }
+
+  async function confirmBulkDelete() {
+    setBulkBusy(true);
+    try {
+      const res = await bulkDeleteTemplatesAction(selectedIds);
+      if ("error" in res) {
+        toast.error(res.error);
+      } else {
+        toast.success(t("bulk.deletedOk", { count: res.count }));
+        exitSelectMode();
+      }
+    } catch {
+      toast.error(t("bulk.actionFailed"));
+    } finally {
+      setBulkBusy(false);
+      setShowBulkDelete(false);
+    }
+  }
+
+  async function handleBulkMove(folderId: string | null) {
+    if (selectedIds.length === 0) return;
+    setBulkBusy(true);
+    try {
+      const res = await bulkMoveTemplatesAction(selectedIds, folderId);
+      if ("error" in res) {
+        toast.error(res.error);
+      } else {
+        toast.success(t("bulk.movedOk", { count: res.count }));
+        exitSelectMode();
+      }
+    } catch {
+      toast.error(t("bulk.actionFailed"));
+    } finally {
+      setBulkBusy(false);
+    }
   }
 
   function handleShare(id: string) {
@@ -442,6 +503,15 @@ export function TemplatesList({
               className="pl-9"
             />
           </div>
+          <Button
+            variant={selectMode ? "primary" : "secondary"}
+            size="md"
+            onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+            className="hv gap-2"
+          >
+            <ListChecks size={16} />
+            {t("bulk.select")}
+          </Button>
         </div>
 
         {/* Folder chips — horizontal scroll rail on mobile (sidebar takes over on lg) */}
@@ -510,6 +580,25 @@ export function TemplatesList({
               </FilterChip>
             ))}
           </div>
+        )}
+
+        {/* Bulk action bar */}
+        {selectMode && initial.length > 0 && (
+          <BulkActionBar
+            countText={t("bulk.selected", { count: selectedIds.length })}
+            selectAllLabel={t("bulk.selectAll")}
+            allSelected={allSelected}
+            onToggleAll={() => setSelectedIds(allSelected ? [] : pageIds)}
+            folders={folders}
+            movePlaceholder={t("bulk.moveTo")}
+            unfiledLabel={t("folders.unfiled")}
+            onMove={handleBulkMove}
+            onDelete={() => selectedIds.length > 0 && setShowBulkDelete(true)}
+            deleteLabel={t("bulk.delete")}
+            onCancel={exitSelectMode}
+            cancelLabel={t("bulk.done")}
+            busy={bulkBusy}
+          />
         )}
 
         {/* Templates grid */}
@@ -584,6 +673,15 @@ export function TemplatesList({
                       <div>
                         {/* Card header: icon box + name + badges */}
                         <div className="flex items-center gap-3">
+                          {selectMode && (
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(template.id)}
+                              onChange={() => toggleSelect(template.id)}
+                              className="size-5 shrink-0 accent-[var(--accent)] cursor-pointer"
+                              aria-label={template.name}
+                            />
+                          )}
                           <div
                             className="hv w-10 h-10 rounded-lg bg-accent-soft border border-accent/40 flex items-center justify-center shrink-0"
                             aria-hidden="true"
@@ -841,6 +939,16 @@ export function TemplatesList({
           onClose={() => setHistoryFor(null)}
         />
       )}
+
+      <ConfirmDialog
+        open={showBulkDelete}
+        onClose={() => setShowBulkDelete(false)}
+        onConfirm={confirmBulkDelete}
+        title={t("bulk.deleteTitle", { count: selectedIds.length })}
+        message={t("bulk.deleteMessage")}
+        confirmLabel={t("bulk.deleteConfirm")}
+        loading={bulkBusy}
+      />
     </div>
   );
 }
