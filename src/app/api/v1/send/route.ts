@@ -25,6 +25,8 @@ import {
   validateWebhookUrl,
 } from "@/lib/discord";
 import { decryptWebhookUrl, encryptWebhookUrl } from "@/lib/crypto";
+import { markWebhookInvalid } from "@/lib/webhook-health";
+import { logger } from "@/lib/logger";
 import enMessages from "@/messages/en.json";
 
 /* Route handlers have no request locale — API errors are always English. */
@@ -160,32 +162,44 @@ export async function POST(req: Request) {
     manualUrlKeyVersion = enc.keyVersion;
   }
 
-  const inserted = await db
-    .insert(messageLogs)
-    .values({
-      userId: auth.userId,
-      webhookId: webhookRecord?.id ?? null,
-      webhookNameSnapshot: webhookRecord?.name ?? "Manual URL",
-      manualUrlEncrypted,
-      manualUrlKeyVersion,
-      mode: parsed.data.mode,
-      payload: parsed.data.savePayload ? (parsed.data.payload as Record<string, unknown>) : null,
-      status,
-      httpStatus: result.httpStatus,
-      latencyMs,
-      discordMessageId: result.messageId,
-      error: result.error,
-      source: "api",
-      idempotencyKey: idempotencyKey ?? null,
-    })
-    .onConflictDoNothing({
-      target: [messageLogs.userId, messageLogs.idempotencyKey],
-    })
-    .returning({ id: messageLogs.id });
+  // Best-effort log: the message was already sent — a failed insert must
+  // not fail the request (the 2026-10-02 incident class). The caller is
+  // told via logPersisted so it isn't misled.
+  let logPersisted = true;
+  let inserted: Array<{ id: string }> = [];
+  try {
+    inserted = await db
+      .insert(messageLogs)
+      .values({
+        userId: auth.userId,
+        webhookId: webhookRecord?.id ?? null,
+        webhookNameSnapshot: webhookRecord?.name ?? "Manual URL",
+        manualUrlEncrypted,
+        manualUrlKeyVersion,
+        mode: parsed.data.mode,
+        payload: parsed.data.savePayload ? (parsed.data.payload as Record<string, unknown>) : null,
+        status,
+        httpStatus: result.httpStatus,
+        latencyMs,
+        discordMessageId: result.messageId,
+        error: result.error,
+        source: "api",
+        idempotencyKey: idempotencyKey ?? null,
+      })
+      .onConflictDoNothing({
+        target: [messageLogs.userId, messageLogs.idempotencyKey],
+      })
+      .returning({ id: messageLogs.id });
+  } catch (e) {
+    logger.error("api", "v1/send: message log insert failed", e instanceof Error ? e.message : e);
+    logPersisted = false;
+  }
 
   let logId = inserted[0]?.id as string | undefined;
   let deduplicated = false;
-  if (idempotencyKey && !logId) {
+  // Only consult the race-recovery path when the insert actually ran: a
+  // thrown insert means "unknown", not "lost a race".
+  if (logPersisted && idempotencyKey && !logId) {
     // Lost a concurrent race — return the winner's outcome.
     const prev = await db
       .select({
@@ -211,21 +225,24 @@ export async function POST(req: Request) {
           messageId: prev[0].discordMessageId ?? undefined,
           status: "sent",
           deduplicated,
+          logPersisted,
         },
       });
     }
   }
 
+  // Best-effort webhook bookkeeping — must not fail the request.
   if (webhookRecord) {
-    await db
-      .update(webhooks)
-      .set({ lastUsedAt: new Date() })
-      .where(eq(webhooks.id, webhookRecord.id));
-    if (result.httpStatus === 404 || result.httpStatus === 401) {
+    try {
       await db
         .update(webhooks)
-        .set({ lastStatus: "invalid" })
+        .set({ lastUsedAt: new Date() })
         .where(eq(webhooks.id, webhookRecord.id));
+      if (result.httpStatus === 404 || result.httpStatus === 401) {
+        await markWebhookInvalid(webhookRecord.id, `Discord HTTP ${result.httpStatus}`);
+      }
+    } catch (e) {
+      logger.error("api", "v1/send: webhook bookkeeping failed", e instanceof Error ? e.message : e);
     }
   }
 
@@ -237,6 +254,7 @@ export async function POST(req: Request) {
           code: result.rateLimited ? "discord_rate_limited" : "discord_error",
           message: result.error ?? t("discordError"),
           logId,
+          logPersisted,
         },
       },
       { status: 502 },
@@ -250,6 +268,7 @@ export async function POST(req: Request) {
       messageId: result.messageId,
       status,
       deduplicated,
+      logPersisted,
     },
   });
 }

@@ -20,7 +20,7 @@ type BulkResult = Promise<{ error: string } | { success: true; count: number }>;
 function cleanIds(ids: string[]): string[] {
   return [
     ...new Set(ids.filter((id) => typeof id === "string" && id.length > 0)),
-  ].slice(0, MAX_BULK_IDS);
+  ];
 }
 
 async function ownedIds(
@@ -67,6 +67,8 @@ export async function bulkDeleteTemplatesAction(ids: string[]): BulkResult {
   const t = await getActionT("errors");
   const clean = cleanIds(ids);
   if (clean.length === 0) return { error: t("templateNotFound") };
+  if (clean.length > MAX_BULK_IDS)
+    return { error: t("bulkTooMany", { max: MAX_BULK_IDS }) };
 
   const owned = await ownedIds("template", user.id, clean);
   if (owned.length === 0) return { error: t("templateNotFound") };
@@ -86,6 +88,8 @@ export async function bulkMoveTemplatesAction(
   const t = await getActionT("errors");
   const clean = cleanIds(ids);
   if (clean.length === 0) return { error: t("templateNotFound") };
+  if (clean.length > MAX_BULK_IDS)
+    return { error: t("bulkTooMany", { max: MAX_BULK_IDS }) };
   if (!(await verifyFolder(user.id, folderId)))
     return { error: t("folderNotFound") };
 
@@ -107,6 +111,8 @@ export async function bulkDeleteWebhooksAction(ids: string[]): BulkResult {
   const t = await getActionT("errors");
   const clean = cleanIds(ids);
   if (clean.length === 0) return { error: t("webhookNotFound") };
+  if (clean.length > MAX_BULK_IDS)
+    return { error: t("bulkTooMany", { max: MAX_BULK_IDS }) };
 
   const owned = await ownedIds("webhook", user.id, clean);
   if (owned.length === 0) return { error: t("webhookNotFound") };
@@ -126,6 +132,8 @@ export async function bulkMoveWebhooksAction(
   const t = await getActionT("errors");
   const clean = cleanIds(ids);
   if (clean.length === 0) return { error: t("webhookNotFound") };
+  if (clean.length > MAX_BULK_IDS)
+    return { error: t("bulkTooMany", { max: MAX_BULK_IDS }) };
   if (!(await verifyFolder(user.id, folderId)))
     return { error: t("folderNotFound") };
 

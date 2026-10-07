@@ -38,7 +38,17 @@ export const env = {
   WEBHOOK_ENCRYPTION_KEY_VERSION: optional(process.env.WEBHOOK_ENCRYPTION_KEY_VERSION, "1"),
 
   // Vercel Cron secret — generate with: openssl rand -hex 16
-  CRON_SECRET: optional(process.env.CRON_SECRET, "dev-cron-secret"),
+  // SECURITY: fail-closed in production. A committed default would let anyone
+  // trigger /api/cron/* with a publicly known value.
+  CRON_SECRET: (() => {
+    const v = process.env.CRON_SECRET;
+    if (process.env.NODE_ENV === "production" && (!v || v === "dev-cron-secret")) {
+      throw new Error(
+        "CRON_SECRET must be set to a strong random value in production. Generate with: openssl rand -hex 16",
+      );
+    }
+    return v ?? "dev-cron-secret";
+  })(),
 
   // Admin dashboard (single account, no signup).
   // Login is email + password via /<locale>/admin/login — separate from Discord OAuth.
@@ -56,7 +66,22 @@ export const env = {
 /**
  * Check if rate limiting is available (Upstash configured).
  * If not configured, rate limiting is skipped (dev mode only).
+ *
+ * SECURITY: in production this must never be silently disabled — a missing
+ * Upstash config would turn off ALL rate limits (login brute-force protection,
+ * API key guessing limits, send limits) without anyone noticing.
  */
 export const isRateLimitEnabled = (): boolean => {
   return !!(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN);
 };
+
+// Fail-closed: crash boot instead of running production with zero rate limiting.
+if (
+  process.env.NODE_ENV === "production" &&
+  (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN)
+) {
+  throw new Error(
+    "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set in production. " +
+      "Rate limiting cannot be disabled in production.",
+  );
+}

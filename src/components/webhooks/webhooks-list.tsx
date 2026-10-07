@@ -189,8 +189,13 @@ export function WebhooksList({
       const formData = new FormData();
       formData.set("webhookId", target.id);
       if (target.kind === "delete") {
-        await deleteWebhookAction(formData);
-        toast.success(t("deleted"));
+        try {
+          const result = await deleteWebhookAction(formData);
+          if (result.error) toast.error(result.error);
+          else toast.success(t("deleted"));
+        } catch {
+          toast.error(t("deleteFailed"));
+        }
       } else {
         const result = await sendTestMessageAction(formData);
         if (result.error) toast.error(result.error);

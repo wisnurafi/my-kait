@@ -23,6 +23,8 @@ import type { LogFilter } from "@/lib/validations";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getActionT } from "@/server/i18n";
 import { substitutePayloadVariables } from "@/lib/template-vars";
+import { logger } from "@/lib/logger";
+import { markWebhookInvalid } from "@/lib/webhook-health";
 type MessageStatus = "sent" | "failed" | "rate_limited" | "edited" | "deleted";
 type MessageMode = "normal" | "embed" | "both";
 
@@ -204,33 +206,43 @@ export async function sendMessageAction(prevState: unknown, formData: FormData) 
       else if (result.rateLimited) status = "rate_limited";
       else status = "failed";
 
-      await db
-        .insert(messageLogs)
-        .values({
-          userId: user.id,
-          webhookId: wh[0].id,
-          webhookNameSnapshot: wh[0].name,
-          mode,
-          payload: savePayload ? processedPayload : null,
-          status,
-          httpStatus: result.httpStatus,
-          latencyMs,
-          discordMessageId: result.messageId,
-          error: result.error,
-          source: "send",
-          idempotencyKey: targetKey,
-        })
-        // Residual race guard: the pre-send check above covers retries, but
-        // two truly concurrent requests can still collide here — skip the
-        // duplicate log row instead of throwing a unique-violation 500.
-        .onConflictDoNothing({
-          target: [messageLogs.userId, messageLogs.idempotencyKey],
-        });
+      // Best-effort log: a failed insert must not abort the remaining
+      // targets — the message was already delivered to Discord.
+      try {
+        await db
+          .insert(messageLogs)
+          .values({
+            userId: user.id,
+            webhookId: wh[0].id,
+            webhookNameSnapshot: wh[0].name,
+            mode,
+            payload: savePayload ? processedPayload : null,
+            status,
+            httpStatus: result.httpStatus,
+            latencyMs,
+            discordMessageId: result.messageId,
+            error: result.error,
+            source: "send",
+            idempotencyKey: targetKey,
+          })
+          // Residual race guard: the pre-send check above covers retries, but
+          // two truly concurrent requests can still collide here — skip the
+          // duplicate log row instead of throwing a unique-violation 500.
+          .onConflictDoNothing({
+            target: [messageLogs.userId, messageLogs.idempotencyKey],
+          });
+      } catch (e) {
+        logger.error("send", "message log insert failed", e instanceof Error ? e.message : e);
+      }
 
-      // Update webhook
-      await db.update(webhooks).set({ lastUsedAt: new Date() }).where(eq(webhooks.id, wh[0].id));
-      if (result.httpStatus === 404 || result.httpStatus === 401) {
-        await db.update(webhooks).set({ lastStatus: "invalid" }).where(eq(webhooks.id, wh[0].id));
+      // Best-effort webhook bookkeeping — never aborts the batch.
+      try {
+        await db.update(webhooks).set({ lastUsedAt: new Date() }).where(eq(webhooks.id, wh[0].id));
+        if (result.httpStatus === 404 || result.httpStatus === 401) {
+          await markWebhookInvalid(wh[0].id, `Discord HTTP ${result.httpStatus}`);
+        }
+      } catch (e) {
+        logger.error("send", "webhook bookkeeping failed", e instanceof Error ? e.message : e);
       }
 
       results.push({ id: wh[0].id, name: wh[0].name, success: result.success, messageId: result.messageId, error: result.error });
@@ -313,34 +325,46 @@ export async function sendMessageAction(prevState: unknown, formData: FormData) 
     manualUrlKeyVersion = enc.keyVersion;
   }
 
-  const inserted = await db
-    .insert(messageLogs)
-    .values({
-      userId: user.id,
-      webhookId: webhookRecord?.id ?? null,
-      webhookNameSnapshot: webhookRecord?.name ?? "Manual URL",
-      manualUrlEncrypted,
-      manualUrlKeyVersion,
-      mode,
-      payload: savePayload ? processedPayload : null,
-      status,
-      httpStatus: result.httpStatus,
-      latencyMs,
-      discordMessageId: result.messageId,
-      error: result.error,
-      source: "send",
-      idempotencyKey: idempotencyKey ?? null,
-    })
-    // Race guard: the early check above and this insert are not atomic, so
-    // two concurrent requests with the same key can both pass the check.
-    // The loser skips its log row and returns the winner's outcome instead
-    // of throwing a unique-violation 500.
-    .onConflictDoNothing({
-      target: [messageLogs.userId, messageLogs.idempotencyKey],
-    })
-    .returning({ id: messageLogs.id });
+  // Best-effort log: the message was already sent — a failed insert must
+  // not fail the whole action (the 2026-10-02 incident class). The caller
+  // is told via logPersisted so the UI doesn't mislead the user.
+  let logPersisted = true;
+  let inserted: Array<{ id: string }> = [];
+  try {
+    inserted = await db
+      .insert(messageLogs)
+      .values({
+        userId: user.id,
+        webhookId: webhookRecord?.id ?? null,
+        webhookNameSnapshot: webhookRecord?.name ?? "Manual URL",
+        manualUrlEncrypted,
+        manualUrlKeyVersion,
+        mode,
+        payload: savePayload ? processedPayload : null,
+        status,
+        httpStatus: result.httpStatus,
+        latencyMs,
+        discordMessageId: result.messageId,
+        error: result.error,
+        source: "send",
+        idempotencyKey: idempotencyKey ?? null,
+      })
+      // Race guard: the early check above and this insert are not atomic, so
+      // two concurrent requests with the same key can both pass the check.
+      // The loser skips its log row and returns the winner's outcome instead
+      // of throwing a unique-violation 500.
+      .onConflictDoNothing({
+        target: [messageLogs.userId, messageLogs.idempotencyKey],
+      })
+      .returning({ id: messageLogs.id });
+  } catch (e) {
+    logger.error("send", "message log insert failed", e instanceof Error ? e.message : e);
+    logPersisted = false;
+  }
 
-  if (idempotencyKey && inserted.length === 0) {
+  // Only consult the race-recovery path when the insert actually ran: a
+  // thrown insert means "unknown", not "lost a race".
+  if (logPersisted && idempotencyKey && inserted.length === 0) {
     const prev = await db
       .select()
       .from(messageLogs)
@@ -363,19 +387,20 @@ export async function sendMessageAction(prevState: unknown, formData: FormData) 
     return { error: prev[0]?.error ?? "Pengiriman sebelumnya gagal" };
   }
 
-  // Update webhook lastUsedAt
+  // Update webhook lastUsedAt — best-effort, must not fail the action.
   if (webhookRecord) {
-    await db
-      .update(webhooks)
-      .set({ lastUsedAt: new Date() })
-      .where(eq(webhooks.id, webhookRecord.id));
-
-    // Mark webhook invalid if 404/401
-    if (result.httpStatus === 404 || result.httpStatus === 401) {
+    try {
       await db
         .update(webhooks)
-        .set({ lastStatus: "invalid" })
+        .set({ lastUsedAt: new Date() })
         .where(eq(webhooks.id, webhookRecord.id));
+
+      // Mark webhook invalid if 404/401 (with a health alert on transition)
+      if (result.httpStatus === 404 || result.httpStatus === 401) {
+        await markWebhookInvalid(webhookRecord.id, `Discord HTTP ${result.httpStatus}`);
+      }
+    } catch (e) {
+      logger.error("send", "webhook bookkeeping failed", e instanceof Error ? e.message : e);
     }
   }
 
@@ -387,6 +412,7 @@ export async function sendMessageAction(prevState: unknown, formData: FormData) 
     success: true,
     messageId: result.messageId,
     message: t("messageSent"),
+    logPersisted,
   };
 }
 
@@ -644,32 +670,42 @@ export async function resendLogAction(logId: string) {
   else if (result.rateLimited) status = "rate_limited";
   else status = "failed";
 
-  await db.insert(messageLogs).values({
-    userId: user.id,
-    webhookId: webhookRecord?.id ?? null,
-    webhookNameSnapshot: webhookRecord?.name ?? log.webhookNameSnapshot,
-    manualUrlEncrypted: webhookRecord ? null : log.manualUrlEncrypted,
-    manualUrlKeyVersion: webhookRecord ? null : log.manualUrlKeyVersion,
-    mode: log.mode as MessageMode,
-    payload,
-    status,
-    httpStatus: result.httpStatus,
-    latencyMs,
-    discordMessageId: result.messageId,
-    error: result.error,
-    source: "resend",
-  });
+  // Best-effort log: the message was already sent — a failed insert must
+  // not fail the whole action.
+  let logPersisted = true;
+  try {
+    await db.insert(messageLogs).values({
+      userId: user.id,
+      webhookId: webhookRecord?.id ?? null,
+      webhookNameSnapshot: webhookRecord?.name ?? log.webhookNameSnapshot,
+      manualUrlEncrypted: webhookRecord ? null : log.manualUrlEncrypted,
+      manualUrlKeyVersion: webhookRecord ? null : log.manualUrlKeyVersion,
+      mode: log.mode as MessageMode,
+      payload,
+      status,
+      httpStatus: result.httpStatus,
+      latencyMs,
+      discordMessageId: result.messageId,
+      error: result.error,
+      source: "resend",
+    });
+  } catch (e) {
+    logger.error("send", "resend log insert failed", e instanceof Error ? e.message : e);
+    logPersisted = false;
+  }
 
+  // Best-effort webhook bookkeeping — must not fail the action.
   if (webhookRecord) {
-    await db
-      .update(webhooks)
-      .set({ lastUsedAt: new Date() })
-      .where(eq(webhooks.id, webhookRecord.id));
-    if (result.httpStatus === 404 || result.httpStatus === 401) {
+    try {
       await db
         .update(webhooks)
-        .set({ lastStatus: "invalid" })
+        .set({ lastUsedAt: new Date() })
         .where(eq(webhooks.id, webhookRecord.id));
+      if (result.httpStatus === 404 || result.httpStatus === 401) {
+        await markWebhookInvalid(webhookRecord.id, `Discord HTTP ${result.httpStatus}`);
+      }
+    } catch (e) {
+      logger.error("send", "webhook bookkeeping failed", e instanceof Error ? e.message : e);
     }
   }
 
@@ -677,34 +713,15 @@ export async function resendLogAction(logId: string) {
   if (!result.success) {
     return { error: result.error ?? t("generic") };
   }
-  return { success: true, messageId: result.messageId, message: t("messageResent") };
+  return { success: true, messageId: result.messageId, message: t("messageResent"), logPersisted };
 }
 
-/* --- Get logs with filters --- */
-export async function getLogs(filters: {
-  status?: string;
-  webhookId?: string;
-  mode?: string;
-  source?: string;
-  search?: string;
-  datePreset?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  sort?: string;
-  page?: number;
-  perPage?: number;
-}) {
-  const user = await requireAuth();
-
-  // Validate filter params: whitelists the status/mode/source/sort enums
-  // and bounds page/perPage (perPage max 100) so a crafted query string
-  // can't exhaust memory. On invalid input fall back to safe defaults
-  // instead of throwing — this runs inside server components.
-  const v: Partial<LogFilter> = logFilterSchema.safeParse(filters).data ?? {};
+/** Shared filter builder for getLogs and the export action below. */
+function buildLogFilterConditions(userId: string, v: Partial<LogFilter>) {
   const { status, webhookId, mode, source, search } = v;
   const { datePreset, dateFrom, dateTo } = v;
 
-  const conditions = [eq(messageLogs.userId, user.id)];
+  const conditions = [eq(messageLogs.userId, userId)];
 
   if (status) {
     conditions.push(eq(messageLogs.status, status));
@@ -743,6 +760,33 @@ export async function getLogs(filters: {
       sql`(${messageLogs.webhookNameSnapshot} ILIKE ${`%${search}%`} OR CAST(${messageLogs.payload} AS TEXT) ILIKE ${`%${search}%`} OR ${messageLogs.discordMessageId} ILIKE ${`%${search}%`})`,
     );
   }
+
+  return conditions;
+}
+
+/* --- Get logs with filters --- */
+export async function getLogs(filters: {
+  status?: string;
+  webhookId?: string;
+  mode?: string;
+  source?: string;
+  search?: string;
+  datePreset?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sort?: string;
+  page?: number;
+  perPage?: number;
+}) {
+  const user = await requireAuth();
+
+  // Validate filter params: whitelists the status/mode/source/sort enums
+  // and bounds page/perPage (perPage max 100) so a crafted query string
+  // can't exhaust memory. On invalid input fall back to safe defaults
+  // instead of throwing — this runs inside server components.
+  const v: Partial<LogFilter> = logFilterSchema.safeParse(filters).data ?? {};
+
+  const conditions = buildLogFilterConditions(user.id, v);
 
   const sort = v.sort ?? "newest";
   const page = v.page ?? 1;
@@ -803,6 +847,38 @@ export async function getLogs(filters: {
         deliveredTotal > 0 ? Math.round((sentTotal / deliveredTotal) * 100) : 0,
     },
   };
+}
+
+/* --- Get ALL filtered logs for export (no pagination, capped) ---
+ * Same filter input type as getLogs (minus pagination). Returns at most
+ * 5000 rows so a huge history can't exhaust memory — the UI should narrow
+ * the filters for larger histories. Row shape matches getLogs.
+ */
+export async function getAllFilteredLogsAction(filters: {
+  status?: string;
+  webhookId?: string;
+  mode?: string;
+  source?: string;
+  search?: string;
+  datePreset?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sort?: string;
+}) {
+  const user = await requireAuth();
+
+  const v: Partial<LogFilter> = logFilterSchema.safeParse(filters).data ?? {};
+  const conditions = buildLogFilterConditions(user.id, v);
+  const sort = v.sort ?? "newest";
+
+  const logs = await db
+    .select()
+    .from(messageLogs)
+    .where(and(...conditions))
+    .orderBy(sort === "oldest" ? (messageLogs.createdAt as any) : desc(messageLogs.createdAt))
+    .limit(5000);
+
+  return { logs };
 }
 
 /* --- Get single log detail --- */

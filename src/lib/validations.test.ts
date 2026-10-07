@@ -3,6 +3,8 @@ import {
   sendRequestSchema,
   templateSchema,
   messageModeSchema,
+  httpUrlSchema,
+  embedsSchema,
 } from "./validations";
 
 // Schemas take a translator; tests use an identity stub.
@@ -82,5 +84,36 @@ describe("templateSchema", () => {
         tags: Array.from({ length: 11 }, (_, i) => `t${i}`),
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("httpUrlSchema", () => {
+  const schema = httpUrlSchema(t);
+
+  it("accepts http and https URLs", () => {
+    expect(schema.safeParse("https://example.com/img.png").success).toBe(true);
+    expect(schema.safeParse("http://example.com/x").success).toBe(true);
+  });
+
+  // SECURITY: z.string().url() alone accepts these (URL parser), which would
+  // become stored XSS when rendered as <a href> on the public share page.
+  it("rejects javascript: URLs", () => {
+    expect(schema.safeParse("javascript:alert(1)").success).toBe(false);
+    expect(schema.safeParse("JaVaScRiPt:alert(1)").success).toBe(false);
+  });
+
+  it("rejects data: URLs", () => {
+    expect(schema.safeParse("data:text/html,<h1>x</h1>").success).toBe(false);
+  });
+
+  it("rejects non-URLs", () => {
+    expect(schema.safeParse("not a url").success).toBe(false);
+  });
+
+  it("rejects javascript: URLs inside embeds", () => {
+    const res = embedsSchema(t).safeParse([
+      { title: "x", url: "javascript:alert(1)" },
+    ]);
+    expect(res.success).toBe(false);
   });
 });

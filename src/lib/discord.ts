@@ -189,7 +189,8 @@ export type SendResult = {
 /**
  * Send a message via webhook.
  * Uses ?wait=true to get the message ID back.
- * Automatically retries on 429 with Discord's retry_after backoff (max 3 retries).
+ * Automatically retries on 429 with Discord's retry_after backoff (max 3 retries),
+ * on 5xx with linear backoff (max 3 retries), and on network errors/timeouts.
  * See PRD 3.4, 6.3.
  */
 export async function sendWebhookMessage(
@@ -241,6 +242,22 @@ export async function sendWebhookMessage(
         // Auto-retry with backoff if attempts remain
         if (attempt < maxRetries) {
           await new Promise((r) => setTimeout(r, retryAfter * 1000));
+          continue;
+        }
+        return lastResult;
+      }
+
+      // Transient Discord errors (5xx) are retried with backoff, like 429s —
+      // a momentary Discord outage shouldn't permanently fail a message.
+      // 4xx (other than 429) are permanent and fail immediately.
+      if (response.status >= 500 && response.status <= 599) {
+        lastResult = {
+          success: false,
+          httpStatus: response.status,
+          error: `Discord error HTTP ${response.status}`,
+        };
+        if (attempt < maxRetries) {
+          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
           continue;
         }
         return lastResult;

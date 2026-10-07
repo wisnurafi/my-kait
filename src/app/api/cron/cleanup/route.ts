@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { safeEqual } from "@/server/admin-password";
 
 /** Rows per DELETE chunk — keeps each statement small and lock-friendly. */
 const CLEANUP_BATCH_SIZE = 5000;
@@ -15,10 +16,12 @@ const CLEANUP_BATCH_SIZE = 5000;
 const CLEANUP_MAX_BATCHES = 200;
 
 export async function GET(req: Request) {
-  // Verify secret
+  // Verify secret — strict "Bearer <secret>" format, timing-safe comparison.
   const authHeader = req.headers.get("authorization");
-  const providedSecret = authHeader?.replace("Bearer ", "");
-  if (providedSecret !== env.CRON_SECRET) {
+  const providedSecret = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length)
+    : "";
+  if (!safeEqual(providedSecret, env.CRON_SECRET)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
