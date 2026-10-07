@@ -13,7 +13,7 @@ import { getActionT } from "@/server/i18n";
 import { sendRequestSchema } from "@/lib/validations";
 import { encryptWebhookUrl } from "@/lib/crypto";
 import { validateWebhookUrl } from "@/lib/discord";
-import { substitutePayloadVariables } from "@/lib/template-vars";
+import { substitutePayloadVariables, parseCustomVars } from "@/lib/template-vars";
 
 const MIN_LEAD_MS = 60_000; // must be at least 1 minute in the future
 const MAX_LEAD_MS = 365 * 24 * 60 * 60_000; // at most 1 year out
@@ -120,9 +120,11 @@ export async function scheduleMessageAction(input: {
   }
 
   // Substitute custom variables now — what you see is what gets sent.
+  // Validated with the same strict rules as an immediate send (see
+  // parseCustomVars); malformed input is ignored and never reaches replaceAll.
   const processedPayload = substitutePayloadVariables(
     parsed.data.payload as Record<string, unknown>,
-    input.customVars,
+    parseCustomVars(input.customVars),
   );
 
   const [created] = await db

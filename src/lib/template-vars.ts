@@ -111,3 +111,49 @@ export function substitutePayloadVariables(
 
   return processValue(payload) as Record<string, unknown>;
 }
+
+/**
+ * Validate user-supplied custom template variables.
+ *
+ * Accepts a JSON string (e.g. from FormData) or an already-parsed value.
+ * Returns the validated record, or undefined when the input is missing,
+ * malformed, or fails validation — callers treat invalid input as
+ * "no custom vars", never an error (same as the send form always did).
+ *
+ * Rules:
+ * - plain object (not array), 1–20 entries
+ * - key matches /^\{[^{}]+\}$/ (e.g. "{nama}"), max 60 chars
+ * - value is a string, max 500 chars
+ *
+ * The key shape + value cap close the replaceAll("", X) memory-exhaustion
+ * vector: an empty key would splice X between every character of the payload.
+ */
+export function parseCustomVars(
+  input: unknown,
+): Record<string, string> | undefined {
+  let parsed: unknown = input;
+  if (typeof input === "string") {
+    if (!input) return undefined;
+    try {
+      parsed = JSON.parse(input);
+    } catch {
+      return undefined;
+    }
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return undefined;
+  }
+  const entries = Object.entries(parsed as Record<string, unknown>);
+  const valid =
+    entries.length > 0 &&
+    entries.length <= 20 &&
+    entries.every(
+      ([k, v]) =>
+        typeof v === "string" &&
+        v.length <= 500 &&
+        /^\{[^{}]+\}$/.test(k) &&
+        k.length <= 60,
+    );
+  if (!valid) return undefined;
+  return Object.fromEntries(entries.map(([k, v]) => [k, v as string]));
+}

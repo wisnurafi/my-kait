@@ -39,13 +39,14 @@ const loginLimiter = createLimiter(5, "60 s");       // 5 login attempts per min
 const publicTemplateLimiter = createLimiter(30, "60 s"); // 30 views per minute
 const reportLimiter = createLimiter(5, "1 h"); // 5 reports per hour per IP
 const apiSendLimiter = createLimiter(5, "60 s"); // 5 API sends per minute per key
+const importLimiter = createLimiter(10, "60 s"); // 10 template imports per minute per user
 
 /**
  * Check rate limit. Returns { success, remaining, reset }.
  * If rate limiting is disabled, always returns success.
  */
 export async function checkRateLimit(
-  type: "send" | "ping" | "addWebhook" | "login" | "publicTemplate" | "report" | "apiSend",
+  type: "send" | "ping" | "addWebhook" | "login" | "publicTemplate" | "report" | "apiSend" | "import",
   identifier: string,
 ): Promise<{ success: boolean; remaining: number; reset: number }> {
   const limiter = {
@@ -56,6 +57,7 @@ export async function checkRateLimit(
     publicTemplate: publicTemplateLimiter,
     report: reportLimiter,
     apiSend: apiSendLimiter,
+    import: importLimiter,
   }[type];
 
   if (!limiter) {
