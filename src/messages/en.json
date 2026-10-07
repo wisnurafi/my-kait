@@ -122,6 +122,20 @@
       "restoreConfirm": "Restore version",
       "restoreOk": "Version restored",
       "keptNote": "Only the {count} newest snapshots are kept."
+    },
+    "bulk": {
+      "select": "Select",
+      "selectAll": "Select all",
+      "selected": "{count} selected",
+      "moveTo": "Move to…",
+      "delete": "Delete",
+      "done": "Done",
+      "deleteTitle": "Delete {count} templates?",
+      "deleteMessage": "This cannot be undone.",
+      "deleteConfirm": "Delete",
+      "deletedOk": "Deleted {count} templates",
+      "movedOk": "Moved {count} templates",
+      "actionFailed": "Bulk action failed"
     }
   },
   "dashboard": {
@@ -436,7 +450,21 @@
     "loadMore": "Load more",
     "showingCount": "Showing {shown} of {total} webhooks",
     "noWebhooksHint": "Add your first Discord webhook to start sending messages.",
-    "noResultsHint": "Try a different keyword or reset the filters."
+    "noResultsHint": "Try a different keyword or reset the filters.",
+    "bulk": {
+      "select": "Select",
+      "selectAll": "Select all",
+      "selected": "{count} selected",
+      "moveTo": "Move to…",
+      "delete": "Delete",
+      "done": "Done",
+      "deleteTitle": "Delete {count} webhooks?",
+      "deleteMessage": "This cannot be undone.",
+      "deleteConfirm": "Delete",
+      "deletedOk": "Deleted {count} webhooks",
+      "movedOk": "Moved {count} webhooks",
+      "actionFailed": "Bulk action failed"
+    }
   },
   "editor": {
     "title": "Message Editor",
