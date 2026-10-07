@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.8.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm tsc --noEmit
+
+      - name: Unit tests
+        run: pnpm test
+
+      # Full Next.js build — catches "use server" export violations and
+      # other build-only errors that tsc can't see. Dummy env vars are
+      # enough: build-time DB reads (landing stats) fall back gracefully.
+      - name: Build
+        run: pnpm build
+        env:
+          DISCORD_CLIENT_ID: ci-dummy
+          DISCORD_CLIENT_SECRET: ci-dummy
+          AUTH_SECRET: ci-dummy-auth-secret-32-chars-min
+          DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+          WEBHOOK_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+          CRON_SECRET: ci-dummy-cron-secret
