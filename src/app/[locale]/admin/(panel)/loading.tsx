@@ -41,7 +41,7 @@ export default function AdminOverviewLoading() {
         {/* Health panel */}
         <div className="panel p-5 space-y-3">
           <Skeleton className="h-5 w-44" />
-          {Array.from({ length: 3 }).map((_, i) => (
+          {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
               className="flex items-center justify-between border-t border-border-ink pt-3"
