@@ -105,7 +105,24 @@
     "eyebrow": "template library",
     "createTemplate": "Create template",
     "noSearchResultsHint": "Try a different keyword or reset the filters.",
-    "backToGallery": "Back to Gallery"
+    "backToGallery": "Back to Gallery",
+    "history": "Version history",
+    "versions": {
+      "title": "Version history",
+      "subtitle": "Snapshots of \"{name}\"",
+      "snapshotNow": "Snapshot now",
+      "snapshotting": "Saving…",
+      "snapshotOk": "Snapshot saved",
+      "loading": "Loading…",
+      "empty": "No snapshots yet. Take one before making big changes.",
+      "latest": "Latest",
+      "restore": "Restore",
+      "restoreTitle": "Restore this version?",
+      "restoreMessage": "Replace \"{name}\" with this snapshot? Your current state is saved as a new snapshot first, so you can undo.",
+      "restoreConfirm": "Restore version",
+      "restoreOk": "Version restored",
+      "keptNote": "Only the {count} newest snapshots are kept."
+    }
   },
   "dashboard": {
     "greeting": "Hey, {name}! 👋",
@@ -662,7 +679,8 @@
     "scheduledInvalidDate": "Invalid date.",
     "scheduledTooSoon": "Schedule at least 1 minute in the future.",
     "scheduledTooFar": "Cannot schedule more than 1 year ahead.",
-    "scheduledNotFound": "Scheduled message not found."
+    "scheduledNotFound": "Scheduled message not found.",
+    "versionNotFound": "Template version not found."
   },
   "ping": {
     "active": "Webhook is active",

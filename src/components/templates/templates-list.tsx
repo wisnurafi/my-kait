@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { FilterChip } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import { TemplateHistoryDialog } from "./template-history-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -42,6 +43,7 @@ import {
   FolderPlus,
   Folder,
   FolderOpen,
+  History,
   LayoutGrid,
   FileQuestion,
   LayoutTemplate,
@@ -176,6 +178,7 @@ export function TemplatesList({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget>(null);
+  const [historyFor, setHistoryFor] = useState<{ id: string; name: string } | null>(null);
 
   function pushParams(patch: Record<string, string | undefined>) {
     const params = new URLSearchParams();
@@ -689,6 +692,16 @@ export function TemplatesList({
                               <Trash2 size={16} className="ia-trash" />
                             </Button>
                           </Tooltip>
+                          <Tooltip content={t("history")}>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => setHistoryFor(template)}
+                              className="hv"
+                            >
+                              <History size={16} />
+                            </Button>
+                          </Tooltip>
                         </div>
                         {shared?.templateId === template.id && (
                           <div className="mt-3 p-2 bg-sunken border border-border-ink rounded-lg">
@@ -819,6 +832,15 @@ export function TemplatesList({
         confirmLabel={t("confirmAction")}
         loading={pending}
       />
+
+      {historyFor && (
+        <TemplateHistoryDialog
+          templateId={historyFor.id}
+          templateName={historyFor.name}
+          open={historyFor !== null}
+          onClose={() => setHistoryFor(null)}
+        />
+      )}
     </div>
   );
 }

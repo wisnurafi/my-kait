@@ -105,7 +105,24 @@
     "eyebrow": "pustaka template",
     "createTemplate": "Buat template",
     "noSearchResultsHint": "Coba kata kunci lain atau atur ulang filter.",
-    "backToGallery": "Kembali ke Galeri"
+    "backToGallery": "Kembali ke Galeri",
+    "history": "Riwayat versi",
+    "versions": {
+      "title": "Riwayat versi",
+      "subtitle": "Snapshot dari \"{name}\"",
+      "snapshotNow": "Ambil snapshot",
+      "snapshotting": "Menyimpan…",
+      "snapshotOk": "Snapshot tersimpan",
+      "loading": "Memuat…",
+      "empty": "Belum ada snapshot. Ambil satu sebelum mengubah besar-besaran.",
+      "latest": "Terbaru",
+      "restore": "Kembalikan",
+      "restoreTitle": "Kembalikan ke versi ini?",
+      "restoreMessage": "Ganti \"{name}\" dengan snapshot ini? Kondisi sekarang disimpan dulu sebagai snapshot baru, jadi bisa di-undo.",
+      "restoreConfirm": "Kembalikan versi",
+      "restoreOk": "Versi dikembalikan",
+      "keptNote": "Hanya {count} snapshot terbaru yang disimpan."
+    }
   },
   "dashboard": {
     "greeting": "Hai, {name}! 👋",
@@ -662,7 +679,8 @@
     "scheduledInvalidDate": "Tanggal tidak valid.",
     "scheduledTooSoon": "Jadwalkan minimal 1 menit ke depan.",
     "scheduledTooFar": "Tidak bisa jadwalkan lebih dari 1 tahun ke depan.",
-    "scheduledNotFound": "Pesan terjadwal tidak ditemukan."
+    "scheduledNotFound": "Pesan terjadwal tidak ditemukan.",
+    "versionNotFound": "Versi template tidak ditemukan."
   },
   "ping": {
     "active": "Webhook aktif",

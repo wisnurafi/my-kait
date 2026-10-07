@@ -8,7 +8,7 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
-import { templates, templateShares, templateReports, users } from "@/lib/schema";
+import { templates, templateShares, templateReports, templateVersions, users } from "@/lib/schema";
 import { eq, and, desc, ilike, or, sql, count, arrayContains, notInArray } from "drizzle-orm";
 import { requireAuth, auth } from "@/lib/auth";
 import { templateSchema, reportTemplateSchema } from "@/lib/validations";
@@ -682,4 +682,139 @@ export async function getAllTemplateTags(): Promise<string[]> {
   return [...new Set(rows.flatMap((r) => r.tags ?? []))].sort((a, b) =>
     a.localeCompare(b),
   );
+}
+
+/* --- Template versioning (manual snapshots) --- */
+
+const MAX_TEMPLATE_VERSIONS = 20;
+
+async function getOwnedTemplate(templateId: string, userId: string) {
+  const rows = await db
+    .select()
+    .from(templates)
+    .where(and(eq(templates.id, templateId), eq(templates.userId, userId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+async function pruneVersions(templateId: string) {
+  const keep = await db
+    .select({ id: templateVersions.id })
+    .from(templateVersions)
+    .where(eq(templateVersions.templateId, templateId))
+    .orderBy(desc(templateVersions.createdAt), desc(templateVersions.id))
+    .limit(MAX_TEMPLATE_VERSIONS);
+  if (keep.length < MAX_TEMPLATE_VERSIONS) return;
+  const keepIds = keep.map((r) => r.id);
+  await db
+    .delete(templateVersions)
+    .where(
+      and(
+        eq(templateVersions.templateId, templateId),
+        notInArray(templateVersions.id, keepIds),
+      ),
+    );
+}
+
+/** Snapshot the template's current state as a new version. */
+export async function createTemplateVersionAction(
+  templateId: string,
+): Promise<{ error: string } | { success: true }> {
+  const user = await requireAuth();
+  const t = await getActionT("errors");
+  const tpl = await getOwnedTemplate(templateId, user.id);
+  if (!tpl) return { error: t("templateNotFound") };
+
+  await db.insert(templateVersions).values({
+    templateId: tpl.id,
+    userId: user.id,
+    name: tpl.name,
+    description: tpl.description,
+    tags: tpl.tags ?? [],
+    payload: tpl.payload,
+  });
+  await pruneVersions(tpl.id);
+  return { success: true };
+}
+
+/** Newest-first version list for a template (metadata only). */
+export async function listTemplateVersionsAction(
+  templateId: string,
+): Promise<
+  | { error: string }
+  | { versions: Array<{ id: string; name: string; createdAt: string }> }
+> {
+  const user = await requireAuth();
+  const t = await getActionT("errors");
+  const tpl = await getOwnedTemplate(templateId, user.id);
+  if (!tpl) return { error: t("templateNotFound") };
+
+  const rows = await db
+    .select({
+      id: templateVersions.id,
+      name: templateVersions.name,
+      createdAt: templateVersions.createdAt,
+    })
+    .from(templateVersions)
+    .where(eq(templateVersions.templateId, templateId))
+    .orderBy(desc(templateVersions.createdAt), desc(templateVersions.id));
+  return {
+    versions: rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      createdAt: r.createdAt.toISOString(),
+    })),
+  };
+}
+
+/**
+ * Restore a version: snapshot the current state first (so the restore
+ * itself is undoable), then apply the version's data to the template.
+ */
+export async function restoreTemplateVersionAction(
+  versionId: string,
+): Promise<{ error: string } | { success: true }> {
+  const user = await requireAuth();
+  const t = await getActionT("errors");
+
+  const rows = await db
+    .select()
+    .from(templateVersions)
+    .where(
+      and(
+        eq(templateVersions.id, versionId),
+        eq(templateVersions.userId, user.id),
+      ),
+    )
+    .limit(1);
+  const version = rows[0];
+  if (!version) return { error: t("versionNotFound") };
+
+  const tpl = await getOwnedTemplate(version.templateId, user.id);
+  if (!tpl) return { error: t("templateNotFound") };
+
+  // Safety snapshot of the pre-restore state
+  await db.insert(templateVersions).values({
+    templateId: tpl.id,
+    userId: user.id,
+    name: tpl.name,
+    description: tpl.description,
+    tags: tpl.tags ?? [],
+    payload: tpl.payload,
+  });
+
+  await db
+    .update(templates)
+    .set({
+      name: version.name,
+      description: version.description,
+      tags: version.tags ?? [],
+      payload: version.payload,
+      updatedAt: new Date(),
+    })
+    .where(eq(templates.id, tpl.id));
+
+  await pruneVersions(tpl.id);
+  revalidatePath("/templates");
+  return { success: true };
 }
