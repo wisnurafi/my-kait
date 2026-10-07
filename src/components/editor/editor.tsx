@@ -40,6 +40,7 @@ import {
   Send,
   Undo,
   Redo,
+  Eraser,
   ChevronDown,
   ChevronUp,
   Save,
@@ -48,6 +49,7 @@ import {
 } from "lucide-react";
 import { SaveTemplateModal } from "@/components/editor/save-template-modal";
 import { ScheduleDialog } from "@/components/editor/schedule-dialog";
+import { ConfirmDialog } from "@/components/ui/dialog";
 import { Link } from "@/i18n/routing";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -162,6 +164,7 @@ export function Editor({
   const [jsonText, setJsonText] = useState("");
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Undo/redo history
   const [history, setHistory] = useState<EditorState[]>([]);
@@ -214,6 +217,16 @@ export function Editor({
     setHistoryIndex(0);
     localStorage.removeItem(DRAFT_KEY);
   }, []);
+
+  // Whether the editor holds anything worth keeping — drives the Clear
+  // button's disabled state so it can't be clicked on an empty editor.
+  const isEditorEmpty =
+    !state.content.trim() &&
+    state.embeds.length === 0 &&
+    !state.username.trim() &&
+    !state.avatarUrl.trim() &&
+    !state.threadId.trim() &&
+    Object.values(varValues).every((v) => !v?.trim());
 
   // Keyboard shortcuts: Ctrl/Cmd+Enter = send, Ctrl/Cmd+S = save as template
   const sendFormRef = useRef<HTMLFormElement>(null);
@@ -402,6 +415,9 @@ export function Editor({
         if (res?.success) {
           if (res.message) toast.success(res.message);
           setEditMessageId(null); // Exit edit mode after success
+          // Clear the editor like send/schedule do — the content now lives in
+          // Discord; keeping it would risk an accidental duplicate send.
+          resetEditor();
         } else if (res?.error) {
           toast.error(res.error);
         }
@@ -534,6 +550,15 @@ export function Editor({
         </Button>
         <Button variant="ghost" size="sm" onClick={redo} disabled={historyIndex >= history.length - 1} className="gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
           <Redo size={14} /> {t("redo")}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowClearConfirm(true)}
+          disabled={isEditorEmpty}
+          className="gap-2 font-mono text-[11px] uppercase tracking-[0.14em]"
+        >
+          <Eraser size={14} /> {t("clearEditor")}
         </Button>
         <span aria-hidden="true" className="mx-2 h-5 w-px bg-border-ink" />
         <Button variant="ghost" size="sm" onClick={handleExportJson} className="hv gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
@@ -941,6 +966,20 @@ export function Editor({
       {showSaveTemplate && (
         <SaveTemplateModal payload={payload} onClose={() => setShowSaveTemplate(false)} />
       )}
+
+      {/* Clear editor confirmation */}
+      <ConfirmDialog
+        open={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={() => {
+          setEditMessageId(null);
+          resetEditor();
+          setShowClearConfirm(false);
+        }}
+        title={t("clearTitle")}
+        message={t("clearMessage")}
+        confirmLabel={t("clearConfirm")}
+      />
 
       {/* Schedule dialog */}
       {showSchedule && (
