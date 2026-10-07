@@ -73,7 +73,9 @@ export default async function AdminOverviewPage({
   const healthy =
     stats.webhooksDown === 0 &&
     stats.failedChecks24h === 0 &&
-    stats.failedMessages24h === 0;
+    stats.failedMessages24h === 0 &&
+    stats.failedScheduled24h === 0 &&
+    stats.stuckScheduled === 0;
 
   return (
     <div className="space-y-6">
@@ -197,6 +199,22 @@ export default async function AdminOverviewPage({
               <dd>
                 <Badge variant={stats.failedMessages24h > 0 ? "warning" : "success"}>
                   {stats.failedMessages24h}
+                </Badge>
+              </dd>
+            </div>
+            <div className="flex items-center justify-between border-t border-border-ink pt-3">
+              <dt className="text-fg-secondary">{t("failedScheduled24h")}</dt>
+              <dd>
+                <Badge variant={stats.failedScheduled24h > 0 ? "warning" : "success"}>
+                  {stats.failedScheduled24h}
+                </Badge>
+              </dd>
+            </div>
+            <div className="flex items-center justify-between border-t border-border-ink pt-3">
+              <dt className="text-fg-secondary">{t("stuckScheduled")}</dt>
+              <dd>
+                <Badge variant={stats.stuckScheduled > 0 ? "danger" : "success"}>
+                  {stats.stuckScheduled}
                 </Badge>
               </dd>
             </div>

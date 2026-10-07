@@ -870,7 +870,9 @@
     "chartHint": "Hover / focus each bar for details",
     "chartUsersNew": "New users",
     "chartTotal": "Total",
-    "chartSuccessRate": "Success rate"
+    "chartSuccessRate": "Success rate",
+    "failedScheduled24h": "Failed scheduled / 24h",
+    "stuckScheduled": "Stuck sending"
   },
   "docs": {
     "eyebrow": "Public REST API",

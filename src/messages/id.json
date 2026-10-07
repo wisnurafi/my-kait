@@ -870,7 +870,9 @@
     "chartHint": "Hover / fokus tiap bar untuk detail",
     "chartUsersNew": "Pengguna baru",
     "chartTotal": "Total",
-    "chartSuccessRate": "Tingkat keberhasilan"
+    "chartSuccessRate": "Tingkat keberhasilan",
+    "failedScheduled24h": "Jadwal gagal / 24 jam",
+    "stuckScheduled": "Pengiriman macet"
   },
   "docs": {
     "eyebrow": "REST API Publik",

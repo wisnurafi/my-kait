@@ -17,10 +17,11 @@ import {
   webhooks,
   webhookChecks,
   adminAuditLogs,
+  scheduledMessages,
   type ReportStatus,
 } from "@/lib/schema";
 import { ADMIN_COOKIE_NAME, verifyAdminSession } from "@/lib/admin-session";
-import { eq, and, gte, sql, desc, ilike, or, count } from "drizzle-orm";
+import { eq, and, gte, lt, sql, desc, ilike, or, count } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 
 export type { ReportStatus } from "@/lib/schema";
@@ -75,14 +76,18 @@ export type AdminOverview = {
   webhooksDown: number;
   failedChecks24h: number;
   failedMessages24h: number;
+  failedScheduled24h: number;
+  stuckScheduled: number;
 };
 
 export async function getAdminOverview(): Promise<AdminOverview> {
   await requireAdmin();
   const d7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const d1 = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  // Same stale-claim threshold as the dispatch cron (STALE_CLAIM_MINUTES).
+  const staleClaim = new Date(Date.now() - 10 * 60_000);
 
-  const [[u], [t], [s], [m], [r], [wd], [fc], [fm]] = await Promise.all([
+  const [[u], [t], [s], [m], [r], [wd], [fc], [fm], [fs], [st]] = await Promise.all([
     db.select({ n: count() }).from(users),
     db.select({ n: count() }).from(templates),
     db
@@ -119,6 +124,28 @@ export async function getAdminOverview(): Promise<AdminOverview> {
           gte(messageLogs.createdAt, d1),
         ),
       ),
+    // Schedules due in the last 24h that failed to dispatch (scheduledAt
+    // is the closest proxy to failure time — the table has no updatedAt).
+    db
+      .select({ n: count() })
+      .from(scheduledMessages)
+      .where(
+        and(
+          eq(scheduledMessages.status, "failed"),
+          gte(scheduledMessages.scheduledAt, d1),
+        ),
+      ),
+    // 'sending' rows claimed >10 min ago: the dispatch cron re-queues
+    // these, so a non-zero count means the cron hasn't ticked recently.
+    db
+      .select({ n: count() })
+      .from(scheduledMessages)
+      .where(
+        and(
+          eq(scheduledMessages.status, "sending"),
+          lt(scheduledMessages.claimedAt, staleClaim),
+        ),
+      ),
   ]);
 
   return {
@@ -130,6 +157,8 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     webhooksDown: wd.n,
     failedChecks24h: fc.n,
     failedMessages24h: fm.n,
+    failedScheduled24h: fs.n,
+    stuckScheduled: st.n,
   };
 }
 
