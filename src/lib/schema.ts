@@ -405,6 +405,44 @@ export const templatesRelations = relations(templates, ({ one, many }) => ({
   }),
   shares: many(templateShares),
   reports: many(templateReports),
+  versions: many(templateVersions),
+}));
+
+/* --- Template versions (manual snapshots for restore) --- */
+
+export const templateVersions = pgTable(
+  "template_versions",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    templateId: text("template_id")
+      .notNull()
+      .references(() => templates.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    tags: text("tags").array().default([]),
+    payload: jsonb("payload").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    templateIdx: index("template_versions_template_id_idx").on(
+      table.templateId,
+      table.createdAt,
+    ),
+  }),
+);
+
+export const templateVersionsRelations = relations(templateVersions, ({ one }) => ({
+  template: one(templates, {
+    fields: [templateVersions.templateId],
+    references: [templates.id],
+  }),
+  user: one(users, {
+    fields: [templateVersions.userId],
+    references: [users.id],
+  }),
 }));
 
 export const templateSharesRelations = relations(templateShares, ({ one }) => ({
