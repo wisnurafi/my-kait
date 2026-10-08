@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import Link from "next/link";
 import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge, FilterChip } from "@/components/ui/badge";
@@ -159,6 +160,11 @@ export function ScheduledList() {
             <p className="text-sm text-fg-secondary">
               {filter === "history" ? t("emptyHistory") : t("emptyUpcoming")}
             </p>
+            <Link href={`/${locale}/editor`} className="mt-1">
+              <Button size="sm" className="hv gap-1.5">
+                <CalendarClock size={14} /> {t("emptyCta")}
+              </Button>
+            </Link>
           </CardBody>
         </Card>
       ) : (

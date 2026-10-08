@@ -1102,6 +1102,7 @@
     "status_cancelled": "Cancelled",
     "emptyUpcoming": "Nothing scheduled yet. Compose a message in the editor and hit Schedule.",
     "emptyHistory": "No history yet. Sent, failed and cancelled schedules will appear here.",
+    "emptyCta": "Schedule a message",
     "cancelTitle": "Cancel scheduled message",
     "cancelMessage": "Stop \"{name}\" from being sent? This cannot be undone.",
     "cancelConfirmLabel": "Confirm cancel scheduled",
