@@ -61,6 +61,8 @@
     "load": "Muat",
     "save": "Simpan",
     "saveAs": "Simpan sebagai Template",
+    "editTitle": "Edit Template",
+    "update": "Simpan perubahan",
     "confirmDelete": "Yakin hapus template ini?",
     "deleteTitle": "Hapus template",
     "deleted": "Template dihapus",

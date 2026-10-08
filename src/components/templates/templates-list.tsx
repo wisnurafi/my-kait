@@ -29,7 +29,6 @@ import {
   createShareLinkAction,
   revokeShareLinkAction,
   getShareLinks,
-  updateTemplateAction,
 } from "@/server/actions/templates";
 import {
   createFolderAction,
@@ -177,10 +176,6 @@ export function TemplatesList({
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
   const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editTags, setEditTags] = useState("");
   const [shared, setShared] = useState<{ templateId: string; slug: string } | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<{ templateId: string } | null>(null);
   const [revoking, setRevoking] = useState(false);
@@ -403,24 +398,24 @@ export function TemplatesList({
     router.push(`/templates?${params.toString()}`, { scroll: false });
   }
 
-  function handleSaveEdit(id: string) {
-    startTransition(async () => {
-      const fd = new FormData();
-      fd.set("id", id);
-      fd.set("name", editName);
-      fd.set("description", editDesc);
-      fd.set("tags", editTags);
-      await updateTemplateAction(fd);
-      setEditingId(null);
-      toast.success(t("updated"));
-    });
-  }
-
-  function startEdit(template: Template) {
-    setEditingId(template.id);
-    setEditName(template.name);
-    setEditDesc(template.description ?? "");
-    setEditTags((template.tags ?? []).join(", "));
+  /**
+   * Full edit: open the template in the editor in edit mode, so the user can
+   * change everything — name, description, tags, and the message content.
+   * The editor picks up "mykait-edit-template" from sessionStorage on mount.
+   */
+  function handleEditTemplate(template: Template) {
+    sessionStorage.setItem(
+      "mykait-edit-template",
+      JSON.stringify({
+        id: template.id,
+        name: template.name,
+        description: template.description ?? "",
+        tags: template.tags ?? [],
+        payload: template.payload ?? {},
+      }),
+    );
+    // Use full reload with locale prefix to ensure editor remounts and loads the template
+    window.location.href = `/${locale}/editor`;
   }
 
   function handleCreateFolder() {
@@ -703,32 +698,6 @@ export function TemplatesList({
                   style={{ "--stagger-index": i } as React.CSSProperties}
                 >
                   <Card className="p-5 h-full">
-                    {editingId === template.id ? (
-                      <div className="space-y-3">
-                        <div>
-                          <Label>{t("name")}</Label>
-                          <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
-                        </div>
-                        <div>
-                          <Label>{t("description")}</Label>
-                          <Textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={2} />
-                        </div>
-                        <div>
-                          <Label>{t("tags")}</Label>
-                          <Input value={editTags} onChange={(e) => setEditTags(e.target.value)} placeholder={t("tagsPlaceholder")} />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => handleSaveEdit(template.id)} className="hv gap-1.5">
-                            <Check size={14} className="ia-check" /> {t("save")}
-                          </Button>
-                          <Tooltip content={tc("cancel")}>
-                            <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="hv">
-                              <X size={14} className="ia-x" />
-                            </Button>
-                          </Tooltip>
-                        </div>
-                      </div>
-                    ) : (
                       <div>
                         {/* Card header: icon box + name + badges */}
                         <div className="flex items-center gap-3">
@@ -810,7 +779,7 @@ export function TemplatesList({
                             <Button
                               size="icon"
                               variant="ghost"
-                              onClick={() => startEdit(template)}
+                              onClick={() => handleEditTemplate(template)}
                               className="hv"
                             >
                               <Pencil size={16} className="ia-pencil" />
@@ -903,7 +872,6 @@ export function TemplatesList({
                           </div>
                         )}
                       </div>
-                    )}
                   </Card>
                 </div>
               );
