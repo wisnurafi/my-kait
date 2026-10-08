@@ -761,7 +761,8 @@
     "variableValueTooLong": "Nilai default terlalu panjang (maks 500 karakter).",
     "variableExists": "Variable sudah ada.",
     "variableLimitReached": "Batas variable tercapai (maks 50).",
-    "variableNotFound": "Variable tidak ditemukan."
+    "variableNotFound": "Variable tidak ditemukan.",
+    "idempotencyKeyTooLong": "idempotencyKey maksimal 100 karakter."
   },
   "ping": {
     "active": "Webhook aktif",
@@ -1033,7 +1034,7 @@
     "pSavePayloadN": "savePayload",
     "pSavePayloadD": "boolean · Simpan payload ke log. Default true.",
     "pIdemN": "idempotencyKey",
-    "pIdemD": "string · Kunci unik buatan lu per pengiriman. Retry dengan key yang sama mengembalikan hasil asli, bukan kirim dua kali.",
+    "pIdemD": "string · Kunci unik buatan lu per pengiriman. Retry dengan key yang sama mengembalikan hasil asli, bukan kirim dua kali. Maksimal 100 karakter — key yang lebih panjang ditolak dengan HTTP 400.",
     "exampleTitle": "Contoh",
     "exampleCurl": "curl -X POST https://my-kait.vercel.app/api/v1/send \\\n  -H \"Authorization: Bearer mk_live_...\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"webhookId\": \"id-webhook-lu\",\n    \"payload\": { \"content\": \"Halo dari API\" },\n    \"mode\": \"normal\"\n  }'",
     "responseTitle": "Response",
@@ -1041,6 +1042,7 @@
     "responseOk": "{\n  \"ok\": true,\n  \"data\": {\n    \"logId\": \"...\",\n    \"messageId\": \"...\",\n    \"status\": \"sent\",\n    \"deduplicated\": false\n  }\n}",
     "responseErrLabel": "Error — HTTP 4xx / 5xx",
     "responseErr": "{\n  \"ok\": false,\n  \"error\": { \"code\": \"validation_failed\", \"message\": \"...\" }\n}",
+    "responseNote": "Setiap pengiriman via API tercatat di log dashboard dengan source \"api\" — payload-nya terlihat di UI kecuali savePayload di-set false.",
     "errorsTitle": "Kode error",
     "e401": "401 · missing_api_key, invalid_api_key, api_key_revoked, api_key_expired — key salah, dicabut, atau kedaluwarsa.",
     "e403": "403 · insufficient_scope — key tidak punya scope yang dibutuhkan.",
@@ -1051,7 +1053,7 @@
     "e429": "429 · rate_limited — pelankan (5 req/menit per key).",
     "e502": "502 · discord_rate_limited, discord_error — Discord menolak pengiriman; percobaannya tetap di-log dan logId disertakan.",
     "rateTitle": "Rate limit",
-    "rateBody": "5 request per menit per API key — sengaja lebih ketat dari dashboard. Kalau lewat, dapat HTTP 429. Rate limit bawaan Discord tetap berlaku di atasnya.",
+    "rateBody": "5 request per menit per API key — sengaja lebih ketat dari dashboard. Kalau lewat, dapat HTTP 429. Rate limit bawaan Discord tetap berlaku di atasnya. Catatan: kalau rate limiter-nya sendiri outage, dia fail-open — request tetap diizinkan, bukan diblokir.",
     "securityTitle": "Catatan keamanan",
     "s1": "Perlakukan key seperti password. Key lengkap ditampilkan sekali dan tidak akan pernah lagi.",
     "s2": "Yang disimpan hanya hash SHA-256 — database yang bocor tidak bisa diubah jadi key yang bisa dipakai.",

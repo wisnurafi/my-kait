@@ -214,6 +214,7 @@ export default async function DocsPage({
             copyLabel={copyLabel}
             copiedLabel={copiedLabel}
           />
+          <p className="text-sm text-fg-secondary mt-3">{t("responseNote")}</p>
         </Section>
 
         <Section id="errors" title={t("errorsTitle")}>
