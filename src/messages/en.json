@@ -527,6 +527,7 @@
     "exportJson": "Export JSON",
     "importJson": "Import JSON",
     "saveAs": "Save Template",
+    "updateTemplate": "Update Template",
     "charLimit": "Character limit",
     "totalEmbedChars": "Total embed characters",
     "undo": "Undo",

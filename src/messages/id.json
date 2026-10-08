@@ -527,6 +527,7 @@
     "exportJson": "Export JSON",
     "importJson": "Import JSON",
     "saveAs": "Simpan Template",
+    "updateTemplate": "Perbarui Template",
     "charLimit": "Batas karakter",
     "totalEmbedChars": "Total karakter embed",
     "undo": "Undo",

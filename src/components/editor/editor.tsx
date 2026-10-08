@@ -677,7 +677,7 @@ export function Editor({
           <Upload size={14} /> {t("importJson")}
         </Button>
         <Button variant="ghost" size="sm" onClick={() => setShowSaveTemplate(true)} title={t("kbdSave", { mod: modKey })} className="gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
-          <Save size={14} /> {t("saveAs")}
+          <Save size={14} /> {editTemplate ? t("updateTemplate") : t("saveAs")}
         </Button>
       </div>
 
@@ -902,7 +902,9 @@ export function Editor({
         >
           <DiscordPreview payload={previewPayload} username={state.username} avatarUrl={state.avatarUrl} />
 
-          {/* Send form */}
+          {/* Send form — hidden in template edit mode: this is template
+              editing, not message composing/sending. */}
+          {!editTemplate && (
           <section className="panel p-5 animate-fade-in">
             <h2 className="flex items-center gap-2.5 font-display text-base font-semibold mb-4">
               <span className="hv grid size-7 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
@@ -1091,6 +1093,7 @@ export function Editor({
               </div>
             </form>
           </section>
+          )}
         </div>
       </div>
 
