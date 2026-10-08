@@ -610,6 +610,8 @@
     "filterMode": "Mode",
     "filterSource": "Source",
     "filterDate": "Date",
+    "dateFrom": "From",
+    "dateTo": "To",
     "datePresets": {
       "today": "Today",
       "7d": "7 days",
