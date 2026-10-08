@@ -45,7 +45,7 @@ const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 // NOTE: kunci bulan mengikuti file locale (singkatan Indonesia: mei/agu/okt/des),
 // BUKAN singkatan Inggris — "oct"/"aug"/"may"/"dec" tidak ada di id.json/en.json
 // dan bikin key bocor ke UI (temuan tooltip Okt 2026).
-const MONTH_KEYS = ["jan", "feb", "mar", "mei", "jun", "jul", "agu", "sep", "okt", "nov", "des"] as const;
+const MONTH_KEYS = ["jan", "feb", "mar", "apr", "mei", "jun", "jul", "agu", "sep", "okt", "nov", "des"] as const;
 
 function parseLocalDate(iso: string): Date {
   const [y, m, d] = iso.split("-").map(Number);

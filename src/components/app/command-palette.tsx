@@ -33,6 +33,9 @@ import {
   Search,
   Command,
   CornerDownLeft,
+  Variable,
+  CalendarClock,
+  KeyRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -80,6 +83,9 @@ function PaletteModal({ onClose }: { onClose: () => void }) {
       { id: "editor", label: tNav("editor"), keywords: "compose write message", href: "/editor", icon: Pencil, group: "go" },
       { id: "webhooks", label: tNav("webhooks"), keywords: "discord url endpoint", href: "/webhooks", icon: Link2, group: "go" },
       { id: "templates", label: tNav("templates"), keywords: "saved library", href: "/templates", icon: FileText, group: "go" },
+      { id: "variables", label: tNav("variables"), keywords: "tokens defaults custom", href: "/variables", icon: Variable, group: "go" },
+      { id: "scheduled", label: tNav("scheduled"), keywords: "queue timed cron", href: "/scheduled", icon: CalendarClock, group: "go" },
+      { id: "api-keys", label: tNav("apiKeys"), keywords: "rest token developer", href: "/api-keys", icon: KeyRound, group: "go" },
       { id: "logs", label: tNav("logs"), keywords: "history activity", href: "/logs", icon: History, group: "go" },
       { id: "settings", label: tNav("settings"), keywords: "config preferences", href: "/settings", icon: Settings, group: "go" },
       { id: "gallery", label: t("gallery"), keywords: "public community share", href: "/gallery", icon: LayoutGrid, group: "go" },
