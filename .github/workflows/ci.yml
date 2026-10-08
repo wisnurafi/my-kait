@@ -38,5 +38,7 @@ jobs:
           DISCORD_CLIENT_SECRET: ci-dummy
           AUTH_SECRET: ci-dummy-auth-secret-32-chars-min
           DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+          UPSTASH_REDIS_REST_URL: https://ci-dummy.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: <redacted>
           WEBHOOK_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
           CRON_SECRET: ci-dummy-cron-secret
