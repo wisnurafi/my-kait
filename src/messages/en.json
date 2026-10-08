@@ -940,7 +940,6 @@
     "toastTemplateDeleted": "Template permanently deleted.",
     "toastActionFailed": "Action failed. Please try again.",
     "viewTemplate": "View template",
-    "expandReason": "Click to read more",
     "filterActive": "Active",
     "filterSuspended": "Suspended",
     "whActive": "Active",
@@ -987,7 +986,12 @@
     "toastKeyRevoked": "API key revoked.",
     "keyRevoked": "Revoked",
     "keyNeverUsed": "Never used",
-    "keyNoExpiry": "No expiry"
+    "keyNoExpiry": "No expiry",
+    "statSchedPending": "Pending scheduled",
+    "statActiveKeys": "Active API keys",
+    "colLastActive": "Last active",
+    "colCreated": "Created",
+    "reportDetailTitle": "Report detail"
   },
   "docs": {
     "eyebrow": "Public REST API",

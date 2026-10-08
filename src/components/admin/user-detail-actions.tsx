@@ -3,15 +3,14 @@
 /**
  * User detail actions: suspend/unsuspend + delete template +
  * cancel scheduled message + revoke API key.
- * Suspend/delete use the two-step ConfirmButton; the scheduled/key
- * actions use ConfirmDialog directly so server-returned errors can be
- * shown precisely instead of a generic failure toast.
+ * All destructive confirms use the shared ConfirmDialog (same pattern as
+ * the user dashboard) — centered modal with title, message, confirm/cancel
+ * and loading state.
  */
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
-import { ConfirmButton } from "@/components/admin/confirm-button";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
@@ -23,6 +22,19 @@ import {
 } from "@/server/actions/admin";
 import { Ban, Undo2, Trash2, KeyRound } from "lucide-react";
 
+/** Bounce to login when the admin session expired mid-action. */
+function useAdminActionError() {
+  const t = useTranslations("admin");
+  const router = useRouter();
+  return (err: unknown) => {
+    if (err instanceof Error && err.message === "UNAUTHORIZED") {
+      router.push("/admin/login");
+      return;
+    }
+    toast.error(t("toastActionFailed"));
+  };
+}
+
 export function SuspendUserButton({
   userId,
   isSuspended,
@@ -33,27 +45,51 @@ export function SuspendUserButton({
   username: string;
 }) {
   const t = useTranslations("admin");
+  const router = useRouter();
+  const handleError = useAdminActionError();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const confirm = async () => {
+    setBusy(true);
+    try {
+      await setUserSuspended(userId, !isSuspended);
+      toast.success(t(isSuspended ? "toastUnsuspended" : "toastSuspended"));
+      router.refresh();
+    } catch (err) {
+      handleError(err);
+    } finally {
+      setBusy(false);
+      setOpen(false);
+    }
+  };
+
   return (
-    <span className="hv inline-flex">
-      <ConfirmButton
-        action={() => setUserSuspended(userId, !isSuspended)}
+    <>
+      <Button
+        size="sm"
         variant={isSuspended ? "primary" : "destructive"}
-        confirmVariant={isSuspended ? "primary" : "destructive"}
-        label={
-          <>
-            {isSuspended ? <Undo2 size={14} /> : <Ban size={14} />}
-            {isSuspended ? t("unsuspend") : t("suspend")}
-          </>
-        }
-        confirmLabel={isSuspended ? t("unsuspend") : t("suspend")}
-        confirmHint={
+        onClick={() => setOpen(true)}
+        className="hv gap-1.5"
+      >
+        {isSuspended ? <Undo2 size={14} /> : <Ban size={14} />}
+        {isSuspended ? t("unsuspend") : t("suspend")}
+      </Button>
+      <ConfirmDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        onConfirm={confirm}
+        loading={busy}
+        danger={!isSuspended}
+        title={isSuspended ? t("unsuspend") : t("suspend")}
+        message={
           isSuspended
             ? t("unsuspendHint", { username })
             : t("suspendHint", { username })
         }
-        successMessage={t(isSuspended ? "toastUnsuspended" : "toastSuspended")}
+        confirmLabel={isSuspended ? t("unsuspend") : t("suspend")}
       />
-    </span>
+    </>
   );
 }
 
@@ -65,25 +101,49 @@ export function DeleteTemplateButton({
   templateName: string;
 }) {
   const t = useTranslations("admin");
+  const router = useRouter();
+  const handleError = useAdminActionError();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const confirm = async () => {
+    setBusy(true);
+    try {
+      await deleteTemplate(templateId);
+      toast.success(t("toastTemplateDeleted"));
+      router.refresh();
+    } catch (err) {
+      handleError(err);
+    } finally {
+      setBusy(false);
+      setOpen(false);
+    }
+  };
+
   return (
-    <span className="hv inline-flex">
-      <ConfirmButton
-        action={() => deleteTemplate(templateId)}
+    <>
+      <Button
+        size="sm"
         variant="ghost"
-        ariaLabel={t("deleteTemplate")}
-        label={
-          <>
-            <span className="ia ia-shake" aria-hidden="true">
-              <Trash2 size={14} />
-            </span>
-            <span>{t("deleteTemplate")}</span>
-          </>
-        }
+        onClick={() => setOpen(true)}
+        aria-label={t("deleteTemplate")}
+        className="hv gap-1.5 text-fg-tertiary hover:text-error shrink-0"
+      >
+        <span className="ia ia-shake" aria-hidden="true">
+          <Trash2 size={14} />
+        </span>
+        <span>{t("deleteTemplate")}</span>
+      </Button>
+      <ConfirmDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        onConfirm={confirm}
+        loading={busy}
+        title={t("deleteTemplate")}
+        message={t("deleteTemplateHint", { name: templateName })}
         confirmLabel={t("deleteTemplate")}
-        confirmHint={t("deleteTemplateHint", { name: templateName })}
-        successMessage={t("toastTemplateDeleted")}
       />
-    </span>
+    </>
   );
 }
 
@@ -96,6 +156,7 @@ export function CancelScheduledButton({
 }) {
   const t = useTranslations("admin");
   const router = useRouter();
+  const handleError = useAdminActionError();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -109,8 +170,8 @@ export function CancelScheduledButton({
         toast.success(t("toastSchedCancelled"));
         router.refresh();
       }
-    } catch {
-      toast.error(t("toastActionFailed"));
+    } catch (err) {
+      handleError(err);
     } finally {
       setBusy(false);
       setOpen(false);
@@ -151,6 +212,7 @@ export function RevokeApiKeyButton({
 }) {
   const t = useTranslations("admin");
   const router = useRouter();
+  const handleError = useAdminActionError();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -164,8 +226,8 @@ export function RevokeApiKeyButton({
         toast.success(t("toastKeyRevoked"));
         router.refresh();
       }
-    } catch {
-      toast.error(t("toastActionFailed"));
+    } catch (err) {
+      handleError(err);
     } finally {
       setBusy(false);
       setOpen(false);

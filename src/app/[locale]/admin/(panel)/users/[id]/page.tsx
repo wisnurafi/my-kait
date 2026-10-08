@@ -56,6 +56,15 @@ export default async function AdminUserDetailPage({
   ]);
 
   const activeShares = user.templates.filter((x) => x.shareActive).length;
+  const pendingReports = user.templates.reduce(
+    (sum, x) => sum + x.pendingReports,
+    0,
+  );
+  const pendingScheduled = scheduled.filter(
+    (s) => s.status === "pending" || s.status === "sending",
+  ).length;
+  const activeKeys = apiKeyList.filter((k) => !k.revokedAt).length;
+  const lastActive = user.recentLogs[0]?.createdAt ?? null;
 
   const webhookStatusMeta = {
     active: { variant: "success" as const, label: t("whActive") },
@@ -105,6 +114,11 @@ export default async function AdminUserDetailPage({
             </p>
             <p className="text-xs text-fg-secondary mt-1">
               {t("colJoined")}: {fmtDate(user.createdAt, locale)}
+              {lastActive && (
+                <>
+                  {" "}· {t("colLastActive")}: {fmtDate(lastActive, locale)}
+                </>
+              )}
             </p>
           </div>
           <SuspendUserButton
@@ -114,13 +128,14 @@ export default async function AdminUserDetailPage({
           />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-6">
           {[
             [user.templates.length, t("colTemplates")],
-            [activeShares, t("statActiveShares")],
             [user.webhooks.length, t("colWebhooks")],
-            // recentLogs is capped at 10 — label it as such, not as a total.
-            [user.recentLogs.length, t("recentLogs")],
+            [activeShares, t("statActiveShares")],
+            [pendingScheduled, t("statSchedPending")],
+            [activeKeys, t("statActiveKeys")],
+            [pendingReports, t("statPendingReports")],
           ].map(([v, label]) => (
             <div key={label as string} className="rounded-lg bg-sunken px-4 py-3">
               <p className="font-display font-bold text-2xl tabular-nums">{v as number}</p>
@@ -149,6 +164,9 @@ export default async function AdminUserDetailPage({
                 <div className="min-w-0">
                   <p className="font-medium truncate">{tpl.name}</p>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    <span className="text-xs text-fg-tertiary font-mono">
+                      {fmtDate(tpl.createdAt, locale)}
+                    </span>
                     {tpl.shareSlug ? (
                       <Link
                         href={`/t/${tpl.shareSlug}`}
@@ -196,7 +214,12 @@ export default async function AdminUserDetailPage({
                   key={w.id}
                   className="flex items-center justify-between gap-3 rounded-lg border border-border-ink px-4 py-3"
                 >
-                  <p className="font-medium truncate">{w.name}</p>
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{w.name}</p>
+                    <p className="text-xs text-fg-tertiary font-mono mt-0.5">
+                      {t("colCreated")}: {fmtDate(w.createdAt, locale)}
+                    </p>
+                  </div>
                   <Badge variant={meta.variant}>{meta.label}</Badge>
                 </li>
               );

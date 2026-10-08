@@ -3,6 +3,7 @@ import { Link } from "@/i18n/routing";
 import { Badge } from "@/components/ui/badge";
 import { getReports, type ReportStatus } from "@/server/actions/admin";
 import { ReportActions } from "@/components/admin/report-actions";
+import { ReportDetailButton } from "@/components/admin/report-detail";
 import { cn } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
 
@@ -141,17 +142,9 @@ export default async function AdminReportsPage({
                     )}
                   </td>
                   <td data-label={t("colReason")} className="max-w-[280px]">
-                    {/* Expandable: clamped by default, full text on click (no JS) */}
-                    <details className="group">
-                      <summary
-                        title={t("expandReason")}
-                        className="cursor-pointer list-none [&::-webkit-details-marker]:hidden"
-                      >
-                        <span className="line-clamp-2 group-open:line-clamp-none text-fg-secondary">
-                          {r.reason}
-                        </span>
-                      </summary>
-                    </details>
+                    <span className="line-clamp-2 text-fg-secondary">
+                      {r.reason}
+                    </span>
                   </td>
                   <td data-label={t("colDate")} className="text-xs text-fg-tertiary whitespace-nowrap font-mono">
                     {fmtDate(r.createdAt, locale)}
@@ -162,7 +155,22 @@ export default async function AdminReportsPage({
                     </Badge>
                   </td>
                   <td data-label={t("colActions")}>
-                    <div className="flex md:justify-end">
+                    {/* Single flex row: detail + moderation actions stay
+                        aligned; wraps only on narrow screens. */}
+                    <div className="flex items-center gap-1.5 flex-wrap md:justify-end">
+                      <ReportDetailButton
+                        report={{
+                          templateName: r.templateName,
+                          templateSlug: r.templateSlug,
+                          reporterName: r.reporterName ?? t("anonymous"),
+                          reporterId: r.reporterId,
+                          reason: r.reason,
+                          dateLabel: fmtDate(r.createdAt, locale),
+                          statusLabel: t(filterLabel(r.status)),
+                          statusVariant: statusVariant[r.status],
+                          reportCount: r.reportCount,
+                        }}
+                      />
                       {r.status === "pending" ? (
                         <ReportActions reportId={r.id} />
                       ) : (
