@@ -9,8 +9,10 @@
  * icon animations + .nav-sweep hover sweep.
  */
 
+import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
+import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { HookLogo } from "@/components/hook-logo";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,8 @@ import {
   ScrollText,
   LogOut,
   ShieldAlert,
+  Menu,
+  X,
 } from "lucide-react";
 
 const navItems = [
@@ -37,14 +41,38 @@ const navItems = [
 
 export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
   const t = useTranslations("admin");
+  const tc = useTranslations("common");
   const pathname = usePathname();
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement>(null);
 
   const logout = async () => {
     await adminLogoutAction();
     router.push("/admin/login");
     router.refresh();
   };
+
+  const isItemActive = (item: (typeof navItems)[number]) =>
+    item.exact
+      ? pathname === item.href || pathname.endsWith("/admin")
+      : pathname.includes(item.href);
+
+  // Mobile drawer: Escape closes, body scroll locks, focus moves into the drawer.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    drawerRef.current?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [menuOpen]);
 
   const itemClass = (isActive: boolean) =>
     cn(
@@ -56,11 +84,51 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
         : "text-fg-secondary hover:text-fg hover:bg-surface-hover",
     );
 
+  const renderDrawerItem = (item: (typeof navItems)[number]) => {
+    const isActive = isItemActive(item);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        aria-current={isActive ? "page" : undefined}
+        onClick={() => setMenuOpen(false)}
+        className={itemClass(isActive)}
+      >
+        <span className="nav-sweep" aria-hidden="true" />
+        {isActive && (
+          <span
+            aria-hidden
+            className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-full bg-accent z-10"
+          />
+        )}
+        <span className={cn("ia relative", item.ia)} aria-hidden="true">
+          <item.icon size={18} className="shrink-0" />
+        </span>
+        <span className="flex-1 relative">{t(item.key)}</span>
+        {item.key === "reports" && pendingCount > 0 && (
+          <Badge variant="warning" className="font-mono relative">
+            {pendingCount}
+          </Badge>
+        )}
+      </Link>
+    );
+  };
+
   return (
     <>
-      {/* Mobile top bar — logo + theme/language, one-tap access on small screens */}
-      <header className="sticky top-0 z-40 md:hidden flex items-center justify-between gap-2 px-4 py-2.5 bg-surface border-b border-border-ink">
-        <Link href="/admin" className="hv flex items-center gap-2 no-underline min-w-0">
+      {/* Mobile top bar — hamburger + logo + theme/language/logout */}
+      <header className="sticky top-0 z-40 md:hidden flex items-center gap-2 px-4 py-2.5 bg-surface border-b border-border-ink">
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          aria-label={t("menu")}
+          aria-expanded={menuOpen}
+          aria-controls="admin-nav-drawer"
+          className="hv p-2 -ml-2 rounded-lg text-fg-secondary hover:text-fg transition-colors duration-150 cursor-pointer focus-ring"
+        >
+          <Menu size={20} />
+        </button>
+        <Link href="/admin" className="hv flex items-center gap-2 no-underline min-w-0 flex-1">
           <HookLogo size={24} />
           <span className="font-display font-bold text-base tracking-tight text-fg truncate hidden min-[400px]:inline">
             my-kait
@@ -70,7 +138,20 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
             {t("title")}
           </Badge>
         </Link>
-        <ThemeLanguageSwitcher />
+        <div className="flex items-center gap-2 shrink-0">
+          <ThemeLanguageSwitcher />
+          <button
+            type="button"
+            onClick={logout}
+            title={t("logout")}
+            aria-label={t("logout")}
+            className="hv p-2 rounded-lg border border-border-ink bg-surface text-fg-secondary hover:text-fg hover:border-border-strong transition-colors duration-150 cursor-pointer focus-ring"
+          >
+            <span className="ia ia-out flex">
+              <LogOut size={16} />
+            </span>
+          </button>
+        </div>
       </header>
 
       {/* Desktop sidebar */}
@@ -90,9 +171,7 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
 
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map((item) => {
-            const isActive = item.exact
-              ? pathname === item.href || pathname.endsWith("/admin")
-              : pathname.includes(item.href);
+            const isActive = isItemActive(item);
             return (
               <Link
                 key={item.href}
@@ -139,53 +218,61 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
         </div>
       </aside>
 
-      {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden flex items-stretch justify-around bg-surface border-t border-border-ink px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-        {navItems.map((item) => {
-          const isActive = item.exact
-            ? pathname === item.href || pathname.endsWith("/admin")
-            : pathname.includes(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive ? "page" : undefined}
-              className={cn(
-                "hv relative flex flex-col items-center gap-1 px-3 py-2 no-underline",
-                "font-mono text-[9px] uppercase tracking-[0.12em]",
-                "transition-colors duration-150",
-                isActive ? "text-accent" : "text-fg-secondary",
-              )}
+      {/* Mobile drawer nav — all items, slides in from the left */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            <div
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setMenuOpen(false)}
+              aria-hidden="true"
+            />
+            <motion.aside
+              ref={drawerRef}
+              id="admin-nav-drawer"
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-label={t("menu")}
+              className="absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-surface border-r border-border-ink flex flex-col focus:outline-none"
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "tween", duration: 0.22, ease: "easeOut" }}
             >
-              <span className={cn("ia", item.ia)} aria-hidden="true">
-                <item.icon size={20} />
-              </span>
-              {t(item.key)}
-              {item.key === "reports" && pendingCount > 0 && (
-                <Badge variant="warning" className="absolute top-0 right-1 font-mono text-[9px] px-1">
-                  {pendingCount}
-                </Badge>
-              )}
-            </Link>
-          );
-        })}
-        {/* Logout — the only way out on mobile (sidebar footer is desktop-only) */}
-        <button
-          type="button"
-          onClick={logout}
-          aria-label={t("logout")}
-          className={cn(
-            "hv relative flex flex-col items-center gap-1 px-3 py-2",
-            "font-mono text-[9px] uppercase tracking-[0.12em]",
-            "transition-colors duration-150 text-fg-secondary active:text-fg",
-          )}
-        >
-          <span className="ia ia-out" aria-hidden="true">
-            <LogOut size={20} />
-          </span>
-          {t("logout")}
-        </button>
-      </nav>
+              <div className="flex items-center justify-between pl-4 pr-3 py-3 border-b border-border-ink">
+                <span className="flex items-center gap-2">
+                  <HookLogo size={24} />
+                  <span className="font-display font-bold text-base tracking-tight text-fg">
+                    my-kait
+                  </span>
+                  <Badge variant="danger" className="ml-1 font-mono text-[9px] shrink-0">
+                    <ShieldAlert size={10} className="mr-1" />
+                    {t("title")}
+                  </Badge>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(false)}
+                  aria-label={tc("close")}
+                  className="hv p-2 rounded-lg text-fg-secondary hover:text-fg transition-colors duration-150 cursor-pointer focus-ring"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+                {navItems.map(renderDrawerItem)}
+              </nav>
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

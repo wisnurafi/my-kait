@@ -45,7 +45,8 @@
     "invalidWebhooks": "{count} webhook bermasalah",
     "variables": "Variabel",
     "sectionWorkspace": "Ruang Kerja",
-    "sectionSystem": "Sistem"
+    "sectionSystem": "Sistem",
+    "menu": "Menu"
   },
   "templates": {
     "title": "Template",
@@ -850,6 +851,13 @@
     "statMessages7d": "Pesan / 7 hari",
     "statPendingReports": "Laporan pending",
     "healthTitle": "Kesehatan sistem",
+    "healthExpand": "Tampilkan detail",
+    "healthAndMore": "dan {count} lainnya",
+    "healthCheckedAt": "dicek {date}",
+    "healthNeverChecked": "belum pernah dicek",
+    "healthStuckSince": "macet sejak {date}",
+    "healthFailures": "{count} kegagalan",
+    "healthTopNote": "Webhook dengan kegagalan terbanyak",
     "webhooksDown": "Webhook down",
     "failedChecks24h": "Health check gagal / 24 jam",
     "failedMessages24h": "Pesan gagal / 24 jam",
@@ -991,7 +999,8 @@
     "statActiveKeys": "API key aktif",
     "colLastActive": "Terakhir aktif",
     "colCreated": "Dibuat",
-    "reportDetailTitle": "Detail laporan"
+    "reportDetailTitle": "Detail laporan",
+    "menu": "Menu"
   },
   "docs": {
     "eyebrow": "REST API Publik",

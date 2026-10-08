@@ -9,14 +9,16 @@
  * every nav item gets .hv, lucide icons are wrapped in .ia.ia-<anim> spans,
  * and a .nav-sweep span sits inside each nav link for the lime sweep.
  */
+import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/routing";
+import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { HookLogo } from "@/components/hook-logo";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { ThemeLanguageSwitcher } from "@/components/app/theme-language-switcher";
-import { LogOut, Home, Pencil, Link2, FileText, History, Settings, Globe, KeyRound, CalendarClock, Variable } from "lucide-react";
+import { LogOut, Home, Pencil, Link2, FileText, History, Settings, Globe, KeyRound, CalendarClock, Variable, Menu, X } from "lucide-react";
 
 const sectionWorkspace = [
   { href: "/dashboard", icon: Home, key: "dashboard", ia: "ia-pop" },
@@ -44,7 +46,10 @@ export function Navbar({
   invalidWebhookCount?: number;
 }) {
   const t = useTranslations("nav");
+  const tc = useTranslations("common");
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement>(null);
   const showInvalidBadge = invalidWebhookCount > 0;
   // i18n key "nav.invalidWebhooks" (ICU plural with {count}) — added separately
   const invalidLabel = showInvalidBadge
@@ -55,7 +60,23 @@ export function Navbar({
       ? { title: invalidLabel, "aria-label": `${t(key)}: ${invalidLabel}` }
       : {};
 
-  const renderDesktopItem = (item: DesktopNavItem) => {
+  // Mobile drawer: Escape closes, body scroll locks, focus moves into the drawer.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    drawerRef.current?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [menuOpen]);
+
+  const renderDesktopItem = (item: DesktopNavItem, onNavigate?: () => void) => {
     const isActive = pathname.includes(item.href);
     return (
       <Link
@@ -63,6 +84,7 @@ export function Navbar({
         href={item.href}
         aria-current={isActive ? "page" : undefined}
         {...webhooksA11y(item.key)}
+        onClick={onNavigate}
         className={cn(
           "hv relative flex items-center gap-3 px-3 py-2.5 no-underline rounded-lg overflow-hidden",
           "font-mono text-[11px] uppercase tracking-[0.14em]",
@@ -97,9 +119,19 @@ export function Navbar({
 
   return (
     <>
-      {/* Mobile top bar — logo + theme/language/logout, one-tap access on small screens */}
-      <header className="sticky top-0 z-40 md:hidden flex items-center justify-between gap-2 px-4 py-2.5 bg-surface border-b border-border-ink">
-        <Link href="/dashboard" className="flex items-center gap-2 no-underline min-w-0">
+      {/* Mobile top bar — hamburger + logo + theme/language/logout */}
+      <header className="sticky top-0 z-40 md:hidden flex items-center gap-2 px-4 py-2.5 bg-surface border-b border-border-ink">
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          aria-label={t("menu")}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-nav-drawer"
+          className="hv p-2 -ml-2 rounded-lg text-fg-secondary hover:text-fg transition-colors duration-150 cursor-pointer focus-ring"
+        >
+          <Menu size={20} />
+        </button>
+        <Link href="/dashboard" className="flex items-center gap-2 no-underline min-w-0 flex-1">
           <HookLogo size={24} />
           <span className="font-display font-bold text-base tracking-tight text-fg truncate">
             my-kait
@@ -134,10 +166,10 @@ export function Navbar({
 
         <nav className="flex-1 px-3 py-4 space-y-1">
           <p className="label px-3 pb-1">{t("sectionWorkspace")}</p>
-          {sectionWorkspace.map(renderDesktopItem)}
+          {sectionWorkspace.map((item) => renderDesktopItem(item))}
           <div className="border-t border-border-ink mt-3 pt-3">
             <p className="label px-3 pb-1">{t("sectionSystem")}</p>
-            {sectionSystem.map(renderDesktopItem)}
+            {sectionSystem.map((item) => renderDesktopItem(item))}
           </div>
         </nav>
 
@@ -167,45 +199,66 @@ export function Navbar({
         </div>
       </aside>
 
-      {/* Mobile bottom nav — section 1 (Workspace) only, 6 items max so it
-          doesn't wrap on 360px screens (see fix/mobile-topbar-theme).
-          Logs + settings stay reachable on desktop sidebar / direct URL. */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden flex items-stretch justify-around bg-surface border-t border-border-ink px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-        {sectionWorkspace.map((item) => {
-          const isActive = pathname.includes(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive ? "page" : undefined}
-              {...webhooksA11y(item.key)}
-              className={cn(
-                "hv relative flex flex-col items-center gap-1 px-2 py-2 no-underline",
-                "font-mono text-[9px] uppercase tracking-[0.12em]",
-                "transition-colors duration-150",
-                isActive ? "text-accent" : "text-fg-secondary",
-              )}
+      {/* Mobile drawer nav — all sections, slides in from the left */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            <div
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setMenuOpen(false)}
+              aria-hidden="true"
+            />
+            <motion.aside
+              ref={drawerRef}
+              id="mobile-nav-drawer"
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-label={t("menu")}
+              className="absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-surface border-r border-border-ink flex flex-col focus:outline-none"
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "tween", duration: 0.22, ease: "easeOut" }}
             >
-              {isActive && (
-                <span
-                  aria-hidden
-                  className="absolute top-0 h-[2px] w-8 rounded-full bg-accent"
-                />
-              )}
-              <span className={cn("ia relative", item.ia)}>
-                <item.icon size={18} />
-                {item.key === "webhooks" && showInvalidBadge && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute -top-1 -right-1.5 h-2.5 w-2.5 rounded-full bg-error ring-2 ring-surface"
-                  />
+              <div className="flex items-center justify-between pl-4 pr-3 py-3 border-b border-border-ink">
+                <span className="flex items-center gap-2">
+                  <HookLogo size={24} />
+                  <span className="font-display font-bold text-base tracking-tight text-fg">
+                    my-kait
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(false)}
+                  aria-label={tc("close")}
+                  className="hv p-2 rounded-lg text-fg-secondary hover:text-fg transition-colors duration-150 cursor-pointer focus-ring"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+                <p className="label px-3 pb-1">{t("sectionWorkspace")}</p>
+                {sectionWorkspace.map((item) =>
+                  renderDesktopItem(item, () => setMenuOpen(false)),
                 )}
-              </span>
-              {t(item.key)}
-            </Link>
-          );
-        })}
-      </nav>
+                <div className="border-t border-border-ink mt-3 pt-3">
+                  <p className="label px-3 pb-1">{t("sectionSystem")}</p>
+                  {sectionSystem.map((item) =>
+                    renderDesktopItem(item, () => setMenuOpen(false)),
+                  )}
+                </div>
+              </nav>
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

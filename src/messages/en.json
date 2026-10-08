@@ -45,7 +45,8 @@
     "invalidWebhooks": "{count, plural, one {# webhook down} other {# webhooks down}}",
     "variables": "Variables",
     "sectionWorkspace": "Workspace",
-    "sectionSystem": "System"
+    "sectionSystem": "System",
+    "menu": "Menu"
   },
   "templates": {
     "title": "Templates",
@@ -850,6 +851,13 @@
     "statMessages7d": "Messages / 7 days",
     "statPendingReports": "Pending reports",
     "healthTitle": "System health",
+    "healthExpand": "Show details",
+    "healthAndMore": "and {count} more",
+    "healthCheckedAt": "checked {date}",
+    "healthNeverChecked": "never checked",
+    "healthStuckSince": "stuck since {date}",
+    "healthFailures": "{count, plural, one {# failure} other {# failures}}",
+    "healthTopNote": "Top webhooks by failures",
     "webhooksDown": "Webhooks down",
     "failedChecks24h": "Failed health checks / 24h",
     "failedMessages24h": "Failed messages / 24h",
@@ -991,7 +999,8 @@
     "statActiveKeys": "Active API keys",
     "colLastActive": "Last active",
     "colCreated": "Created",
-    "reportDetailTitle": "Report detail"
+    "reportDetailTitle": "Report detail",
+    "menu": "Menu"
   },
   "docs": {
     "eyebrow": "Public REST API",
