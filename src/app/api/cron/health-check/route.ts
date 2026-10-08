@@ -72,11 +72,14 @@ export async function GET(req: Request) {
       const isDown = newStatus === "invalid";
       if (wasUp && isDown) {
         down++;
+        // Store only the locale-neutral reason detail; the human sentence is
+        // composed client-side via i18n (see health-alerts.tsx). Old rows
+        // keep the legacy full-sentence format and render as-is.
         await db.insert(webhookHealthAlerts).values({
           userId: wh.userId,
           webhookId: wh.id,
           type: "down",
-          message: `Webhook "${wh.name}" tidak merespons (${result.error ?? `HTTP ${result.httpStatus}`})`,
+          message: result.error ?? `HTTP ${result.httpStatus}`,
         });
         alerts.push({ webhookId: wh.id, name: wh.name, type: "down" });
       }
@@ -88,7 +91,7 @@ export async function GET(req: Request) {
           userId: wh.userId,
           webhookId: wh.id,
           type: "recovered",
-          message: `Webhook "${wh.name}" kembali online`,
+          message: null,
         });
         alerts.push({ webhookId: wh.id, name: wh.name, type: "recovered" });
       }

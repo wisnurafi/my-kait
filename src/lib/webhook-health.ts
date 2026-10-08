@@ -38,12 +38,14 @@ export async function markWebhookInvalid(
       .set({ lastStatus: "invalid" })
       .where(eq(webhooks.id, webhookId));
 
-    // Same message shape as the health-check cron's "down" alert.
+    // Store only the locale-neutral reason detail; the human sentence is
+    // composed client-side via i18n (see health-alerts.tsx). Same shape as
+    // the health-check cron's "down" alert.
     await db.insert(webhookHealthAlerts).values({
       userId: wh[0].userId,
       webhookId: wh[0].id,
       type: "down",
-      message: `Webhook "${wh[0].name}" tidak merespons (${reason})`,
+      message: reason,
     });
   } catch (e) {
     // Health bookkeeping must never break a send flow.

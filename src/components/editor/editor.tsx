@@ -637,9 +637,6 @@ export function Editor({
         <Button variant="ghost" size="sm" onClick={() => setShowSaveTemplate(true)} title={t("kbdSave", { mod: modKey })} className="gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
           <Save size={14} /> {t("saveAs")}
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => setShowVarPicker(true)} title={t("variablePickerHint")} className="gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
-          <Braces size={14} /> {t("variablePicker")}
-        </Button>
       </div>
 
       {/* JSON Import/Export panel */}
@@ -728,6 +725,17 @@ export function Editor({
                 placeholder={t("contentPlaceholder")}
                 maxLength={2000}
               />
+              <div className="mt-2 flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowVarPicker(true)}
+                  title={t("variablePickerHint")}
+                  className="gap-2 font-mono text-[11px] uppercase tracking-[0.14em]"
+                >
+                  <Braces size={14} /> {t("variablePicker")}
+                </Button>
+              </div>
               <RoleMentionHelper
                 onInsert={(mention) => {
                   updateState((prev) => ({ ...prev, content: prev.content + mention }));

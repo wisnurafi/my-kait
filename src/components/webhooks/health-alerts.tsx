@@ -24,6 +24,15 @@ interface Alert {
   webhookName: string;
 }
 
+/**
+ * Old rows store the full Indonesian sentence (`Webhook "X" tidak merespons
+ * (...)`); new rows store only the locale-neutral reason detail (or null).
+ * Legacy rows render as-is until acknowledged.
+ */
+function isLegacyAlertMessage(message: string): boolean {
+  return message.startsWith('Webhook "');
+}
+
 export function HealthAlerts({
   initialAlerts,
 }: {
@@ -95,7 +104,14 @@ export function HealthAlerts({
                 )}
                 <span className="flex-1 min-w-0">
                   <strong>{alert.webhookName}</strong>
-                  {alert.message && <span className="text-fg-secondary"> — {alert.message}</span>}
+                  {alert.message && (
+                    <span className="text-fg-secondary">
+                      {" — "}
+                      {isLegacyAlertMessage(alert.message)
+                        ? alert.message
+                        : t("alertDownDetail", { reason: alert.message })}
+                    </span>
+                  )}
                 </span>
                 <span className="text-xs text-fg-tertiary font-mono shrink-0">
                   {format.dateTime(alert.createdAt, { dateStyle: "medium", timeStyle: "short" })}
