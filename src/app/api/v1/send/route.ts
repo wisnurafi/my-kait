@@ -71,8 +71,13 @@ export async function POST(req: Request) {
 
   const idempotencyKey =
     typeof b.idempotencyKey === "string" && b.idempotencyKey
-      ? b.idempotencyKey.slice(0, 100)
+      ? b.idempotencyKey
       : undefined;
+  if (typeof b.idempotencyKey === "string" && b.idempotencyKey.length > 100) {
+    // Reject instead of silently truncating: truncation could collapse two
+    // distinct keys into one and deduplicate the wrong request.
+    return err("idempotency_key_too_long", t("idempotencyKeyTooLong"), 400);
+  }
 
   // Idempotency: a retried request with the same key returns the original
   // outcome instead of sending a duplicate message.
@@ -206,6 +211,7 @@ export async function POST(req: Request) {
         id: messageLogs.id,
         status: messageLogs.status,
         discordMessageId: messageLogs.discordMessageId,
+        error: messageLogs.error,
       })
       .from(messageLogs)
       .where(
@@ -215,19 +221,25 @@ export async function POST(req: Request) {
         ),
       )
       .limit(1);
-    if (prev.length > 0 && prev[0].status === "sent") {
-      logId = prev[0].id;
-      deduplicated = true;
-      return NextResponse.json({
-        ok: true,
-        data: {
-          logId,
-          messageId: prev[0].discordMessageId ?? undefined,
-          status: "sent",
-          deduplicated,
-          logPersisted,
-        },
-      });
+    if (prev.length > 0) {
+      if (prev[0].status === "sent") {
+        logId = prev[0].id;
+        deduplicated = true;
+        return NextResponse.json({
+          ok: true,
+          data: {
+            logId,
+            messageId: prev[0].discordMessageId ?? undefined,
+            status: "sent",
+            deduplicated,
+            logPersisted,
+          },
+        });
+      }
+      // Winner failed: mirror the pre-check contract — a non-sent previous
+      // outcome for this key is a 409 duplicate_failed, never a response
+      // that silently omits logId.
+      return err("duplicate_failed", prev[0].error ?? t("generic"), 409);
     }
   }
 
