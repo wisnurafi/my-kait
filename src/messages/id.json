@@ -42,7 +42,10 @@
     "logout": "Keluar",
     "apiKeys": "API Keys",
     "scheduled": "Terjadwal",
-    "invalidWebhooks": "{count} webhook bermasalah"
+    "invalidWebhooks": "{count} webhook bermasalah",
+    "variables": "Variabel",
+    "sectionWorkspace": "Ruang Kerja",
+    "sectionSystem": "Sistem"
   },
   "templates": {
     "title": "Template",
@@ -285,26 +288,7 @@
     "apiKeysLoadFailed": "Gagal memuat API keys",
     "apiKeysDocsLink": "Baca dokumentasi API",
     "apiKeysLinkDesc": "Kelola REST API key lu",
-    "apiKeysRevokeMessage": "Cabut key \"{name}\"? Key langsung berhenti berfungsi.",
-    "variablesTitle": "Variabel",
-    "variablesDesc": "Token {nama} dengan nilai default. Pakai tombol {x} di editor untuk menyisipkannya, nilai defaultnya otomatis terisi di form kirim.",
-    "variableNameLabel": "Nama",
-    "variableNamePlaceholder": "nama_event",
-    "variableNameHint": "Huruf, angka, dan underscore saja, maks 40 karakter. Kurung kurawal ditambahkan otomatis.",
-    "variableDefaultLabel": "Nilai default",
-    "variableDefaultPlaceholder": "Weekly Sync",
-    "variableAdd": "Tambah",
-    "variableAdding": "Menambahkan...",
-    "variableCreated": "Variable ditambahkan.",
-    "variableCreateFailed": "Gagal menambah variable.",
-    "variableDeleted": "Variable dihapus.",
-    "variableDeleteFailed": "Gagal menghapus variable.",
-    "variablesLoadFailed": "Gagal memuat variable.",
-    "variablesEmpty": "Belum ada variable. Tambahkan yang pertama di atas.",
-    "variableNoDefault": "tanpa default",
-    "variableDeleteLabel": "Hapus variable {name}",
-    "variableDeleteTitle": "Hapus variable?",
-    "variableDeleteMessage": "Hapus {name}? Variable ini tidak akan muncul lagi di picker editor."
+    "apiKeysRevokeMessage": "Cabut key \"{name}\"? Key langsung berhenti berfungsi."
   },
   "landing": {
     "navFeatures": "Fitur",
@@ -606,8 +590,8 @@
     "builtinVariables": "Bawaan",
     "builtinVariablesDesc": "Terisi otomatis saat mengirim.",
     "myVariables": "Variable saya",
-    "myVariablesDesc": "Tersimpan di Settings, beserta nilai defaultnya.",
-    "noVariablesHint": "Belum ada variable tersimpan. Tambahkan di Settings.",
+    "myVariablesDesc": "Tersimpan di halaman Variables, beserta nilai defaultnya.",
+    "noVariablesHint": "Belum ada variable tersimpan. <link>Tambahkan di halaman Variables.</link>",
     "defaultValueHint": "Default: {value}"
   },
   "logs": {
@@ -1082,5 +1066,34 @@
     "rescheduleConfirm": "Simpan Waktu Baru",
     "rescheduledOk": "Pesan dijadwal ulang",
     "rescheduleFailed": "Gagal menjadwal ulang"
+  },
+  "variables": {
+    "variablesTitle": "Variabel",
+    "variablesDesc": "Token {nama} dengan nilai default. Pakai tombol {x} di editor untuk menyisipkannya, nilai defaultnya otomatis terisi di form kirim.",
+    "variableNameLabel": "Nama",
+    "variableNamePlaceholder": "nama_event",
+    "variableNameHint": "Huruf, angka, dan underscore saja, maks 40 karakter. Kurung kurawal ditambahkan otomatis.",
+    "variableDefaultLabel": "Nilai default",
+    "variableDefaultPlaceholder": "Weekly Sync",
+    "variableAdd": "Tambah",
+    "variableAdding": "Menambahkan...",
+    "variableCreated": "Variable ditambahkan.",
+    "variableCreateFailed": "Gagal menambah variable.",
+    "variableDeleted": "Variable dihapus.",
+    "variableDeleteFailed": "Gagal menghapus variable.",
+    "variablesLoadFailed": "Gagal memuat variable.",
+    "variablesEmpty": "Belum ada variable. Tambahkan yang pertama di atas.",
+    "variableNoDefault": "tanpa default",
+    "variableDeleteLabel": "Hapus variable {name}",
+    "variableDeleteTitle": "Hapus variable?",
+    "variableDeleteMessage": "Hapus {name}? Variable ini tidak akan muncul lagi di picker editor.",
+    "explainer": "Ketik {name} langsung di payload mana pun, atau sisipkan dari tombol {x} di toolbar editor. Nilai default di bawah otomatis terisi di form kirim, ubah kapan pun sebelum mengirim.",
+    "listTitle": "Variable tersimpan",
+    "emptyTitle": "Belum ada variable",
+    "emptyCta": "Tambah variable pertama",
+    "count": "{count} variable",
+    "editVariableLabel": "Ubah variable {name}",
+    "variableUpdated": "Variable diperbarui.",
+    "variableUpdateFailed": "Gagal memperbarui variable."
   }
 }

@@ -42,7 +42,10 @@
     "logout": "Log out",
     "apiKeys": "API Keys",
     "scheduled": "Scheduled",
-    "invalidWebhooks": "{count, plural, one {# webhook down} other {# webhooks down}}"
+    "invalidWebhooks": "{count, plural, one {# webhook down} other {# webhooks down}}",
+    "variables": "Variables",
+    "sectionWorkspace": "Workspace",
+    "sectionSystem": "System"
   },
   "templates": {
     "title": "Templates",
@@ -285,26 +288,7 @@
     "apiKeysLoadFailed": "Failed to load API keys",
     "apiKeysDocsLink": "Read the API documentation",
     "apiKeysLinkDesc": "Manage your REST API keys",
-    "apiKeysRevokeMessage": "Revoke key \"{name}\"? The key stops working immediately.",
-    "variablesTitle": "Variables",
-    "variablesDesc": "Named {tokens} with default values. Use the {x} button in the editor to insert them, and their defaults pre-fill the send form.",
-    "variableNameLabel": "Name",
-    "variableNamePlaceholder": "nama_event",
-    "variableNameHint": "Letters, numbers and underscore only, max 40 characters. Braces are added automatically.",
-    "variableDefaultLabel": "Default value",
-    "variableDefaultPlaceholder": "Weekly Sync",
-    "variableAdd": "Add",
-    "variableAdding": "Adding...",
-    "variableCreated": "Variable added.",
-    "variableCreateFailed": "Failed to add variable.",
-    "variableDeleted": "Variable deleted.",
-    "variableDeleteFailed": "Failed to delete variable.",
-    "variablesLoadFailed": "Failed to load variables.",
-    "variablesEmpty": "No variables yet. Add your first one above.",
-    "variableNoDefault": "no default",
-    "variableDeleteLabel": "Delete variable {name}",
-    "variableDeleteTitle": "Delete variable?",
-    "variableDeleteMessage": "Delete {name}? It will no longer appear in the editor picker."
+    "apiKeysRevokeMessage": "Revoke key \"{name}\"? The key stops working immediately."
   },
   "landing": {
     "navFeatures": "Features",
@@ -606,8 +590,8 @@
     "builtinVariables": "Built-in",
     "builtinVariablesDesc": "Filled automatically when sending.",
     "myVariables": "My variables",
-    "myVariablesDesc": "Saved in Settings, with their default values.",
-    "noVariablesHint": "No saved variables yet. Add them in Settings.",
+    "myVariablesDesc": "Saved on the Variables page, with their default values.",
+    "noVariablesHint": "No saved variables yet. <link>Add them on the Variables page.</link>",
     "defaultValueHint": "Default: {value}"
   },
   "logs": {
@@ -1082,5 +1066,34 @@
     "rescheduleConfirm": "Save new time",
     "rescheduledOk": "Message rescheduled",
     "rescheduleFailed": "Failed to reschedule"
+  },
+  "variables": {
+    "variablesTitle": "Variables",
+    "variablesDesc": "Named {tokens} with default values. Use the {x} button in the editor to insert them, and their defaults pre-fill the send form.",
+    "variableNameLabel": "Name",
+    "variableNamePlaceholder": "nama_event",
+    "variableNameHint": "Letters, numbers and underscore only, max 40 characters. Braces are added automatically.",
+    "variableDefaultLabel": "Default value",
+    "variableDefaultPlaceholder": "Weekly Sync",
+    "variableAdd": "Add",
+    "variableAdding": "Adding...",
+    "variableCreated": "Variable added.",
+    "variableCreateFailed": "Failed to add variable.",
+    "variableDeleted": "Variable deleted.",
+    "variableDeleteFailed": "Failed to delete variable.",
+    "variablesLoadFailed": "Failed to load variables.",
+    "variablesEmpty": "No variables yet. Add your first one above.",
+    "variableNoDefault": "no default",
+    "variableDeleteLabel": "Delete variable {name}",
+    "variableDeleteTitle": "Delete variable?",
+    "variableDeleteMessage": "Delete {name}? It will no longer appear in the editor picker.",
+    "explainer": "Type {name} directly in any payload, or insert it from the {x} button in the editor toolbar. The default below fills the send form automatically, override it any time before sending.",
+    "listTitle": "Saved variables",
+    "emptyTitle": "No variables yet",
+    "emptyCta": "Add your first variable",
+    "count": "{count, plural, one {# variable} other {# variables}}",
+    "editVariableLabel": "Edit variable {name}",
+    "variableUpdated": "Variable updated.",
+    "variableUpdateFailed": "Failed to update variable."
   }
 }

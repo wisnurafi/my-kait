@@ -1120,7 +1120,18 @@ export function Editor({
               <Label>{t("myVariables")}</Label>
               <p className="text-xs mt-1 mb-2">{t("myVariablesDesc")}</p>
               {userVars.length === 0 ? (
-                <p className="text-sm">{t("noVariablesHint")}</p>
+                <p className="text-sm text-fg-secondary">
+                  {t.rich("noVariablesHint", {
+                    link: (chunks) => (
+                      <Link
+                        href="/variables"
+                        className="text-link underline-offset-2 hover:underline"
+                      >
+                        {chunks}
+                      </Link>
+                    ),
+                  })}
+                </p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {userVars.map((v) => (
