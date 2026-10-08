@@ -21,6 +21,7 @@ export function BulkActionBar({
   onMove,
   onDelete,
   deleteLabel,
+  deleteDisabled = false,
   onCancel,
   cancelLabel,
   busy = false,
@@ -35,6 +36,8 @@ export function BulkActionBar({
   onMove: (folderId: string | null) => void;
   onDelete: () => void;
   deleteLabel: string;
+  /** Disable the delete button, e.g. when nothing is selected. */
+  deleteDisabled?: boolean;
   onCancel: () => void;
   cancelLabel: string;
   busy?: boolean;
@@ -83,7 +86,7 @@ export function BulkActionBar({
         variant="destructive"
         size="sm"
         onClick={onDelete}
-        disabled={busy}
+        disabled={busy || deleteDisabled}
         className="gap-1.5"
       >
         <Trash2 size={14} />

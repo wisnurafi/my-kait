@@ -357,6 +357,7 @@ export function WebhooksList({
           onMove={handleBulkMove}
           onDelete={() => selectedIds.length > 0 && setShowBulkDelete(true)}
           deleteLabel={t("bulk.delete")}
+          deleteDisabled={selectedIds.length === 0}
           onCancel={exitSelectMode}
           cancelLabel={t("bulk.done")}
           busy={bulkBusy}
