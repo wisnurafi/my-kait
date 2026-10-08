@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Dialog, DialogTitle, DialogBody, ConfirmDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/toast";
 import { DiscordPreview } from "@/components/editor/discord-preview";
 import { cn } from "@/lib/utils";
+import { diffVersions, type VersionSnapshot } from "@/lib/version-diff";
 import {
   createTemplateVersionAction,
   listTemplateVersionsAction,
@@ -15,7 +16,22 @@ import {
 } from "@/server/actions/templates";
 import { History, Camera, RotateCcw, Eye } from "lucide-react";
 
-type Version = { id: string; name: string; createdAt: string; payload: unknown };
+type Version = {
+  id: string;
+  name: string;
+  description: string | null;
+  tags: string[];
+  folderId: string | null;
+  createdAt: string;
+  payload: unknown;
+};
+
+const FIELD_LABEL_KEYS: Record<string, string> = {
+  name: "name",
+  description: "description",
+  tags: "tags",
+  folder: "versions.folder",
+};
 
 function fmtTimestamp(iso: string, locale: string) {
   return new Date(iso).toLocaleString(locale === "en" ? "en-US" : "id-ID", {
@@ -30,11 +46,16 @@ function fmtTimestamp(iso: string, locale: string) {
 export function TemplateHistoryDialog({
   templateId,
   templateName,
+  current,
+  folders,
   open,
   onClose,
 }: {
   templateId: string;
   templateName: string;
+  /** The template's current state, to diff each version against. */
+  current: VersionSnapshot;
+  folders: Array<{ id: string; name: string }>;
   open: boolean;
   onClose: () => void;
 }) {
@@ -53,6 +74,16 @@ export function TemplateHistoryDialog({
     active && typeof active.payload === "object" && active.payload !== null
       ? (active.payload as Record<string, unknown>)
       : {};
+
+  const folderName = (id: string | null) =>
+    id ? (folders.find((f) => f.id === id)?.name ?? id) : t("folders.unfiled");
+
+  // What restoring the active version would change vs the current state.
+  const changes = useMemo(
+    () => (active ? diffVersions(current, active, folderName) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [active, current, folders],
+  );
 
   const load = async () => {
     const res = await listTemplateVersionsAction(templateId);
@@ -185,13 +216,38 @@ export function TemplateHistoryDialog({
                 })}
               </ul>
 
-              {/* Side preview */}
+              {/* Side preview: diff vs current state + rendered message */}
               <div className="min-w-0">
                 {active && (
                   <p className="label mb-2 truncate">
                     {t("versions.previewTitle", { name: active.name })}
                   </p>
                 )}
+                <div className="panel p-3 mb-3">
+                  <p className="label mb-2">{t("versions.diffTitle")}</p>
+                  {changes.length === 0 ? (
+                    <p className="text-xs text-fg-tertiary">{t("versions.noDiff")}</p>
+                  ) : (
+                    <ul className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                      {changes.map((c, i) => (
+                        <li key={`${c.field}-${c.path ?? ""}-${i}`} className="text-xs">
+                          <span className="font-bold uppercase tracking-wide text-fg-secondary">
+                            {c.field === "payload"
+                              ? <span className="font-mono normal-case">{c.path}</span>
+                              : t(FIELD_LABEL_KEYS[c.field] ?? c.field)}
+                          </span>
+                          <span className="block mt-0.5 break-words">
+                            <span className="text-fg-tertiary line-through">
+                              {c.before}
+                            </span>
+                            {" → "}
+                            <span className="text-success">{c.after}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
                 <DiscordPreview payload={activePayload} />
               </div>
             </div>

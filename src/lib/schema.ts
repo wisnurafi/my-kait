@@ -460,6 +460,9 @@ export const templateVersions = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     tags: text("tags").array().default([]),
+    folderId: text("folder_id").references(() => templateFolders.id, {
+      onDelete: "set null",
+    }),
     payload: jsonb("payload").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
