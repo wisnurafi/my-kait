@@ -116,7 +116,7 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
 
   return (
     <>
-      {/* Mobile top bar — hamburger + logo + theme/language/logout */}
+      {/* Mobile top bar — hamburger + logo (theme/logout live in the drawer) */}
       <header className="sticky top-0 z-40 md:hidden flex items-center gap-2 px-4 py-2.5 bg-surface border-b border-border-ink">
         <button
           type="button"
@@ -138,20 +138,6 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
             {t("title")}
           </Badge>
         </Link>
-        <div className="flex items-center gap-2 shrink-0">
-          <ThemeLanguageSwitcher />
-          <button
-            type="button"
-            onClick={logout}
-            title={t("logout")}
-            aria-label={t("logout")}
-            className="hv p-2 rounded-lg border border-border-ink bg-surface text-fg-secondary hover:text-fg hover:border-border-strong transition-colors duration-150 cursor-pointer focus-ring"
-          >
-            <span className="ia ia-out flex">
-              <LogOut size={16} />
-            </span>
-          </button>
-        </div>
       </header>
 
       {/* Desktop sidebar */}
@@ -269,6 +255,23 @@ export function AdminSidebar({ pendingCount }: { pendingCount: number }) {
               <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
                 {navItems.map(renderDrawerItem)}
               </nav>
+              {/* Bottom controls — mirrors the desktop sidebar footer */}
+              <div className="px-3 py-4 border-t border-border-ink space-y-3">
+                <div className="px-3">
+                  <ThemeLanguageSwitcher />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hv w-full justify-start gap-3 font-mono text-[11px] uppercase tracking-[0.14em]"
+                  onClick={logout}
+                >
+                  <span className="ia ia-out" aria-hidden="true">
+                    <LogOut size={18} />
+                  </span>
+                  {t("logout")}
+                </Button>
+              </div>
             </motion.aside>
           </motion.div>
         )}
