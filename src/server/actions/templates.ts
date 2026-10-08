@@ -135,41 +135,48 @@ export async function getTemplate(id: string) {
   return result[0] ?? null;
 }
 
-/* --- Update template --- */
-export async function updateTemplateAction(formData: FormData) {
+/* --- Update template (full edit: name, description, tags, payload) --- */
+export async function updateTemplateAction(
+  formData: FormData,
+): Promise<{ error: string } | { success: true }> {
   const user = await requireAuth();
   const t = await getActionT("errors");
 
   const id = String(formData.get("id") ?? "");
-  const name = String(formData.get("name") ?? "");
-  const description = String(formData.get("description") ?? "") || undefined;
-  const tags = String(formData.get("tags") ?? "")
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
 
-  if (!name) return { error: t("nameRequired") };
+  let payload: unknown;
+  try {
+    payload = JSON.parse(String(formData.get("payload") ?? "{}"));
+  } catch {
+    return { error: t("payloadInvalid") };
+  }
+
+  const raw = {
+    name: String(formData.get("name") ?? ""),
+    description: String(formData.get("description") ?? "") || undefined,
+    tags: String(formData.get("tags") ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    payload,
+  };
+
+  const parsed = templateSchema(t).safeParse(raw);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? t("payloadInvalid") };
+  }
 
   // Verify ownership
-  const existing = await db
-    .select()
-    .from(templates)
-    .where(
-      and(
-        eq(templates.id, id),
-        eq(templates.userId, user.id),
-      ),
-    )
-    .limit(1);
-
-  if (existing.length === 0) return { error: t("templateNotFound") };
+  const existing = await getOwnedTemplate(id, user.id);
+  if (!existing) return { error: t("templateNotFound") };
 
   await db
     .update(templates)
     .set({
-      name,
-      description: description ?? null,
-      tags,
+      name: parsed.data.name,
+      description: parsed.data.description ?? null,
+      tags: parsed.data.tags ?? [],
+      payload: parsed.data.payload,
       updatedAt: new Date(),
     })
     .where(eq(templates.id, id));

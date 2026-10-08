@@ -7,16 +7,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogTitle, DialogBody } from "@/components/ui/dialog";
-import { saveAsTemplateAction } from "@/server/actions/templates";
+import { saveAsTemplateAction, updateTemplateAction } from "@/server/actions/templates";
 import { toast } from "@/components/ui/toast";
 import { Save } from "lucide-react";
 
 export function SaveTemplateModal({
   payload,
+  editing,
   onClose,
+  onSaved,
 }: {
   payload: Record<string, unknown>;
+  /** Set when the editor was opened from a template's "Edit" action: save updates it in place. */
+  editing?: { id: string; name: string; description: string; tags: string[] } | null;
   onClose: () => void;
+  onSaved?: () => void;
 }) {
   const t = useTranslations("templates");
   const [pending, startTransition] = useTransition();
@@ -28,13 +33,21 @@ export function SaveTemplateModal({
     startTransition(async () => {
       const formData = new FormData(e.currentTarget);
       formData.set("payload", JSON.stringify(payload));
-      const res = await saveAsTemplateAction(null, formData);
+      if (editing) formData.set("id", editing.id);
+      const res = editing
+        ? await updateTemplateAction(formData)
+        : await saveAsTemplateAction(null, formData);
       setResult(res);
-      if (res.success) {
-        if (res.message) toast.success(res.message);
-        setTimeout(onClose, 1500);
-      } else if (res.error) {
+      if ("error" in res && res.error) {
         toast.error(res.error);
+      } else if ("success" in res && res.success) {
+        if (editing) {
+          toast.success(t("updated"));
+          setTimeout(() => onSaved?.(), 1200);
+        } else {
+          if ("message" in res && res.message) toast.success(res.message);
+          setTimeout(onClose, 1500);
+        }
       }
     });
   }
@@ -46,22 +59,22 @@ export function SaveTemplateModal({
           <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
             <Save size={14} />
           </span>
-          {t("saveAs")}
+          {editing ? t("editTitle") : t("saveAs")}
         </span>
       </DialogTitle>
       <DialogBody>
         <form onSubmit={handleSubmit} data-kbd-off className="space-y-4">
           <div>
             <Label required>{t("name")}</Label>
-            <Input name="name" placeholder={t("namePlaceholder")} required />
+            <Input name="name" placeholder={t("namePlaceholder")} required defaultValue={editing?.name ?? ""} />
           </div>
           <div>
             <Label>{t("description")}</Label>
-            <Textarea name="description" rows={2} placeholder={t("descriptionPlaceholder")} />
+            <Textarea name="description" rows={2} placeholder={t("descriptionPlaceholder")} defaultValue={editing?.description ?? ""} />
           </div>
           <div>
             <Label>{t("tags")}</Label>
-            <Input name="tags" placeholder={t("importTagsPlaceholder")} />
+            <Input name="tags" placeholder={t("importTagsPlaceholder")} defaultValue={(editing?.tags ?? []).join(", ")} />
           </div>
           {result?.error && (
             <p className="font-mono text-xs uppercase tracking-[0.14em] text-error">{result.error}</p>
@@ -75,7 +88,7 @@ export function SaveTemplateModal({
             ) : (
               <Save size={18} />
             )}
-            {t("save")}
+            {editing ? t("update") : t("save")}
           </Button>
         </form>
       </DialogBody>

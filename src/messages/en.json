@@ -61,6 +61,8 @@
     "load": "Load",
     "save": "Save",
     "saveAs": "Save as Template",
+    "editTitle": "Edit Template",
+    "update": "Save changes",
     "confirmDelete": "Delete this template?",
     "deleteTitle": "Delete template",
     "deleted": "Template deleted",

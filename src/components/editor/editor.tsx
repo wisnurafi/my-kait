@@ -15,7 +15,7 @@
  */
 
 import { useState, useEffect, useCallback, useTransition, useMemo, useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -155,6 +155,7 @@ export function Editor({
 }) {
   const t = useTranslations("editor");
   const tn = useTranslations("nav");
+  const locale = useLocale();
   const [pending, startTransition] = useTransition();
   // Tablet (768–1023px) view toggle: "write" (form) or "preview".
   // Initial "write" on both server and client — no window/navigator reads,
@@ -233,6 +234,18 @@ export function Editor({
 
   const [editMessageId, setEditMessageId] = useState<string | null>(null);
 
+  /**
+   * Template edit mode: set when the editor is opened from a template's
+   * "Edit" action. Saving updates the existing template (name, description,
+   * tags, and payload) instead of creating a new one.
+   */
+  const [editTemplate, setEditTemplate] = useState<{
+    id: string;
+    name: string;
+    description: string;
+    tags: string[];
+  } | null>(null);
+
   // Reset editor to empty state after successful send
   const resetEditor = useCallback(() => {
     const empty: EditorState = {
@@ -310,8 +323,37 @@ export function Editor({
       sessionStorage.removeItem("mykait-edit-message-id");
     }
 
+    // Check for template edit mode (from a template's "Edit" action): the stored
+    // record carries the template id + metadata, and its payload is loaded
+    // below through the same import path as "Load".
+    let importPayload = sessionStorage.getItem("mykait-import-payload");
+    const editTemplateRaw = sessionStorage.getItem("mykait-edit-template");
+    if (editTemplateRaw) {
+      try {
+        const editTpl = JSON.parse(editTemplateRaw) as {
+          id?: string;
+          name?: string;
+          description?: string;
+          tags?: string[];
+          payload?: unknown;
+        };
+        if (editTpl.id) {
+          setEditTemplate({
+            id: editTpl.id,
+            name: editTpl.name ?? "",
+            description: editTpl.description ?? "",
+            tags: editTpl.tags ?? [],
+          });
+          importPayload = JSON.stringify(editTpl.payload ?? {});
+        }
+      } catch (err) {
+        logger.error("editor", "failed to load edit template", err);
+        toast.error(t("importFailed"));
+      }
+      sessionStorage.removeItem("mykait-edit-template");
+    }
+
     // Check sessionStorage first (from "Duplikasi ke Editor" action or template Load)
-    const importPayload = sessionStorage.getItem("mykait-import-payload");
     if (importPayload) {
       try {
         const parsed = JSON.parse(importPayload);
@@ -352,15 +394,15 @@ export function Editor({
 
   // Autosave draft. Skipped while in edit mode: the payload being edited must
   // never overwrite the user's unsent draft in localStorage (data loss).
-  // editMessageId is in the deps so entering edit mode cancels any pending
-  // write and exiting edit mode resumes normal autosave.
+  // editMessageId/editTemplate are in the deps so entering edit mode cancels
+  // any pending write and exiting edit mode resumes normal autosave.
   useEffect(() => {
-    if (editMessageId) return;
+    if (editMessageId || editTemplate) return;
     const timer = setTimeout(() => {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(state));
     }, 1000);
     return () => clearTimeout(timer);
-  }, [state, editMessageId]);
+  }, [state, editMessageId, editTemplate]);
 
   // Push to history
   const pushHistory = useCallback((newState: EditorState) => {
@@ -1052,9 +1094,17 @@ export function Editor({
         </div>
       </div>
 
-      {/* Save as template modal */}
+      {/* Save as template modal (or update template in edit mode) */}
       {showSaveTemplate && (
-        <SaveTemplateModal payload={payload} onClose={() => setShowSaveTemplate(false)} />
+        <SaveTemplateModal
+          payload={payload}
+          editing={editTemplate}
+          onClose={() => setShowSaveTemplate(false)}
+          onSaved={() => {
+            setEditTemplate(null);
+            window.location.href = `/${locale}/templates`;
+          }}
+        />
       )}
 
       {/* Clear editor confirmation */}
@@ -1063,6 +1113,7 @@ export function Editor({
         onClose={() => setShowClearConfirm(false)}
         onConfirm={() => {
           setEditMessageId(null);
+          setEditTemplate(null);
           resetEditor();
           setShowClearConfirm(false);
         }}
