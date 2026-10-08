@@ -124,6 +124,20 @@ export function LogsView({
     router.push(`?${params.toString()}`, { scroll: false });
   }
 
+  function updateDatePreset(value: string) {
+    const params = new URLSearchParams(currentFilters as Record<string, string>);
+    if (value) params.set("datePreset", value);
+    else params.delete("datePreset");
+    // Leaving custom mode: drop the stale custom range so it can't linger
+    // in the URL (the backend only reads dateFrom/dateTo for custom).
+    if (value !== "custom") {
+      params.delete("dateFrom");
+      params.delete("dateTo");
+    }
+    params.delete("page");
+    router.push(`?${params.toString()}`, { scroll: false });
+  }
+
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -389,12 +403,33 @@ export function LogsView({
               <Label>{t("filterDate")}</Label>
               <Select
                 value={currentFilters.datePreset ?? "30d"}
-                onChange={(e) => updateFilter("datePreset", e.target.value)}
+                onChange={(e) => updateDatePreset(e.target.value)}
               >
                 <option value="today">{t("datePresets.today")}</option>
                 <option value="7d">{t("datePresets.7d")}</option>
                 <option value="30d">{t("datePresets.30d")}</option>
+                <option value="custom">{t("datePresets.custom")}</option>
               </Select>
+              {currentFilters.datePreset === "custom" && (
+                <div className="flex gap-2 mt-2">
+                  <div className="flex-1 min-w-0">
+                    <Label>{t("dateFrom")}</Label>
+                    <Input
+                      type="date"
+                      value={currentFilters.dateFrom ?? ""}
+                      onChange={(e) => updateFilter("dateFrom", e.target.value)}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Label>{t("dateTo")}</Label>
+                    <Input
+                      type="date"
+                      value={currentFilters.dateTo ?? ""}
+                      onChange={(e) => updateFilter("dateTo", e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             <div>
               <Label>{t("sortLabel")}</Label>
