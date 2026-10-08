@@ -11,7 +11,6 @@ import { ThemeLanguageSwitcher } from "@/components/app/theme-language-switcher"
 import { toast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
 import { Mascot } from "@/components/mascot";
-import { VariablesManager } from "@/components/settings/variables-manager";
 import { signOut } from "next-auth/react";
 import { deleteAccountAction } from "@/server/actions/messages";
 import { exportUserDataAction } from "@/server/actions/export";
@@ -145,19 +144,8 @@ export function SettingsClient({
         </Card>
       </div>
 
-      {/* Variables */}
-      <div className="stagger-in" style={staggerStyle(2)}>
-        <Card hover>
-          <CardBody>
-            <h2 className="font-display text-xl uppercase mb-2">{t("variablesTitle")}</h2>
-            <p className="text-sm text-fg-secondary mb-4">{t("variablesDesc")}</p>
-            <VariablesManager />
-          </CardBody>
-        </Card>
-      </div>
-
       {/* Data export */}
-      <div className="stagger-in" style={staggerStyle(3)}>
+      <div className="stagger-in" style={staggerStyle(2)}>
         <Card hover>
           <CardBody>
             <h2 className="font-display text-xl uppercase mb-4">{t("dataExport")}</h2>
@@ -171,7 +159,7 @@ export function SettingsClient({
       </div>
 
       {/* API keys link */}
-      <div className="stagger-in" style={staggerStyle(4)}>
+      <div className="stagger-in" style={staggerStyle(3)}>
         <Link href="/api-keys" className="hv no-underline block">
           <Card hover>
             <CardBody>
@@ -193,7 +181,7 @@ export function SettingsClient({
       </div>
 
       {/* Danger zone */}
-      <div className="stagger-in" style={staggerStyle(5)}>
+      <div className="stagger-in" style={staggerStyle(4)}>
         <div
           className="panel"
           style={{
@@ -245,7 +233,7 @@ export function SettingsClient({
       </div>
 
       {/* Legal */}
-      <div className="flex gap-4 justify-center text-sm stagger-in" style={staggerStyle(6)}>
+      <div className="flex gap-4 justify-center text-sm stagger-in" style={staggerStyle(5)}>
         <Link href="/privacy" className="text-fg-secondary hover:text-link">
           {t("privacy")}
         </Link>
