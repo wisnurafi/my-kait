@@ -46,6 +46,81 @@ async function fetchWithTimeout(
   }
 }
 
+interface DiscordFetchOutcome {
+  /** Last response received; null when every attempt failed at network level. */
+  response: Response | null;
+  /** True when the final failure was an exhausted 429. */
+  rateLimited: boolean;
+  /** Capped retry_after (seconds) from the last 429; 0 when none seen. */
+  retryAfter: number;
+  /** Network error message, set when response is null. */
+  networkError?: string;
+}
+
+/**
+ * Shared Discord request executor — one retry policy for send, edit and
+ * delete:
+ * - 429 → sleep Discord's retry_after (capped at MAX_RETRY_WAIT_S), retry
+ * - 5xx → linear backoff, retry (a momentary Discord outage shouldn't
+ *   permanently fail the request)
+ * - network error/timeout → linear backoff, retry
+ * - other 4xx → permanent, returned immediately without retry
+ */
+async function fetchDiscordWithRetry(
+  url: string,
+  init: RequestInit,
+  maxRetries = 3,
+): Promise<DiscordFetchOutcome> {
+  let retryAfter = 0;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    let response: Response;
+    try {
+      response = await fetchWithTimeout(url, init);
+    } catch (err) {
+      // Network error — retry if attempts remain
+      if (attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      return {
+        response: null,
+        rateLimited: false,
+        retryAfter: 0,
+        networkError: err instanceof Error ? err.message : "Error jaringan",
+      };
+    }
+
+    if (response.status === 429) {
+      const body = await response.json().catch(() => null);
+      // Cap the backoff: never sleep longer than MAX_RETRY_WAIT_S
+      // on a single wait, no matter what retry_after claims.
+      retryAfter = Math.min(
+        Math.ceil(body?.retry_after ?? 5),
+        MAX_RETRY_WAIT_S,
+      );
+      if (attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, retryAfter * 1000));
+        continue;
+      }
+      return { response, rateLimited: true, retryAfter };
+    }
+
+    if (response.status >= 500 && response.status <= 599) {
+      if (attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+        continue;
+      }
+    }
+
+    return { response, rateLimited: false, retryAfter };
+  }
+
+  // Unreachable: every iteration either continues (attempt < maxRetries)
+  // or returns. Present only to satisfy the type checker.
+  throw new Error("unreachable");
+}
+
 /**
  * Validate that a URL is a legitimate Discord webhook URL.
  * Throws on invalid — does not make a network request.
@@ -189,8 +264,8 @@ export type SendResult = {
 /**
  * Send a message via webhook.
  * Uses ?wait=true to get the message ID back.
- * Automatically retries on 429 with Discord's retry_after backoff (max 3 retries),
- * on 5xx with linear backoff (max 3 retries), and on network errors/timeouts.
+ * Retries via fetchDiscordWithRetry (429 with Discord's retry_after backoff,
+ * 5xx and network errors with linear backoff; max 3 retries).
  * See PRD 3.4, 6.3.
  */
 export async function sendWebhookMessage(
@@ -198,128 +273,90 @@ export async function sendWebhookMessage(
   payload: Record<string, unknown>,
   maxRetries = 3,
 ): Promise<SendResult> {
-  const start = Date.now();
-  let lastResult: SendResult | null = null;
+  const sendUrl = url.includes("?") ? `${url}&wait=true` : `${url}?wait=true`;
+  const outcome = await fetchDiscordWithRetry(
+    sendUrl,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "MyKait/1.0 (webhook-studio)",
+      },
+      body: JSON.stringify(payload),
+      redirect: "error",
+    },
+    maxRetries,
+  );
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const sendUrl = url.includes("?") ? `${url}&wait=true` : `${url}?wait=true`;
-
-      const response = await fetchWithTimeout(sendUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "MyKait/1.0 (webhook-studio)",
-        },
-        body: JSON.stringify(payload),
-        redirect: "error",
-      });
-
-      if (response.status === 204 || response.status === 200) {
-        const data = await response.json().catch(() => null);
-        return {
-          success: true,
-          messageId: data?.id,
-          httpStatus: response.status,
-        };
-      }
-
-      if (response.status === 429) {
-        const body = await response.json().catch(() => null);
-        // Cap the backoff: never sleep longer than MAX_RETRY_WAIT_S
-        // on a single wait, no matter what retry_after claims.
-        const retryAfter = Math.min(
-          Math.ceil(body?.retry_after ?? 5),
-          MAX_RETRY_WAIT_S,
-        );
-        lastResult = {
-          success: false,
-          httpStatus: 429,
-          rateLimited: true,
-          retryAfter,
-          error: `Rate limited oleh Discord. Coba lagi dalam ${retryAfter} detik.`,
-        };
-        // Auto-retry with backoff if attempts remain
-        if (attempt < maxRetries) {
-          await new Promise((r) => setTimeout(r, retryAfter * 1000));
-          continue;
-        }
-        return lastResult;
-      }
-
-      // Transient Discord errors (5xx) are retried with backoff, like 429s —
-      // a momentary Discord outage shouldn't permanently fail a message.
-      // 4xx (other than 429) are permanent and fail immediately.
-      if (response.status >= 500 && response.status <= 599) {
-        lastResult = {
-          success: false,
-          httpStatus: response.status,
-          error: `Discord error HTTP ${response.status}`,
-        };
-        if (attempt < maxRetries) {
-          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
-          continue;
-        }
-        return lastResult;
-      }
-
-    if (response.status === 400) {
-      const body = await response.json().catch(() => null);
-      return {
-        success: false,
-        httpStatus: 400,
-        error: body?.message
-          ? `Discord: ${body.message}`
-          : "Payload tidak valid (periksa field embed)",
-      };
-    }
-
-    const latencyMs = Date.now() - start;
-    void latencyMs;
-
-    const body = await response.json().catch(() => null);
+  if (!outcome.response) {
     return {
       success: false,
-      httpStatus: response.status,
-      error: body?.message ?? `HTTP ${response.status}`,
+      httpStatus: 0,
+      error: outcome.networkError ?? "Error jaringan",
     };
-    } catch (err) {
-      // Network error — retry if attempts remain
-      if (attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-        continue;
-      }
-      return {
-        success: false,
-        httpStatus: 0,
-        error: err instanceof Error ? err.message : "Error jaringan",
-      };
-    }
+  }
+  const response = outcome.response;
+
+  if (response.status === 204 || response.status === 200) {
+    const data = await response.json().catch(() => null);
+    return {
+      success: true,
+      messageId: data?.id,
+      httpStatus: response.status,
+    };
   }
 
-  // Should not reach here, but return last 429 result if we do
-  return (
-    lastResult ?? {
+  if (outcome.rateLimited) {
+    return {
       success: false,
       httpStatus: 429,
       rateLimited: true,
-      error: "Rate limited oleh Discord.",
-    }
-  );
+      retryAfter: outcome.retryAfter,
+      error: `Rate limited oleh Discord. Coba lagi dalam ${outcome.retryAfter} detik.`,
+    };
+  }
+
+  if (response.status === 400) {
+    const body = await response.json().catch(() => null);
+    return {
+      success: false,
+      httpStatus: 400,
+      error: body?.message
+        ? `Discord: ${body.message}`
+        : "Payload tidak valid (periksa field embed)",
+    };
+  }
+
+  if (response.status >= 500 && response.status <= 599) {
+    return {
+      success: false,
+      httpStatus: response.status,
+      error: `Discord error HTTP ${response.status}`,
+    };
+  }
+
+  const body = await response.json().catch(() => null);
+  return {
+    success: false,
+    httpStatus: response.status,
+    error: body?.message ?? `HTTP ${response.status}`,
+  };
 }
 
 /**
  * Edit a sent message (PATCH).
+ * Retries via fetchDiscordWithRetry — same 429/5xx/network policy as send.
  * See PRD 3.5.
  */
 export async function editWebhookMessage(
   url: string,
   messageId: string,
   payload: Record<string, unknown>,
+  maxRetries = 3,
 ): Promise<SendResult> {
-  try {
-    const editUrl = `${url}/messages/${messageId}`;
-    const response = await fetchWithTimeout(editUrl, {
+  const outcome = await fetchDiscordWithRetry(
+    `${url}/messages/${messageId}`,
+    {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -327,60 +364,90 @@ export async function editWebhookMessage(
       },
       body: JSON.stringify(payload),
       redirect: "error",
-    });
+    },
+    maxRetries,
+  );
 
-    if (response.ok) {
-      return { success: true, httpStatus: response.status, messageId };
-    }
-
-    const body = await response.json().catch(() => null);
-    return {
-      success: false,
-      httpStatus: response.status,
-      error: body?.message ?? `HTTP ${response.status}`,
-    };
-  } catch (err) {
+  if (!outcome.response) {
     return {
       success: false,
       httpStatus: 0,
-      error: err instanceof Error ? err.message : "Error jaringan",
+      error: outcome.networkError ?? "Error jaringan",
     };
   }
+  const response = outcome.response;
+
+  if (response.ok) {
+    return { success: true, httpStatus: response.status, messageId };
+  }
+
+  if (outcome.rateLimited) {
+    return {
+      success: false,
+      httpStatus: 429,
+      rateLimited: true,
+      retryAfter: outcome.retryAfter,
+      error: `Rate limited oleh Discord. Coba lagi dalam ${outcome.retryAfter} detik.`,
+    };
+  }
+
+  const body = await response.json().catch(() => null);
+  return {
+    success: false,
+    httpStatus: response.status,
+    error: body?.message ?? `HTTP ${response.status}`,
+  };
 }
 
 /**
  * Delete a sent message (DELETE).
+ * Retries via fetchDiscordWithRetry — same 429/5xx/network policy as send.
  * See PRD 3.5.
  */
 export async function deleteWebhookMessage(
   url: string,
   messageId: string,
+  maxRetries = 3,
 ): Promise<SendResult> {
-  try {
-    const deleteUrl = `${url}/messages/${messageId}`;
-    const response = await fetchWithTimeout(deleteUrl, {
+  const outcome = await fetchDiscordWithRetry(
+    `${url}/messages/${messageId}`,
+    {
       method: "DELETE",
       headers: {
         "User-Agent": "MyKait/1.0 (webhook-studio)",
       },
       redirect: "error",
-    });
+    },
+    maxRetries,
+  );
 
-    if (response.ok || response.status === 204) {
-      return { success: true, httpStatus: 204 };
-    }
-
-    const body = await response.json().catch(() => null);
-    return {
-      success: false,
-      httpStatus: response.status,
-      error: body?.message ?? `HTTP ${response.status}`,
-    };
-  } catch (err) {
+  if (!outcome.response) {
     return {
       success: false,
       httpStatus: 0,
-      error: err instanceof Error ? err.message : "Error jaringan",
+      error: outcome.networkError ?? "Error jaringan",
     };
   }
+  const response = outcome.response;
+
+  if (response.ok || response.status === 204) {
+    return { success: true, httpStatus: 204 };
+  }
+
+  if (outcome.rateLimited) {
+    return {
+      success: false,
+      httpStatus: 429,
+      rateLimited: true,
+      retryAfter: outcome.retryAfter,
+      error: `Rate limited oleh Discord. Coba lagi dalam ${outcome.retryAfter} detik.`,
+    };
+  }
+
+  const body = await response.json().catch(() => null);
+  return {
+    success: false,
+    httpStatus: response.status,
+    error: body?.message ?? `HTTP ${response.status}`,
+  };
 }
