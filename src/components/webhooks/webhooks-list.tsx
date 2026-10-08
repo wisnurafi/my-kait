@@ -186,8 +186,14 @@ export function WebhooksList({
     const target = confirmTarget;
     setConfirmTarget(null);
     startTransition(async () => {
+      // deleteWebhookAction reads formData.get("id"); sendTestMessageAction
+      // reads formData.get("webhookId") - set the right key per action.
       const formData = new FormData();
-      formData.set("webhookId", target.id);
+      if (target.kind === "delete") {
+        formData.set("id", target.id);
+      } else {
+        formData.set("webhookId", target.id);
+      }
       if (target.kind === "delete") {
         try {
           const result = await deleteWebhookAction(formData);

@@ -18,7 +18,6 @@ export default async function VariablesPage({
       <PageHeader
         eyebrow={tn("variables")}
         title={t("variablesTitle")}
-        description={t("variablesDesc")}
         media={<Mascot mini size={52} />}
       />
       <VariablesManager />

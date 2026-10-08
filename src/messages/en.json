@@ -1069,7 +1069,6 @@
   },
   "variables": {
     "variablesTitle": "Variables",
-    "variablesDesc": "Named {tokens} with default values. Use the {x} button in the editor to insert them, and their defaults pre-fill the send form.",
     "variableNameLabel": "Name",
     "variableNamePlaceholder": "nama_event",
     "variableNameHint": "Letters, numbers and underscore only, max 40 characters. Braces are added automatically.",
@@ -1094,6 +1093,7 @@
     "count": "{count, plural, one {# variable} other {# variables}}",
     "editVariableLabel": "Edit variable {name}",
     "variableUpdated": "Variable updated.",
-    "variableUpdateFailed": "Failed to update variable."
+    "variableUpdateFailed": "Failed to update variable.",
+    "pageLabel": "Page {n}"
   }
 }

@@ -1069,7 +1069,6 @@
   },
   "variables": {
     "variablesTitle": "Variabel",
-    "variablesDesc": "Token {nama} dengan nilai default. Pakai tombol {x} di editor untuk menyisipkannya, nilai defaultnya otomatis terisi di form kirim.",
     "variableNameLabel": "Nama",
     "variableNamePlaceholder": "nama_event",
     "variableNameHint": "Huruf, angka, dan underscore saja, maks 40 karakter. Kurung kurawal ditambahkan otomatis.",
@@ -1094,6 +1093,7 @@
     "count": "{count} variable",
     "editVariableLabel": "Ubah variable {name}",
     "variableUpdated": "Variable diperbarui.",
-    "variableUpdateFailed": "Gagal memperbarui variable."
+    "variableUpdateFailed": "Gagal memperbarui variable.",
+    "pageLabel": "Halaman {n}"
   }
 }
