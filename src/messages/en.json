@@ -41,7 +41,8 @@
     "settings": "Settings",
     "logout": "Log out",
     "apiKeys": "API Keys",
-    "scheduled": "Scheduled"
+    "scheduled": "Scheduled",
+    "invalidWebhooks": "{count, plural, one {# webhook down} other {# webhooks down}}"
   },
   "templates": {
     "title": "Templates",
@@ -284,7 +285,26 @@
     "apiKeysLoadFailed": "Failed to load API keys",
     "apiKeysDocsLink": "Read the API documentation",
     "apiKeysLinkDesc": "Manage your REST API keys",
-    "apiKeysRevokeMessage": "Revoke key \"{name}\"? The key stops working immediately."
+    "apiKeysRevokeMessage": "Revoke key \"{name}\"? The key stops working immediately.",
+    "variablesTitle": "Variables",
+    "variablesDesc": "Named {tokens} with default values. Use the {x} button in the editor to insert them, and their defaults pre-fill the send form.",
+    "variableNameLabel": "Name",
+    "variableNamePlaceholder": "nama_event",
+    "variableNameHint": "Letters, numbers and underscore only, max 40 characters. Braces are added automatically.",
+    "variableDefaultLabel": "Default value",
+    "variableDefaultPlaceholder": "Weekly Sync",
+    "variableAdd": "Add",
+    "variableAdding": "Adding...",
+    "variableCreated": "Variable added.",
+    "variableCreateFailed": "Failed to add variable.",
+    "variableDeleted": "Variable deleted.",
+    "variableDeleteFailed": "Failed to delete variable.",
+    "variablesLoadFailed": "Failed to load variables.",
+    "variablesEmpty": "No variables yet. Add your first one above.",
+    "variableNoDefault": "no default",
+    "variableDeleteLabel": "Delete variable {name}",
+    "variableDeleteTitle": "Delete variable?",
+    "variableDeleteMessage": "Delete {name}? It will no longer appear in the editor picker."
   },
   "landing": {
     "navFeatures": "Features",
@@ -578,7 +598,16 @@
     "tabPreview": "Preview",
     "scheduleButton": "Schedule",
     "scheduleHint": "Schedule this message for later (single target only)",
-    "viewScheduled": "View scheduled →"
+    "viewScheduled": "View scheduled →",
+    "variablePicker": "Variables",
+    "variablePickerHint": "Insert a variable at the cursor",
+    "variablePickerTitle": "Insert variable",
+    "builtinVariables": "Built-in",
+    "builtinVariablesDesc": "Filled automatically when sending.",
+    "myVariables": "My variables",
+    "myVariablesDesc": "Saved in Settings, with their default values.",
+    "noVariablesHint": "No saved variables yet. Add them in Settings.",
+    "defaultValueHint": "Default: {value}"
   },
   "logs": {
     "title": "Delivery History",
@@ -730,7 +759,13 @@
     "scheduledTooFar": "Cannot schedule more than 1 year ahead.",
     "scheduledNotFound": "Scheduled message not found.",
     "versionNotFound": "Template version not found.",
-    "bulkTooMany": "You can select at most {max} items at once."
+    "bulkTooMany": "You can select at most {max} items at once.",
+    "variableNameInvalid": "Variable name must be 1-40 characters: letters, numbers, underscore only.",
+    "variableNameReserved": "That name is reserved for a built-in variable.",
+    "variableValueTooLong": "Default value is too long (max 500 characters).",
+    "variableExists": "Variable already exists.",
+    "variableLimitReached": "Variable limit reached (max 50).",
+    "variableNotFound": "Variable not found."
   },
   "ping": {
     "active": "Webhook is active",
@@ -1034,6 +1069,17 @@
     "emptyHistory": "No history yet. Sent, failed and cancelled schedules will appear here.",
     "cancelTitle": "Cancel scheduled message",
     "cancelMessage": "Stop \"{name}\" from being sent? This cannot be undone.",
-    "cancelConfirmLabel": "Confirm cancel scheduled"
+    "cancelConfirmLabel": "Confirm cancel scheduled",
+    "recurrence_none": "Does not repeat",
+    "recurrence_daily": "Daily",
+    "recurrence_weekly": "Weekly",
+    "recurrence_monthly": "Monthly",
+    "recurrenceLabel": "Repeat",
+    "recurrenceHint": "After each send, the next occurrence is scheduled automatically.",
+    "rescheduleButton": "Reschedule",
+    "rescheduleTitle": "Reschedule message",
+    "rescheduleConfirm": "Save new time",
+    "rescheduledOk": "Message rescheduled",
+    "rescheduleFailed": "Failed to reschedule"
   }
 }

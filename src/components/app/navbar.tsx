@@ -35,9 +35,23 @@ const desktopNavItems = [
   { href: "/scheduled", icon: CalendarClock, key: "scheduled", ia: "ia-ring" },
 ] as const;
 
-export function Navbar() {
+export function Navbar({
+  invalidWebhookCount = 0,
+}: {
+  /** Webhooks with last_status = 'invalid' — shows a red badge/dot on the webhooks nav item. */
+  invalidWebhookCount?: number;
+}) {
   const t = useTranslations("nav");
   const pathname = usePathname();
+  const showInvalidBadge = invalidWebhookCount > 0;
+  // i18n key "nav.invalidWebhooks" (ICU plural with {count}) — added separately
+  const invalidLabel = showInvalidBadge
+    ? t("invalidWebhooks", { count: invalidWebhookCount })
+    : undefined;
+  const webhooksA11y = (key: string) =>
+    key === "webhooks" && invalidLabel
+      ? { title: invalidLabel, "aria-label": `${t(key)}: ${invalidLabel}` }
+      : {};
 
   return (
     <>
@@ -84,6 +98,7 @@ export function Navbar() {
                 key={item.href}
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
+                {...webhooksA11y(item.key)}
                 className={cn(
                   "hv relative flex items-center gap-3 px-3 py-2.5 no-underline rounded-lg overflow-hidden",
                   "font-mono text-[11px] uppercase tracking-[0.14em]",
@@ -104,6 +119,14 @@ export function Navbar() {
                   <item.icon size={18} />
                 </span>
                 {t(item.key)}
+                {item.key === "webhooks" && showInvalidBadge && (
+                  <span
+                    aria-hidden="true"
+                    className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-error/30 bg-error-soft px-1 font-mono text-[10px] font-medium leading-none text-error"
+                  >
+                    {invalidWebhookCount > 99 ? "99+" : invalidWebhookCount}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -144,6 +167,7 @@ export function Navbar() {
               key={item.href}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
+              {...webhooksA11y(item.key)}
               className={cn(
                 "hv relative flex flex-col items-center gap-1 px-2 py-2 no-underline",
                 "font-mono text-[9px] uppercase tracking-[0.12em]",
@@ -157,8 +181,14 @@ export function Navbar() {
                   className="absolute top-0 h-[2px] w-8 rounded-full bg-accent"
                 />
               )}
-              <span className={cn("ia", item.ia)}>
+              <span className={cn("ia relative", item.ia)}>
                 <item.icon size={18} />
+                {item.key === "webhooks" && showInvalidBadge && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-1 -right-1.5 h-2.5 w-2.5 rounded-full bg-error ring-2 ring-surface"
+                  />
+                )}
               </span>
               {t(item.key)}
             </Link>

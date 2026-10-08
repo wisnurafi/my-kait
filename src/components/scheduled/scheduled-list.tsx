@@ -13,6 +13,7 @@ import {
   type ScheduledPublic,
   type ScheduledFilter,
 } from "@/server/actions/scheduled";
+import { ScheduleDialog } from "@/components/editor/schedule-dialog";
 import { CalendarClock, Ban, Inbox, ChevronLeft, ChevronRight } from "lucide-react";
 
 type PageData = {
@@ -88,6 +89,7 @@ export function ScheduledList() {
   const [page, setPage] = useState(1);
   const [cancelTarget, setCancelTarget] = useState<ScheduledPublic | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [rescheduleTarget, setRescheduleTarget] = useState<ScheduledPublic | null>(null);
 
   const load = useCallback(
     async (f: ScheduledFilter, p: number) => {
@@ -180,6 +182,11 @@ export function ScheduledList() {
                     >
                       {t(`status_${s.status}`)}
                     </Badge>
+                    {s.recurrence !== "none" && (
+                      <Badge variant="default">
+                        {t(`recurrence_${s.recurrence}`)}
+                      </Badge>
+                    )}
                     {isOverdue(s) && <Badge variant="warning">{t("overdue")}</Badge>}
                   </div>
                   {s.preview && (
@@ -198,14 +205,24 @@ export function ScheduledList() {
                   </div>
                 </div>
                 {s.status === "pending" && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => setCancelTarget(s)}
-                    className="gap-2 shrink-0"
-                  >
-                    <Ban size={16} />
-                    {t("cancelButton")}
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setRescheduleTarget(s)}
+                      className="gap-2 shrink-0"
+                    >
+                      <CalendarClock size={16} />
+                      {t("rescheduleButton")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setCancelTarget(s)}
+                      className="gap-2 shrink-0"
+                    >
+                      <Ban size={16} />
+                      {t("cancelButton")}
+                    </Button>
+                  </>
                 )}
               </li>
             ))}
@@ -251,6 +268,17 @@ export function ScheduledList() {
           message={t("cancelMessage", { name: cancelTarget.webhookNameSnapshot })}
           confirmLabel={t("cancelConfirmLabel")}
           loading={cancelling}
+        />
+      )}
+
+      {rescheduleTarget && (
+        <ScheduleDialog
+          mode="reschedule"
+          open={!!rescheduleTarget}
+          onClose={() => setRescheduleTarget(null)}
+          scheduleId={rescheduleTarget.id}
+          initialScheduledAt={rescheduleTarget.scheduledAt}
+          onRescheduled={() => load(filter, page)}
         />
       )}
     </div>

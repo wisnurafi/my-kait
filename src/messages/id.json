@@ -41,7 +41,8 @@
     "settings": "Pengaturan",
     "logout": "Keluar",
     "apiKeys": "API Keys",
-    "scheduled": "Terjadwal"
+    "scheduled": "Terjadwal",
+    "invalidWebhooks": "{count} webhook bermasalah"
   },
   "templates": {
     "title": "Template",
@@ -284,7 +285,26 @@
     "apiKeysLoadFailed": "Gagal memuat API keys",
     "apiKeysDocsLink": "Baca dokumentasi API",
     "apiKeysLinkDesc": "Kelola REST API key lu",
-    "apiKeysRevokeMessage": "Cabut key \"{name}\"? Key langsung berhenti berfungsi."
+    "apiKeysRevokeMessage": "Cabut key \"{name}\"? Key langsung berhenti berfungsi.",
+    "variablesTitle": "Variabel",
+    "variablesDesc": "Token {nama} dengan nilai default. Pakai tombol {x} di editor untuk menyisipkannya, nilai defaultnya otomatis terisi di form kirim.",
+    "variableNameLabel": "Nama",
+    "variableNamePlaceholder": "nama_event",
+    "variableNameHint": "Huruf, angka, dan underscore saja, maks 40 karakter. Kurung kurawal ditambahkan otomatis.",
+    "variableDefaultLabel": "Nilai default",
+    "variableDefaultPlaceholder": "Weekly Sync",
+    "variableAdd": "Tambah",
+    "variableAdding": "Menambahkan...",
+    "variableCreated": "Variable ditambahkan.",
+    "variableCreateFailed": "Gagal menambah variable.",
+    "variableDeleted": "Variable dihapus.",
+    "variableDeleteFailed": "Gagal menghapus variable.",
+    "variablesLoadFailed": "Gagal memuat variable.",
+    "variablesEmpty": "Belum ada variable. Tambahkan yang pertama di atas.",
+    "variableNoDefault": "tanpa default",
+    "variableDeleteLabel": "Hapus variable {name}",
+    "variableDeleteTitle": "Hapus variable?",
+    "variableDeleteMessage": "Hapus {name}? Variable ini tidak akan muncul lagi di picker editor."
   },
   "landing": {
     "navFeatures": "Fitur",
@@ -578,7 +598,16 @@
     "tabPreview": "Pratinjau",
     "scheduleButton": "Jadwalkan",
     "scheduleHint": "Jadwalkan pesan ini untuk nanti (satu target saja)",
-    "viewScheduled": "Lihat terjadwal →"
+    "viewScheduled": "Lihat terjadwal →",
+    "variablePicker": "Variabel",
+    "variablePickerHint": "Sisipkan variable di posisi kursor",
+    "variablePickerTitle": "Sisipkan variable",
+    "builtinVariables": "Bawaan",
+    "builtinVariablesDesc": "Terisi otomatis saat mengirim.",
+    "myVariables": "Variable saya",
+    "myVariablesDesc": "Tersimpan di Settings, beserta nilai defaultnya.",
+    "noVariablesHint": "Belum ada variable tersimpan. Tambahkan di Settings.",
+    "defaultValueHint": "Default: {value}"
   },
   "logs": {
     "title": "Riwayat Pengiriman",
@@ -730,7 +759,13 @@
     "scheduledTooFar": "Tidak bisa jadwalkan lebih dari 1 tahun ke depan.",
     "scheduledNotFound": "Pesan terjadwal tidak ditemukan.",
     "versionNotFound": "Versi template tidak ditemukan.",
-    "bulkTooMany": "Kamu hanya bisa memilih maksimal {max} item sekaligus."
+    "bulkTooMany": "Kamu hanya bisa memilih maksimal {max} item sekaligus.",
+    "variableNameInvalid": "Nama variable harus 1-40 karakter: huruf, angka, underscore saja.",
+    "variableNameReserved": "Nama itu dipakai variable bawaan.",
+    "variableValueTooLong": "Nilai default terlalu panjang (maks 500 karakter).",
+    "variableExists": "Variable sudah ada.",
+    "variableLimitReached": "Batas variable tercapai (maks 50).",
+    "variableNotFound": "Variable tidak ditemukan."
   },
   "ping": {
     "active": "Webhook aktif",
@@ -1034,6 +1069,17 @@
     "emptyHistory": "Belum ada riwayat. Jadwal yang terkirim, gagal, dan dibatalkan muncul di sini.",
     "cancelTitle": "Batalkan pesan terjadwal",
     "cancelMessage": "Batalkan pengiriman \"{name}\"? Tidak bisa dibatalkan lagi.",
-    "cancelConfirmLabel": "Konfirmasi batalkan jadwal"
+    "cancelConfirmLabel": "Konfirmasi batalkan jadwal",
+    "recurrence_none": "Tidak diulang",
+    "recurrence_daily": "Harian",
+    "recurrence_weekly": "Mingguan",
+    "recurrence_monthly": "Bulanan",
+    "recurrenceLabel": "Ulangi",
+    "recurrenceHint": "Setelah terkirim, jadwal berikutnya dibuat otomatis.",
+    "rescheduleButton": "Jadwal Ulang",
+    "rescheduleTitle": "Jadwal Ulang Pesan",
+    "rescheduleConfirm": "Simpan Waktu Baru",
+    "rescheduledOk": "Pesan dijadwal ulang",
+    "rescheduleFailed": "Gagal menjadwal ulang"
   }
 }

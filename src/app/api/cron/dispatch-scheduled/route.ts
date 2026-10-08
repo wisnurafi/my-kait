@@ -16,12 +16,15 @@
  *     to pending for the next tick.
  *  4. Rate-limited sends go back to pending for the next tick (max 3 attempts);
  *     other failures are marked failed with the error recorded.
+ *  5. Recurring schedules (recurrence != 'none') queue their next occurrence
+ *     after a successful send, anchored on the original scheduled_at.
  */
 
 import { NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { db, sql } from "@/lib/db";
 import { webhooks, messageLogs, scheduledMessages } from "@/lib/schema";
+import type { ScheduledRecurrence } from "@/lib/schema";
 import { decryptWebhookUrl, encryptWebhookUrl } from "@/lib/crypto";
 import { sendWebhookMessage } from "@/lib/discord";
 import { markWebhookInvalid } from "@/lib/webhook-health";
@@ -60,6 +63,8 @@ interface ClaimedRow {
   payload: unknown;
   mode: "normal" | "embed" | "both";
   attempts: number;
+  recurrence: ScheduledRecurrence;
+  scheduled_at: string;
 }
 
 async function markRow(
@@ -77,6 +82,33 @@ async function markRow(
 }
 
 type RowOutcome = "sent" | "failed" | "retried";
+
+/**
+ * Next occurrence for a recurring schedule, anchored on the ORIGINAL
+ * scheduled_at so send-time drift never accumulates (a late tick doesn't
+ * shift every future occurrence). Monthly clamps to the last day of the
+ * month (Jan 31 -> Feb 28).
+ */
+function nextScheduledAt(
+  from: Date,
+  recurrence: "daily" | "weekly" | "monthly",
+): Date {
+  const d = new Date(from.getTime());
+  if (recurrence === "daily") {
+    d.setUTCDate(d.getUTCDate() + 1);
+  } else if (recurrence === "weekly") {
+    d.setUTCDate(d.getUTCDate() + 7);
+  } else {
+    const day = d.getUTCDate();
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() + 1);
+    const lastDay = new Date(
+      Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    d.setUTCDate(Math.min(day, lastDay));
+  }
+  return d;
+}
 
 /**
  * Process one claimed row. Never throws: every failure path marks the row
@@ -203,6 +235,29 @@ async function processRow(row: ClaimedRow): Promise<RowOutcome> {
   try {
     if (result.success) {
       await markRow(row.id, { status: "sent", sentLogId: logId });
+      // Recurring schedules: queue the next occurrence. Best-effort —
+      // a failure here is logged and never touches the row just sent.
+      if (row.recurrence !== "none") {
+        try {
+          await db.insert(scheduledMessages).values({
+            userId: row.user_id,
+            webhookId: row.webhook_id,
+            manualUrlEncrypted: row.manual_url_encrypted,
+            manualUrlKeyVersion: row.manual_url_key_version,
+            webhookNameSnapshot: row.webhook_name_snapshot,
+            payload: row.payload as Record<string, unknown>,
+            mode: row.mode,
+            scheduledAt: nextScheduledAt(new Date(row.scheduled_at), row.recurrence),
+            recurrence: row.recurrence,
+          });
+        } catch (e) {
+          logger.error(
+            "cron",
+            "dispatch-scheduled: failed to queue next recurring occurrence",
+            e instanceof Error ? e.message : e,
+          );
+        }
+      }
       return "sent";
     } else if (result.rateLimited && row.attempts < MAX_ATTEMPTS) {
       await markRow(row.id, { status: "pending", lastError: result.error });
@@ -257,7 +312,7 @@ export async function GET(req: Request) {
       )
       RETURNING id, user_id, webhook_id, manual_url_encrypted,
                 manual_url_key_version, webhook_name_snapshot,
-                payload, mode, attempts
+                payload, mode, attempts, recurrence, scheduled_at
     `) as unknown as ClaimedRow[];
 
     // 3. Send claims in small parallel batches with a time budget, so one
