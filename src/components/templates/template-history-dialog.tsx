@@ -6,14 +6,26 @@ import { Dialog, DialogTitle, DialogBody, ConfirmDialog } from "@/components/ui/
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/toast";
+import { DiscordPreview } from "@/components/editor/discord-preview";
+import { cn } from "@/lib/utils";
 import {
   createTemplateVersionAction,
   listTemplateVersionsAction,
   restoreTemplateVersionAction,
 } from "@/server/actions/templates";
-import { History, Camera, RotateCcw } from "lucide-react";
+import { History, Camera, RotateCcw, Eye } from "lucide-react";
 
-type Version = { id: string; name: string; createdAt: string; preview: string };
+type Version = { id: string; name: string; createdAt: string; payload: unknown };
+
+function fmtTimestamp(iso: string, locale: string) {
+  return new Date(iso).toLocaleString(locale === "en" ? "en-US" : "id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export function TemplateHistoryDialog({
   templateId,
@@ -32,6 +44,15 @@ export function TemplateHistoryDialog({
   const [snapshotting, setSnapshotting] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState<Version | null>(null);
   const [restoring, setRestoring] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // The previewed version: explicit selection, otherwise the newest.
+  const active =
+    versions?.find((v) => v.id === selectedId) ?? versions?.[0] ?? null;
+  const activePayload =
+    active && typeof active.payload === "object" && active.payload !== null
+      ? (active.payload as Record<string, unknown>)
+      : {};
 
   const load = async () => {
     const res = await listTemplateVersionsAction(templateId);
@@ -41,11 +62,13 @@ export function TemplateHistoryDialog({
     } else {
       setVersions(res.versions);
     }
+    setSelectedId(null);
   };
 
   useEffect(() => {
     if (open) {
       setVersions(null);
+      setSelectedId(null);
       load();
     } else {
       setRestoreTarget(null);
@@ -86,7 +109,7 @@ export function TemplateHistoryDialog({
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} className="max-w-lg">
+      <Dialog open={open} onClose={onClose} className="max-w-4xl">
         <DialogTitle>
           <span className="flex items-center gap-2">
             <History size={18} />
@@ -112,49 +135,66 @@ export function TemplateHistoryDialog({
           ) : versions.length === 0 ? (
             <p className="text-sm text-fg-tertiary">{t("versions.empty")}</p>
           ) : (
-            <ul className="space-y-2 max-h-80 overflow-y-auto">
-              {versions.map((v, i) => (
-                <li
-                  key={v.id}
-                  className="panel p-3 flex items-center gap-3"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm truncate">{v.name}</span>
-                      {i === 0 && (
-                        <Badge variant="info">{t("versions.latest")}</Badge>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Version list */}
+              <ul className="space-y-2 max-h-[30rem] overflow-y-auto pr-1">
+                {versions.map((v, i) => {
+                  const isActive = active?.id === v.id;
+                  return (
+                    <li
+                      key={v.id}
+                      className={cn(
+                        "panel p-3 transition-colors",
+                        isActive && "border-accent",
                       )}
-                    </div>
-                    <p className="text-xs text-fg-tertiary mt-0.5">
-                      {new Date(v.createdAt).toLocaleString(
-                        locale === "en" ? "en-US" : "id-ID",
-                        {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        },
-                      )}
-                    </p>
-                    {v.preview && (
-                      <p className="text-xs text-fg-secondary mt-1 line-clamp-2 break-words">
-                        {v.preview}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm truncate flex-1 min-w-0">
+                          {v.name}
+                        </span>
+                        {i === 0 && (
+                          <Badge variant="info">{t("versions.latest")}</Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-fg-tertiary mt-0.5">
+                        {fmtTimestamp(v.createdAt, locale)}
                       </p>
-                    )}
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setRestoreTarget(v)}
-                    className="gap-1.5 shrink-0"
-                  >
-                    <RotateCcw size={14} />
-                    {t("versions.restore")}
-                  </Button>
-                </li>
-              ))}
-            </ul>
+                      <div className="flex items-center gap-2 mt-2.5">
+                        <Button
+                          size="sm"
+                          variant={isActive ? "secondary" : "ghost"}
+                          onClick={() => setSelectedId(v.id)}
+                          className="gap-1.5"
+                          aria-pressed={isActive}
+                        >
+                          <Eye size={14} />
+                          {t("versions.preview")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setRestoreTarget(v)}
+                          className="gap-1.5"
+                        >
+                          <RotateCcw size={14} />
+                          {t("versions.restore")}
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Side preview */}
+              <div className="min-w-0">
+                {active && (
+                  <p className="label mb-2 truncate">
+                    {t("versions.previewTitle", { name: active.name })}
+                  </p>
+                )}
+                <DiscordPreview payload={activePayload} />
+              </div>
+            </div>
           )}
           <p className="text-xs text-fg-tertiary mt-4">
             {t("versions.keptNote", { count: 20 })}

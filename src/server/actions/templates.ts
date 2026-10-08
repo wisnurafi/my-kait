@@ -729,12 +729,12 @@ export async function createTemplateVersionAction(
   return { success: true };
 }
 
-/** Newest-first version list for a template (metadata + content preview). */
+/** Newest-first version list for a template (with full payload for preview). */
 export async function listTemplateVersionsAction(
   templateId: string,
 ): Promise<
   | { error: string }
-  | { versions: Array<{ id: string; name: string; createdAt: string; preview: string }> }
+  | { versions: Array<{ id: string; name: string; createdAt: string; payload: unknown }> }
 > {
   const user = await requireAuth();
   const t = await getActionT("errors");
@@ -756,7 +756,7 @@ export async function listTemplateVersionsAction(
       id: r.id,
       name: r.name,
       createdAt: r.createdAt.toISOString(),
-      preview: payloadPreview(r.payload),
+      payload: r.payload,
     })),
   };
 }

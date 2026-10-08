@@ -133,6 +133,8 @@
       "empty": "Belum ada snapshot. Ambil satu sebelum mengubah besar-besaran.",
       "latest": "Terbaru",
       "restore": "Kembalikan",
+      "preview": "Pratinjau",
+      "previewTitle": "Pratinjau: {name}",
       "restoreTitle": "Kembalikan ke versi ini?",
       "restoreMessage": "Ganti \"{name}\" dengan snapshot ini? Kondisi sekarang disimpan dulu sebagai snapshot baru, jadi bisa di-undo.",
       "restoreConfirm": "Kembalikan versi",
