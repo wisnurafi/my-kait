@@ -940,7 +940,6 @@
     "toastTemplateDeleted": "Template dihapus permanen.",
     "toastActionFailed": "Aksi gagal. Coba lagi.",
     "viewTemplate": "Lihat template",
-    "expandReason": "Klik untuk baca selengkapnya",
     "filterActive": "Aktif",
     "filterSuspended": "Disuspend",
     "whActive": "Aktif",
@@ -987,7 +986,12 @@
     "toastKeyRevoked": "API key dicabut.",
     "keyRevoked": "Dicabut",
     "keyNeverUsed": "Belum pernah dipakai",
-    "keyNoExpiry": "Tanpa kedaluwarsa"
+    "keyNoExpiry": "Tanpa kedaluwarsa",
+    "statSchedPending": "Terjadwal pending",
+    "statActiveKeys": "API key aktif",
+    "colLastActive": "Terakhir aktif",
+    "colCreated": "Dibuat",
+    "reportDetailTitle": "Detail laporan"
   },
   "docs": {
     "eyebrow": "REST API Publik",

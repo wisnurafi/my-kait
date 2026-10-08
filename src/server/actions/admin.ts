@@ -638,7 +638,7 @@ export type AdminUserDetail = {
     shareActive: boolean | null;
     pendingReports: number;
   }[];
-  webhooks: { id: string; name: string; lastStatus: string }[];
+  webhooks: { id: string; name: string; lastStatus: string; createdAt: Date }[];
   recentLogs: { id: string; status: string; createdAt: Date }[];
 };
 
@@ -687,6 +687,7 @@ export async function getUserDetail(userId: string): Promise<AdminUserDetail> {
         id: webhooks.id,
         name: webhooks.name,
         lastStatus: webhooks.lastStatus,
+        createdAt: webhooks.createdAt,
       })
       .from(webhooks)
       .where(eq(webhooks.userId, userId))
