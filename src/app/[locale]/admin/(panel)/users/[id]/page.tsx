@@ -1,10 +1,16 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/routing";
 import { Badge } from "@/components/ui/badge";
-import { getUserDetail } from "@/server/actions/admin";
+import {
+  getUserDetail,
+  getUserScheduled,
+  getUserApiKeys,
+} from "@/server/actions/admin";
 import {
   SuspendUserButton,
   DeleteTemplateButton,
+  CancelScheduledButton,
+  RevokeApiKeyButton,
 } from "@/components/admin/user-detail-actions";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -43,6 +49,12 @@ export default async function AdminUserDetailPage({
     notFound();
   }
 
+  // Loaded after the user exists; requireAdmin failures surface via error.tsx.
+  const [scheduled, apiKeyList] = await Promise.all([
+    getUserScheduled(id),
+    getUserApiKeys(id),
+  ]);
+
   const activeShares = user.templates.filter((x) => x.shareActive).length;
 
   const webhookStatusMeta = {
@@ -51,6 +63,21 @@ export default async function AdminUserDetailPage({
     rate_limited: { variant: "warning" as const, label: t("whRateLimited") },
     unchecked: { variant: "default" as const, label: t("whUnchecked") },
   };
+
+  const schedStatusMeta = {
+    pending: { variant: "warning" as const, label: t("schedPending") },
+    sending: { variant: "info" as const, label: t("schedSending") },
+    sent: { variant: "success" as const, label: t("schedSent") },
+    failed: { variant: "danger" as const, label: t("schedFailed") },
+    cancelled: { variant: "default" as const, label: t("schedCancelled") },
+  };
+
+  const recurrenceLabel = {
+    none: t("recOnce"),
+    daily: t("recDaily"),
+    weekly: t("recWeekly"),
+    monthly: t("recMonthly"),
+  } as const;
 
   return (
     <div className="space-y-6">
@@ -174,6 +201,107 @@ export default async function AdminUserDetailPage({
                 </li>
               );
             })}
+          </ul>
+        )}
+      </div>
+
+      {/* Scheduled */}
+      <div className="panel p-6 stagger-in">
+        <h3 className="mb-4">
+          {t("colScheduled")} ({scheduled.length})
+        </h3>
+        {scheduled.length === 0 ? (
+          <p className="text-sm text-fg-secondary">{t("emptyScheduled")}</p>
+        ) : (
+          <ul className="space-y-2">
+            {scheduled.map((s) => {
+              const meta =
+                schedStatusMeta[
+                  s.status as keyof typeof schedStatusMeta
+                ] ?? schedStatusMeta.pending;
+              return (
+                <li
+                  key={s.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border-ink px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{s.webhookName}</p>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <span className="text-xs text-fg-tertiary font-mono">
+                        {fmtDate(s.scheduledAt, locale)}
+                      </span>
+                      <Badge
+                        variant={s.recurrence === "none" ? "default" : "info"}
+                        className="font-mono text-[10px]"
+                      >
+                        {
+                          recurrenceLabel[
+                            s.recurrence as keyof typeof recurrenceLabel
+                          ]
+                        }
+                      </Badge>
+                      {s.attempts > 0 && (
+                        <span className="text-xs text-fg-tertiary font-mono">
+                          {t("attemptsLabel", { count: s.attempts })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant={meta.variant}>{meta.label}</Badge>
+                    {s.status === "pending" && (
+                      <CancelScheduledButton
+                        scheduledId={s.id}
+                        webhookName={s.webhookName}
+                      />
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      {/* API keys */}
+      <div className="panel p-6 stagger-in">
+        <h3 className="mb-4">
+          {t("colApiKeys")} ({apiKeyList.length})
+        </h3>
+        {apiKeyList.length === 0 ? (
+          <p className="text-sm text-fg-secondary">{t("emptyApiKeys")}</p>
+        ) : (
+          <ul className="space-y-2">
+            {apiKeyList.map((k) => (
+              <li
+                key={k.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border-ink px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium truncate">
+                    {k.name}{" "}
+                    <code className="font-mono text-xs text-fg-tertiary">
+                      {k.keyPrefix}…
+                    </code>
+                  </p>
+                  <p className="text-xs text-fg-tertiary mt-1">
+                    {t("colLastUsed")}:{" "}
+                    {k.lastUsedAt
+                      ? fmtDate(k.lastUsedAt, locale)
+                      : t("keyNeverUsed")}{" "}
+                    · {t("colExpires")}:{" "}
+                    {k.expiresAt ? fmtDate(k.expiresAt, locale) : t("keyNoExpiry")}
+                  </p>
+                </div>
+                <div className="shrink-0">
+                  {k.revokedAt ? (
+                    <Badge variant="default">{t("keyRevoked")}</Badge>
+                  ) : (
+                    <RevokeApiKeyButton keyId={k.id} keyName={k.name} />
+                  )}
+                </div>
+              </li>
+            ))}
           </ul>
         )}
       </div>

@@ -22,8 +22,9 @@ import {
   type ReportStatus,
 } from "@/lib/schema";
 import { ADMIN_COOKIE_NAME, verifyAdminSession } from "@/lib/admin-session";
-import { eq, and, gte, lt, sql, desc, ilike, or, count } from "drizzle-orm";
+import { eq, and, gte, lt, sql, desc, ilike, or, count, isNull } from "drizzle-orm";
 import { logger } from "@/lib/logger";
+import { getActionT } from "@/server/i18n";
 
 export type { ReportStatus } from "@/lib/schema";
 
@@ -704,4 +705,144 @@ export async function getUserDetail(userId: string): Promise<AdminUserDetail> {
   ]);
 
   return { ...u, templates: tpls, webhooks: whs, recentLogs: logs };
+}
+
+/* --- Per-user scheduled messages (admin visibility + cancel) --- */
+
+export type AdminUserScheduledItem = {
+  id: string;
+  webhookName: string;
+  scheduledAt: Date;
+  recurrence: "none" | "daily" | "weekly" | "monthly";
+  status: string;
+  attempts: number;
+};
+
+export async function getUserScheduled(
+  userId: string,
+): Promise<AdminUserScheduledItem[]> {
+  await requireAdmin();
+  return db
+    .select({
+      id: scheduledMessages.id,
+      webhookName: scheduledMessages.webhookNameSnapshot,
+      scheduledAt: scheduledMessages.scheduledAt,
+      recurrence: scheduledMessages.recurrence,
+      status: scheduledMessages.status,
+      attempts: scheduledMessages.attempts,
+    })
+    .from(scheduledMessages)
+    .where(eq(scheduledMessages.userId, userId))
+    .orderBy(
+      sql`case when ${scheduledMessages.status} in ('pending','sending') then 0 else 1 end`,
+      desc(scheduledMessages.scheduledAt),
+    )
+    .limit(50);
+}
+
+/**
+ * Cancel a user's scheduled message as admin. No ownership check by design
+ * (admin scope) — do NOT reuse the user-facing cancelScheduledAction here.
+ * Only pending rows can be cancelled, mirroring the user action.
+ */
+export async function adminCancelScheduledAction(
+  scheduledId: string,
+): Promise<{ error: string } | { cancelled: true }> {
+  await requireAdmin();
+  const t = await getActionT("errors");
+
+  const [row] = await db
+    .select({
+      id: scheduledMessages.id,
+      webhookName: scheduledMessages.webhookNameSnapshot,
+      userId: scheduledMessages.userId,
+    })
+    .from(scheduledMessages)
+    .where(eq(scheduledMessages.id, scheduledId))
+    .limit(1);
+  if (!row) return { error: t("scheduledNotFound") };
+
+  const updated = await db
+    .update(scheduledMessages)
+    .set({ status: "cancelled" })
+    .where(
+      and(
+        eq(scheduledMessages.id, scheduledId),
+        eq(scheduledMessages.status, "pending"),
+      ),
+    )
+    .returning({ id: scheduledMessages.id });
+  if (updated.length === 0) return { error: t("scheduledNotFound") };
+
+  const [u] = await db
+    .select({ username: users.username })
+    .from(users)
+    .where(eq(users.id, row.userId))
+    .limit(1);
+  await logAdminAction(
+    "scheduled.cancelled",
+    "scheduled",
+    scheduledId,
+    `Scheduled message to "${row.webhookName}" cancelled (@${u?.username ?? "?"})`,
+  );
+  return { cancelled: true as const };
+}
+
+/* --- Per-user API keys (admin visibility + revoke) --- */
+
+export type AdminUserApiKeyItem = {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  lastUsedAt: Date | null;
+  expiresAt: Date | null;
+  revokedAt: Date | null;
+  createdAt: Date;
+};
+
+export async function getUserApiKeys(
+  userId: string,
+): Promise<AdminUserApiKeyItem[]> {
+  await requireAdmin();
+  return db
+    .select({
+      id: apiKeys.id,
+      name: apiKeys.name,
+      keyPrefix: apiKeys.keyPrefix,
+      lastUsedAt: apiKeys.lastUsedAt,
+      expiresAt: apiKeys.expiresAt,
+      revokedAt: apiKeys.revokedAt,
+      createdAt: apiKeys.createdAt,
+    })
+    .from(apiKeys)
+    .where(eq(apiKeys.userId, userId))
+    .orderBy(desc(apiKeys.createdAt))
+    .limit(50);
+}
+
+/**
+ * Revoke a user's API key as admin. No ownership check by design (admin
+ * scope). Already-revoked keys are a no-op error, mirroring revokeApiKeyAction.
+ * Never returns the key itself — only the prefix is ever exposed.
+ */
+export async function adminRevokeApiKeyAction(
+  keyId: string,
+): Promise<{ error: string } | { revoked: true }> {
+  await requireAdmin();
+  const t = await getActionT("errors");
+
+  const rows = await db
+    .update(apiKeys)
+    .set({ revokedAt: new Date() })
+    .where(and(eq(apiKeys.id, keyId), isNull(apiKeys.revokedAt)))
+    .returning({ id: apiKeys.id, name: apiKeys.name });
+
+  if (rows.length === 0) return { error: t("apiKeyNotFound") };
+  await logAdminAction(
+    "apikey.revoked",
+    "api_key",
+    keyId,
+    `API key "${rows[0].name}" revoked`,
+  );
+  return { revoked: true as const };
 }
