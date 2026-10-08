@@ -53,9 +53,13 @@ export function ReportDetailButton({ report }: { report: ReportDetailData }) {
         <Eye size={14} />
         <span>{t("colDetail")}</span>
       </Button>
-      <Dialog open={open} onClose={() => setOpen(false)}>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        className="max-w-xl"
+      >
         <DialogTitle>{t("reportDetailTitle")}</DialogTitle>
-        <DialogBody>
+        <DialogBody className="max-h-[80vh] overflow-y-auto">
           <dl>
             <Row label={t("colTemplate")}>
               <span className="font-medium">{report.templateName}</span>
