@@ -46,17 +46,23 @@ import {
   Save,
   SlidersHorizontal,
   CalendarClock,
+  Braces,
 } from "lucide-react";
 import { SaveTemplateModal } from "@/components/editor/save-template-modal";
 import { ScheduleDialog } from "@/components/editor/schedule-dialog";
-import { ConfirmDialog } from "@/components/ui/dialog";
+import { ConfirmDialog, Dialog, DialogTitle, DialogBody } from "@/components/ui/dialog";
 import { Link } from "@/i18n/routing";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
   extractCustomVariables,
   substitutePayloadVariables,
+  BUILTIN_VARIABLE_NAMES,
 } from "@/lib/template-vars";
+import {
+  listVariablesAction,
+  type UserVariable,
+} from "@/server/actions/variables";
 import { logger } from "@/lib/logger";
 
 /* --- Types --- */
@@ -165,6 +171,7 @@ export function Editor({
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showVarPicker, setShowVarPicker] = useState(false);
 
   // Undo/redo history
   const [history, setHistory] = useState<EditorState[]>([]);
@@ -198,6 +205,32 @@ export function Editor({
   // Values are filled in the send form and substituted server-side at send time.
   const [varValues, setVarValues] = useState<Record<string, string>>({});
 
+  // The user's saved variables (global, managed in settings). Loaded once;
+  // each variable's defaultValue pre-fills the per-send values below without
+  // overwriting anything the user already typed.
+  const [userVars, setUserVars] = useState<UserVariable[]>([]);
+  const loadUserVariables = useCallback(async () => {
+    try {
+      const vars = await listVariablesAction();
+      setUserVars(vars);
+      setVarValues((prev) => {
+        const next = { ...prev };
+        for (const v of vars) {
+          const token = `{${v.name}}`;
+          if (!(token in next) && v.defaultValue) {
+            next[token] = v.defaultValue;
+          }
+        }
+        return next;
+      });
+    } catch (e) {
+      logger.warn("editor", "Failed to load user variables", { error: String(e) });
+    }
+  }, []);
+  useEffect(() => {
+    void loadUserVariables();
+  }, [loadUserVariables]);
+
   const [editMessageId, setEditMessageId] = useState<string | null>(null);
 
   // Reset editor to empty state after successful send
@@ -230,6 +263,9 @@ export function Editor({
 
   // Keyboard shortcuts: Ctrl/Cmd+Enter = send, Ctrl/Cmd+S = save as template
   const sendFormRef = useRef<HTMLFormElement>(null);
+  // Ref to the content textarea, used to read the caret position when
+  // inserting a variable from the {x} picker.
+  const contentRef = useRef<HTMLTextAreaElement | null>(null);
   const [modKey, setModKey] = useState("Ctrl");
 
   useEffect(() => {
@@ -354,6 +390,37 @@ export function Editor({
       setState(history[historyIndex + 1]);
     }
   };
+
+  // Insert a {token} at the caret position in the content field (the {x}
+  // picker). Falls back to append when the field has no caret (e.g. hidden
+  // by the current mode). Goes through updateState so undo/redo keep working.
+  const insertVariable = useCallback(
+    (token: string) => {
+      const el = contentRef.current;
+      if (el && typeof el.selectionStart === "number") {
+        const start = el.selectionStart;
+        const end = el.selectionEnd ?? start;
+        updateState((prev) => ({
+          ...prev,
+          content: prev.content.slice(0, start) + token + prev.content.slice(end),
+        }));
+        // Restore focus and caret after React re-renders the controlled value.
+        requestAnimationFrame(() => {
+          el.focus();
+          const pos = start + token.length;
+          try {
+            el.setSelectionRange(pos, pos);
+          } catch {
+            // Field may be hidden by a mode switch, ignore.
+          }
+        });
+      } else {
+        updateState((prev) => ({ ...prev, content: prev.content + token }));
+      }
+      setShowVarPicker(false);
+    },
+    [updateState],
+  );
 
   /* --- Build payload for send/preview --- */
 
@@ -570,6 +637,9 @@ export function Editor({
         <Button variant="ghost" size="sm" onClick={() => setShowSaveTemplate(true)} title={t("kbdSave", { mod: modKey })} className="gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
           <Save size={14} /> {t("saveAs")}
         </Button>
+        <Button variant="ghost" size="sm" onClick={() => setShowVarPicker(true)} title={t("variablePickerHint")} className="gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
+          <Braces size={14} /> {t("variablePicker")}
+        </Button>
       </div>
 
       {/* JSON Import/Export panel */}
@@ -651,6 +721,7 @@ export function Editor({
                 </Badge>
               </div>
               <Textarea
+                ref={contentRef}
                 value={state.content}
                 onChange={(e) => updateState((prev) => ({ ...prev, content: e.target.value }))}
                 rows={5}
@@ -1014,6 +1085,53 @@ export function Editor({
           }}
         />
       )}
+
+      {/* Variable picker: built-ins + the user's saved variables.
+          Clicking one inserts {token} at the content caret. */}
+      <Dialog open={showVarPicker} onClose={() => setShowVarPicker(false)}>
+        <DialogTitle>{t("variablePickerTitle")}</DialogTitle>
+        <DialogBody>
+          <div className="space-y-5" data-kbd-off>
+            <div>
+              <Label>{t("builtinVariables")}</Label>
+              <p className="text-xs mt-1 mb-2">{t("builtinVariablesDesc")}</p>
+              <div className="flex flex-wrap gap-2">
+                {BUILTIN_VARIABLE_NAMES.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => insertVariable(name)}
+                    className="px-2.5 py-1.5 rounded-lg border border-border-ink bg-sunken font-mono text-xs text-fg-secondary hover:text-fg hover:border-accent transition-colors cursor-pointer"
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>{t("myVariables")}</Label>
+              <p className="text-xs mt-1 mb-2">{t("myVariablesDesc")}</p>
+              {userVars.length === 0 ? (
+                <p className="text-sm">{t("noVariablesHint")}</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {userVars.map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => insertVariable(`{${v.name}}`)}
+                      title={v.defaultValue ? t("defaultValueHint", { value: v.defaultValue }) : undefined}
+                      className="px-2.5 py-1.5 rounded-lg border border-border-ink bg-sunken font-mono text-xs text-fg-secondary hover:text-fg hover:border-accent transition-colors cursor-pointer"
+                    >
+                      {`{${v.name}}`}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogBody>
+      </Dialog>
     </div>
   );
 }

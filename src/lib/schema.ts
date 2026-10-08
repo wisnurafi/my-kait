@@ -66,6 +66,13 @@ export const scheduledStatusEnum = pgEnum("scheduled_status", [
   "cancelled",
 ]);
 
+export const scheduledRecurrenceEnum = pgEnum("scheduled_recurrence", [
+  "none",
+  "daily",
+  "weekly",
+  "monthly",
+]);
+
 /* --- Tables --- */
 
 export const users = pgTable("users", {
@@ -269,6 +276,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   messageLogs: many(messageLogs),
   apiKeys: many(apiKeys),
   scheduledMessages: many(scheduledMessages),
+  userVariables: many(userVariables),
 }));
 
 export const webhooksRelations = relations(webhooks, ({ one, many }) => ({
@@ -370,6 +378,9 @@ export const scheduledMessages = pgTable(
     mode: messageModeEnum("mode").notNull(),
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
     status: scheduledStatusEnum("status").notNull().default("pending"),
+    // Repeat cadence; "none" = one-shot. Dispatch creates the next pending
+    // row after a successful send (computed from the original scheduled_at).
+    recurrence: scheduledRecurrenceEnum("recurrence").notNull().default("none"),
     attempts: integer("attempts").notNull().default(0),
     lastError: text("last_error"),
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
@@ -390,6 +401,32 @@ export const scheduledMessagesRelations = relations(scheduledMessages, ({ one })
     fields: [scheduledMessages.webhookId],
     references: [webhooks.id],
   }),
+}));
+
+/* --- User variables: named {tokens} with default values, shared across
+   templates/editor. The editor's {x} picker inserts {name} into the payload;
+   the default value pre-fills the per-send custom-variables panel. --- */
+
+export const userVariables = pgTable(
+  "user_variables",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // Token name WITHOUT braces, e.g. "nama_event" -> inserted as {nama_event}
+    name: text("name").notNull(),
+    defaultValue: text("default_value").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("user_variables_user_id_idx").on(table.userId),
+    nameIdx: index("user_variables_user_name_idx").on(table.userId, table.name),
+  }),
+);
+
+export const userVariablesRelations = relations(userVariables, ({ one }) => ({
+  user: one(users, { fields: [userVariables.userId], references: [users.id] }),
 }));
 
 export const templateFoldersRelations = relations(templateFolders, ({ one, many }) => ({
@@ -471,6 +508,7 @@ export type MessageStatus = (typeof messageStatusEnum.enumValues)[number];
 export type MessageMode = (typeof messageModeEnum.enumValues)[number];
 export type ReportStatus = (typeof reportStatusEnum.enumValues)[number];
 export type ScheduledStatus = (typeof scheduledStatusEnum.enumValues)[number];
+export type ScheduledRecurrence = (typeof scheduledRecurrenceEnum.enumValues)[number];
 
 /* --- Types --- */
 

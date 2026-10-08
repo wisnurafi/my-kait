@@ -2,11 +2,13 @@
 
 /**
  * Scheduled message management server actions.
- * One-shot schedules; a per-minute cron dispatches due rows.
+ * One-shot and recurring schedules; a per-minute cron dispatches due rows.
+ * Recurring rows spawn their next occurrence after each successful send.
  */
 
 import { db } from "@/lib/db";
 import { scheduledMessages, webhooks } from "@/lib/schema";
+import type { ScheduledRecurrence } from "@/lib/schema";
 import { eq, and, desc, inArray, count, sql } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
 import { getActionT } from "@/server/i18n";
@@ -18,6 +20,11 @@ import { substitutePayloadVariables, parseCustomVars } from "@/lib/template-vars
 const MIN_LEAD_MS = 60_000; // must be at least 1 minute in the future
 const MAX_LEAD_MS = 365 * 24 * 60 * 60_000; // at most 1 year out
 
+/** Client input is untrusted — coerce anything unexpected to "none". */
+function parseRecurrence(v: unknown): ScheduledRecurrence {
+  return v === "daily" || v === "weekly" || v === "monthly" ? v : "none";
+}
+
 function toPublic(s: typeof scheduledMessages.$inferSelect) {
   return {
     id: s.id,
@@ -28,6 +35,7 @@ function toPublic(s: typeof scheduledMessages.$inferSelect) {
     preview: payloadPreview(s.payload),
     scheduledAt: s.scheduledAt.toISOString(),
     status: s.status,
+    recurrence: s.recurrence,
     attempts: s.attempts,
     lastError: s.lastError,
     createdAt: s.createdAt.toISOString(),
@@ -63,6 +71,7 @@ export async function scheduleMessageAction(input: {
   mode: "normal" | "embed" | "both";
   customVars?: Record<string, string>;
   scheduledAt: string; // ISO 8601
+  recurrence?: ScheduledRecurrence;
 }): Promise<{ error: string } | { scheduled: ScheduledPublic }> {
   const user = await requireAuth();
   const t = await getActionT("errors");
@@ -138,6 +147,7 @@ export async function scheduleMessageAction(input: {
       payload: processedPayload,
       mode: parsed.data.mode,
       scheduledAt: at,
+      recurrence: parseRecurrence(input.recurrence),
     })
     .returning();
 
@@ -196,6 +206,43 @@ export async function listScheduledAction(filter: ScheduledFilter = "upcoming", 
     totalPages,
     counts: { ...counts, all: counts.upcoming + counts.history },
   };
+}
+
+/* --- Reschedule a pending schedule (new time only; recurrence unchanged) --- */
+export async function rescheduleAction(
+  id: string,
+  scheduledAt: string, // ISO 8601
+): Promise<{ error: string } | { scheduled: ScheduledPublic }> {
+  const user = await requireAuth();
+  const t = await getActionT("errors");
+
+  const at = new Date(scheduledAt);
+  if (Number.isNaN(at.getTime())) {
+    return { error: t("scheduledInvalidDate") };
+  }
+  const now = Date.now();
+  if (at.getTime() < now + MIN_LEAD_MS) {
+    return { error: t("scheduledTooSoon") };
+  }
+  if (at.getTime() > now + MAX_LEAD_MS) {
+    return { error: t("scheduledTooFar") };
+  }
+
+  // Atomic match-or-error: only a pending row owned by this user moves.
+  const [updated] = await db
+    .update(scheduledMessages)
+    .set({ scheduledAt: at })
+    .where(
+      and(
+        eq(scheduledMessages.id, id),
+        eq(scheduledMessages.userId, user.id),
+        eq(scheduledMessages.status, "pending"),
+      ),
+    )
+    .returning();
+
+  if (!updated) return { error: t("scheduledNotFound") };
+  return { scheduled: toPublic(updated) };
 }
 
 /* --- Cancel a pending schedule --- */

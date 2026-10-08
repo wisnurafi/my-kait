@@ -3,6 +3,9 @@ import { Navbar } from "@/components/app/navbar";
 import { CommandPaletteProvider } from "@/components/app/command-palette";
 import { Toaster } from "@/components/ui/toast";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { webhooks } from "@/lib/schema";
+import { and, count, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
 export default async function AppLayout({
@@ -17,13 +20,27 @@ export default async function AppLayout({
 
   // Require auth
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect(`/${locale}`);
   }
 
+  // Global invalid-webhook badge: cheap indexed count (webhooks_user_id_idx),
+  // passed to Navbar for both desktop sidebar and mobile bottom nav.
+  // Re-queried on every navigation inside (app), so the badge clears itself
+  // once all webhooks are healthy again.
+  const [{ n: invalidWebhookCount }] = await db
+    .select({ n: count() })
+    .from(webhooks)
+    .where(
+      and(
+        eq(webhooks.userId, session.user.id),
+        eq(webhooks.lastStatus, "invalid"),
+      ),
+    );
+
   return (
     <div className="min-h-screen">
-      <Navbar />
+      <Navbar invalidWebhookCount={invalidWebhookCount} />
       <CommandPaletteProvider>
         <main className="dash-main md:pl-64 pb-20 md:pb-0">
           {/* relative: keeps content above .dash-main::before noise layer (same as admin shell) */}
