@@ -133,6 +133,8 @@
       "empty": "No snapshots yet. Take one before making big changes.",
       "latest": "Latest",
       "restore": "Restore",
+      "preview": "Preview",
+      "previewTitle": "Preview: {name}",
       "restoreTitle": "Restore this version?",
       "restoreMessage": "Replace \"{name}\" with this snapshot? Your current state is saved as a new snapshot first, so you can undo.",
       "restoreConfirm": "Restore version",
