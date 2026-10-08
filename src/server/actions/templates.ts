@@ -13,6 +13,7 @@ import { eq, and, desc, ilike, or, sql, count, arrayContains, notInArray } from 
 import { requireAuth, auth } from "@/lib/auth";
 import { templateSchema, reportTemplateSchema } from "@/lib/validations";
 import { generateSlug } from "@/lib/utils";
+import { payloadPreview } from "@/lib/payload-preview";
 import { getActionT } from "@/server/i18n";
 import { checkRateLimit, getClientIp } from "@/lib/ratelimit";
 import { notifyAdminNewReport } from "@/server/admin-notify";
@@ -595,19 +596,6 @@ export type GalleryTemplate = {
   preview: string;
 };
 
-/** Ambil cuplikan teks dari payload Discord untuk preview kartu galeri. */
-function payloadPreview(payload: unknown): string {
-  if (!payload || typeof payload !== "object") return "";
-  const p = payload as Record<string, unknown>;
-  const content = typeof p.content === "string" ? p.content.trim() : "";
-  if (content) return content.slice(0, 140);
-  const embeds = Array.isArray(p.embeds) ? p.embeds : [];
-  const em = embeds[0] as Record<string, unknown> | undefined;
-  const title = typeof em?.title === "string" ? em.title.trim() : "";
-  const desc = typeof em?.description === "string" ? em.description.trim() : "";
-  return [title, desc].filter(Boolean).join(" — ").slice(0, 140);
-}
-
 export async function getGalleryTemplates(opts: {
   search?: string;
   sort?: "popular" | "latest";
@@ -741,12 +729,12 @@ export async function createTemplateVersionAction(
   return { success: true };
 }
 
-/** Newest-first version list for a template (metadata only). */
+/** Newest-first version list for a template (metadata + content preview). */
 export async function listTemplateVersionsAction(
   templateId: string,
 ): Promise<
   | { error: string }
-  | { versions: Array<{ id: string; name: string; createdAt: string }> }
+  | { versions: Array<{ id: string; name: string; createdAt: string; preview: string }> }
 > {
   const user = await requireAuth();
   const t = await getActionT("errors");
@@ -758,6 +746,7 @@ export async function listTemplateVersionsAction(
       id: templateVersions.id,
       name: templateVersions.name,
       createdAt: templateVersions.createdAt,
+      payload: templateVersions.payload,
     })
     .from(templateVersions)
     .where(eq(templateVersions.templateId, templateId))
@@ -767,6 +756,7 @@ export async function listTemplateVersionsAction(
       id: r.id,
       name: r.name,
       createdAt: r.createdAt.toISOString(),
+      preview: payloadPreview(r.payload),
     })),
   };
 }

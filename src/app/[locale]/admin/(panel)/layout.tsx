@@ -38,7 +38,7 @@ export default async function AdminPanelLayout({
   return (
     <div className="min-h-screen">
       <AdminSidebar pendingCount={pendingCount} />
-      <main className="dash-main md:pl-64 pb-20 md:pb-0">
+      <main className="dash-main md:pl-64">
         {/* relative: keeps content above .dash-main::before noise layer */}
         <div className="relative p-6 md:p-8 max-w-7xl mx-auto">{children}</div>
       </main>

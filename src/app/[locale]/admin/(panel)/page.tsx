@@ -1,8 +1,9 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
+import type { ReactNode } from "react";
 import { Link } from "@/i18n/routing";
 import { Badge } from "@/components/ui/badge";
 import { Mascot } from "@/components/mascot";
-import { getAdminOverview, getReports, getAdminActivity } from "@/server/actions/admin";
+import { getAdminOverview, getReports, getAdminActivity, getHealthDetails } from "@/server/actions/admin";
 import { AdminActivityCharts } from "@/components/admin/activity-charts";
 import { Flag, ChevronRight, ArrowRight } from "lucide-react";
 
@@ -58,6 +59,88 @@ function fmtDate(d: Date, locale: string) {
   });
 }
 
+/**
+ * One health KPI row. When `expandLabel` is set and the count is non-zero,
+ * the row becomes an expandable <details> disclosing the drill-down list.
+ */
+function HealthRow({
+  label,
+  count,
+  variant,
+  expandLabel,
+  children,
+}: {
+  label: string;
+  count: number;
+  variant: "danger" | "warning" | "success";
+  expandLabel?: string;
+  children?: ReactNode;
+}) {
+  const head = (
+    <>
+      <span className="text-fg-secondary flex items-center gap-2">
+        {expandLabel && count > 0 && (
+          <ChevronRight
+            size={14}
+            aria-hidden="true"
+            className="text-fg-tertiary transition-transform group-open:rotate-90"
+          />
+        )}
+        {label}
+      </span>
+      <Badge variant={count > 0 ? variant : "success"}>{count}</Badge>
+    </>
+  );
+  const rowClass = "border-t border-border-ink pt-3 first:border-0 first:pt-0";
+  if (!expandLabel || count === 0) {
+    return (
+      <div className={`flex items-center justify-between ${rowClass}`}>
+        {head}
+      </div>
+    );
+  }
+  return (
+    <details className={`group ${rowClass}`}>
+      <summary
+        aria-label={expandLabel}
+        className="flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden"
+      >
+        {head}
+      </summary>
+      <div className="mt-1">{children}</div>
+    </details>
+  );
+}
+
+/** One compact drill-down line: title + meta, owner linked to user detail. */
+function HealthItem({
+  title,
+  sub,
+  userId,
+  username,
+}: {
+  title: string;
+  sub: string;
+  userId: string;
+  username: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-1.5 border-t border-border-ink/60 first:border-0">
+      <div className="min-w-0">
+        <p className="font-medium text-fg truncate text-[13px]">{title}</p>
+        <p className="text-[11px] text-fg-tertiary truncate font-mono">{sub}</p>
+      </div>
+      <Link
+        href={`/admin/users/${userId}`}
+        title={username}
+        className="shrink-0 text-xs text-accent hover:underline no-underline font-mono"
+      >
+        {username}
+      </Link>
+    </div>
+  );
+}
+
 export default async function AdminOverviewPage({
   params,
 }: {
@@ -76,6 +159,13 @@ export default async function AdminOverviewPage({
     stats.failedMessages24h === 0 &&
     stats.failedScheduled24h === 0 &&
     stats.stuckScheduled === 0;
+  // Drill-down lists are fetched only when something needs attention.
+  const showDetails =
+    stats.webhooksDown > 0 ||
+    stats.failedMessages24h > 0 ||
+    stats.failedScheduled24h > 0 ||
+    stats.stuckScheduled > 0;
+  const details = showDetails ? await getHealthDetails() : null;
 
   return (
     <div className="space-y-6">
@@ -177,48 +267,119 @@ export default async function AdminOverviewPage({
               {t("allClear")}
             </p>
           )}
-          <dl className="space-y-3 text-sm">
-            <div className="flex items-center justify-between border-t border-border-ink pt-3 first:border-0 first:pt-0">
-              <dt className="text-fg-secondary">{t("webhooksDown")}</dt>
-              <dd>
-                <Badge variant={stats.webhooksDown > 0 ? "danger" : "success"}>
-                  {stats.webhooksDown}
-                </Badge>
-              </dd>
-            </div>
-            <div className="flex items-center justify-between border-t border-border-ink pt-3">
-              <dt className="text-fg-secondary">{t("failedChecks24h")}</dt>
-              <dd>
-                <Badge variant={stats.failedChecks24h > 0 ? "warning" : "success"}>
-                  {stats.failedChecks24h}
-                </Badge>
-              </dd>
-            </div>
-            <div className="flex items-center justify-between border-t border-border-ink pt-3">
-              <dt className="text-fg-secondary">{t("failedMessages24h")}</dt>
-              <dd>
-                <Badge variant={stats.failedMessages24h > 0 ? "warning" : "success"}>
-                  {stats.failedMessages24h}
-                </Badge>
-              </dd>
-            </div>
-            <div className="flex items-center justify-between border-t border-border-ink pt-3">
-              <dt className="text-fg-secondary">{t("failedScheduled24h")}</dt>
-              <dd>
-                <Badge variant={stats.failedScheduled24h > 0 ? "warning" : "success"}>
-                  {stats.failedScheduled24h}
-                </Badge>
-              </dd>
-            </div>
-            <div className="flex items-center justify-between border-t border-border-ink pt-3">
-              <dt className="text-fg-secondary">{t("stuckScheduled")}</dt>
-              <dd>
-                <Badge variant={stats.stuckScheduled > 0 ? "danger" : "success"}>
-                  {stats.stuckScheduled}
-                </Badge>
-              </dd>
-            </div>
-          </dl>
+          <div className="space-y-3 text-sm">
+            <HealthRow
+              label={t("webhooksDown")}
+              count={stats.webhooksDown}
+              variant="danger"
+              expandLabel={t("healthExpand")}
+            >
+              {details?.downWebhooks.map((w) => (
+                <HealthItem
+                  key={w.id}
+                  title={w.name}
+                  sub={
+                    w.lastCheckedAt
+                      ? t("healthCheckedAt", {
+                          date: fmtDate(w.lastCheckedAt, locale),
+                        })
+                      : t("healthNeverChecked")
+                  }
+                  userId={w.userId}
+                  username={w.username}
+                />
+              ))}
+              {details &&
+                stats.webhooksDown - details.downWebhooks.length > 0 && (
+                  <p className="text-[11px] text-fg-tertiary font-mono pt-1">
+                    {t("healthAndMore", {
+                      count: stats.webhooksDown - details.downWebhooks.length,
+                    })}
+                  </p>
+                )}
+            </HealthRow>
+            <HealthRow
+              label={t("failedChecks24h")}
+              count={stats.failedChecks24h}
+              variant="warning"
+            />
+            <HealthRow
+              label={t("failedMessages24h")}
+              count={stats.failedMessages24h}
+              variant="warning"
+              expandLabel={t("healthExpand")}
+            >
+              {details && details.topFailedMessages.length > 0 && (
+                <p className="text-[11px] text-fg-tertiary font-mono pt-1 pb-0.5">
+                  {t("healthTopNote")}
+                </p>
+              )}
+              {details?.topFailedMessages.map((m) => (
+                <HealthItem
+                  key={`${m.userId}:${m.webhookName}`}
+                  title={m.webhookName}
+                  sub={t("healthFailures", { count: m.failures })}
+                  userId={m.userId}
+                  username={m.username}
+                />
+              ))}
+            </HealthRow>
+            <HealthRow
+              label={t("failedScheduled24h")}
+              count={stats.failedScheduled24h}
+              variant="warning"
+              expandLabel={t("healthExpand")}
+            >
+              {details?.failedScheduled.map((s) => (
+                <HealthItem
+                  key={s.id}
+                  title={s.webhookName}
+                  sub={`${fmtDate(s.scheduledAt, locale)} · ${t("attemptsLabel", { count: s.attempts })}`}
+                  userId={s.userId}
+                  username={s.username}
+                />
+              ))}
+              {details &&
+                stats.failedScheduled24h - details.failedScheduled.length > 0 && (
+                  <p className="text-[11px] text-fg-tertiary font-mono pt-1">
+                    {t("healthAndMore", {
+                      count:
+                        stats.failedScheduled24h - details.failedScheduled.length,
+                    })}
+                  </p>
+                )}
+            </HealthRow>
+            <HealthRow
+              label={t("stuckScheduled")}
+              count={stats.stuckScheduled}
+              variant="danger"
+              expandLabel={t("healthExpand")}
+            >
+              {details?.stuckScheduled.map((s) => (
+                <HealthItem
+                  key={s.id}
+                  title={s.webhookName}
+                  sub={
+                    s.claimedAt
+                      ? t("healthStuckSince", {
+                          date: fmtDate(s.claimedAt, locale),
+                        })
+                      : fmtDate(s.scheduledAt, locale)
+                  }
+                  userId={s.userId}
+                  username={s.username}
+                />
+              ))}
+              {details &&
+                stats.stuckScheduled - details.stuckScheduled.length > 0 && (
+                  <p className="text-[11px] text-fg-tertiary font-mono pt-1">
+                    {t("healthAndMore", {
+                      count: stats.stuckScheduled - details.stuckScheduled.length,
+                    })}
+                  </p>
+                )}
+            </HealthRow>
+          </div>
         </div>
       </div>
     </div>

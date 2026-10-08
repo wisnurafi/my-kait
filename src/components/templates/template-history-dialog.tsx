@@ -13,7 +13,7 @@ import {
 } from "@/server/actions/templates";
 import { History, Camera, RotateCcw } from "lucide-react";
 
-type Version = { id: string; name: string; createdAt: string };
+type Version = { id: string; name: string; createdAt: string; preview: string };
 
 export function TemplateHistoryDialog({
   templateId,
@@ -137,6 +137,11 @@ export function TemplateHistoryDialog({
                         },
                       )}
                     </p>
+                    {v.preview && (
+                      <p className="text-xs text-fg-secondary mt-1 line-clamp-2 break-words">
+                        {v.preview}
+                      </p>
+                    )}
                   </div>
                   <Button
                     size="sm"

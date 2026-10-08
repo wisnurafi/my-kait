@@ -22,7 +22,7 @@ import {
   type ReportStatus,
 } from "@/lib/schema";
 import { ADMIN_COOKIE_NAME, verifyAdminSession } from "@/lib/admin-session";
-import { eq, and, gte, lt, sql, desc, ilike, or, count, isNull } from "drizzle-orm";
+import { eq, and, gte, lt, sql, desc, asc, ilike, or, count, isNull } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { getActionT } from "@/server/i18n";
 
@@ -162,6 +162,141 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     failedScheduled24h: fs.n,
     stuckScheduled: st.n,
   };
+}
+
+/* --- Health drill-down: per-category detail lists for the overview panel --- */
+
+export type HealthDownWebhook = {
+  id: string;
+  name: string;
+  userId: string;
+  username: string;
+  lastCheckedAt: Date | null;
+};
+
+export type HealthFailedSchedule = {
+  id: string;
+  webhookName: string;
+  userId: string;
+  username: string;
+  scheduledAt: Date;
+  attempts: number;
+};
+
+export type HealthStuckSchedule = {
+  id: string;
+  webhookName: string;
+  userId: string;
+  username: string;
+  scheduledAt: Date;
+  claimedAt: Date | null;
+};
+
+export type HealthTopFailedMessage = {
+  webhookName: string;
+  userId: string;
+  username: string;
+  failures: number;
+};
+
+export type HealthDetails = {
+  downWebhooks: HealthDownWebhook[];
+  failedScheduled: HealthFailedSchedule[];
+  stuckScheduled: HealthStuckSchedule[];
+  topFailedMessages: HealthTopFailedMessage[];
+};
+
+/**
+ * Detail behind the health KPIs on the admin overview. Each list is capped
+ * (10 / 10 / 10 / top 5); the panel shows "and N more" from the overview
+ * counts. Only called when at least one KPI is non-zero.
+ */
+export async function getHealthDetails(): Promise<HealthDetails> {
+  await requireAdmin();
+  const d1 = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  // Same stale-claim threshold as the dispatch cron (STALE_CLAIM_MINUTES).
+  const staleClaim = new Date(Date.now() - 10 * 60_000);
+
+  const [downWebhooks, failedScheduled, stuckScheduled, topFailedMessages] =
+    await Promise.all([
+      db
+        .select({
+          id: webhooks.id,
+          name: webhooks.name,
+          userId: webhooks.userId,
+          username: users.username,
+          lastCheckedAt: webhooks.lastCheckedAt,
+        })
+        .from(webhooks)
+        .innerJoin(users, eq(webhooks.userId, users.id))
+        .where(eq(webhooks.lastStatus, "invalid"))
+        .orderBy(desc(webhooks.lastCheckedAt))
+        .limit(10),
+      db
+        .select({
+          id: scheduledMessages.id,
+          webhookName: scheduledMessages.webhookNameSnapshot,
+          userId: scheduledMessages.userId,
+          username: users.username,
+          scheduledAt: scheduledMessages.scheduledAt,
+          attempts: scheduledMessages.attempts,
+        })
+        .from(scheduledMessages)
+        .innerJoin(users, eq(scheduledMessages.userId, users.id))
+        .where(
+          and(
+            eq(scheduledMessages.status, "failed"),
+            gte(scheduledMessages.scheduledAt, d1),
+          ),
+        )
+        .orderBy(desc(scheduledMessages.scheduledAt))
+        .limit(10),
+      db
+        .select({
+          id: scheduledMessages.id,
+          webhookName: scheduledMessages.webhookNameSnapshot,
+          userId: scheduledMessages.userId,
+          username: users.username,
+          scheduledAt: scheduledMessages.scheduledAt,
+          claimedAt: scheduledMessages.claimedAt,
+        })
+        .from(scheduledMessages)
+        .innerJoin(users, eq(scheduledMessages.userId, users.id))
+        .where(
+          and(
+            eq(scheduledMessages.status, "sending"),
+            lt(scheduledMessages.claimedAt, staleClaim),
+          ),
+        )
+        .orderBy(asc(scheduledMessages.claimedAt))
+        .limit(10),
+      // Top failing webhooks in the last 24h. Single aggregate query;
+      // message_logs is pruned after 30 days, so the scan stays bounded.
+      db
+        .select({
+          webhookName: messageLogs.webhookNameSnapshot,
+          userId: messageLogs.userId,
+          username: users.username,
+          failures: count(),
+        })
+        .from(messageLogs)
+        .innerJoin(users, eq(messageLogs.userId, users.id))
+        .where(
+          and(
+            sql`${messageLogs.status} in ('failed','rate_limited')`,
+            gte(messageLogs.createdAt, d1),
+          ),
+        )
+        .groupBy(
+          messageLogs.webhookNameSnapshot,
+          messageLogs.userId,
+          users.username,
+        )
+        .orderBy(desc(count()))
+        .limit(5),
+    ]);
+
+  return { downWebhooks, failedScheduled, stuckScheduled, topFailedMessages };
 }
 
 export async function getPendingReportsCount(): Promise<number> {
