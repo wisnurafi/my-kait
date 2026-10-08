@@ -15,7 +15,7 @@ import { toast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Trash2, Pencil, Check, X, Variable } from "lucide-react";
+import { Plus, Trash2, Pencil, Check, X, Variable, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   listVariablesAction,
   createVariableAction,
@@ -23,6 +23,9 @@ import {
   deleteVariableAction,
   type UserVariable,
 } from "@/server/actions/variables";
+
+/** Items shown per page in the variables list. */
+const PAGE_SIZE = 12;
 
 /** Loading skeleton that mirrors the real layout: add form + 3 list rows. */
 function VariablesSkeleton() {
@@ -67,6 +70,7 @@ export function VariablesManager() {
   const [editName, setEditName] = useState("");
   const [editDefault, setEditDefault] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [page, setPage] = useState(1);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
 
   const refresh = useCallback(async () => {
@@ -84,6 +88,14 @@ export function VariablesManager() {
     void refresh();
   }, [refresh]);
 
+  const totalPages = Math.max(1, Math.ceil(variables.length / PAGE_SIZE));
+  // Clamp the page when the list shrinks (e.g. deletes) so we never land
+  // on an empty page.
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages));
+  }, [totalPages]);
+  const pageItems = variables.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const handleCreate = async () => {
     const trimmed = name.trim();
     if (!trimmed || creating) return;
@@ -96,6 +108,7 @@ export function VariablesManager() {
         setVariables((prev) =>
           [...prev, res.variable].sort((a, b) => a.name.localeCompare(b.name)),
         );
+        setPage(1);
         setName("");
         setDefaultValue("");
         toast.success(t("variableCreated"));
@@ -242,7 +255,7 @@ export function VariablesManager() {
                 </span>
               </div>
               <ul className="divide-y divide-border-ink rounded-lg border border-border-ink">
-                {variables.map((v) =>
+                {pageItems.map((v) =>
                   editingId === v.id ? (
                     <li
                       key={v.id}
@@ -326,6 +339,48 @@ export function VariablesManager() {
                   ),
                 )}
               </ul>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setPage(page - 1)}
+                    disabled={page <= 1}
+                    className="gap-1"
+                  >
+                    <ChevronLeft size={16} /> {tc("prev")}
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (n) => (
+                        <Button
+                          key={n}
+                          variant={n === page ? "secondary" : "ghost"}
+                          size="sm"
+                          onClick={() => setPage(n)}
+                          aria-label={t("pageLabel", { n })}
+                          aria-current={n === page ? "page" : undefined}
+                          className="min-w-8 px-2 font-mono"
+                        >
+                          {n}
+                        </Button>
+                      ),
+                    )}
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setPage(page + 1)}
+                    disabled={page >= totalPages}
+                    className="hv gap-1"
+                  >
+                    {tc("next")}{" "}
+                    <span className="ia ia-nudge">
+                      <ChevronRight size={16} />
+                    </span>
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </>
