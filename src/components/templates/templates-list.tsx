@@ -545,9 +545,12 @@ export function TemplatesList({
     </div>
   );
 
+  const historyTemplate = historyFor
+    ? (initial.find((x) => x.id === historyFor.id) ?? null)
+    : null;
+
   return (
-    <div className="flex gap-8 flex-col lg:flex-row">
-      {/* Main content FIRST in DOM: title (page header) + search, then folder chips */}
+    <div className="flex gap-8 flex-col lg:flex-row">      {/* Main content FIRST in DOM: title (page header) + search, then folder chips */}
       <div className="flex-1 min-w-0 space-y-6">
         {/* Search */}
         <div className="flex gap-2 flex-wrap items-center stagger-in">
@@ -1011,11 +1014,19 @@ export function TemplatesList({
         loading={revoking}
       />
 
-      {historyFor && (
+      {historyTemplate && (
         <TemplateHistoryDialog
-          templateId={historyFor.id}
-          templateName={historyFor.name}
-          open={historyFor !== null}
+          templateId={historyTemplate.id}
+          templateName={historyTemplate.name}
+          current={{
+            name: historyTemplate.name,
+            description: historyTemplate.description,
+            tags: historyTemplate.tags,
+            folderId: historyTemplate.folderId,
+            payload: historyTemplate.payload,
+          }}
+          folders={folders.map((f) => ({ id: f.id, name: f.name }))}
+          open
           onClose={() => setHistoryFor(null)}
         />
       )}

@@ -723,18 +723,29 @@ export async function createTemplateVersionAction(
     name: tpl.name,
     description: tpl.description,
     tags: tpl.tags ?? [],
+    folderId: tpl.folderId,
     payload: tpl.payload,
   });
   await pruneVersions(tpl.id);
   return { success: true };
 }
 
-/** Newest-first version list for a template (with full payload for preview). */
+/** Newest-first version list for a template (with full snapshot for preview/diff). */
 export async function listTemplateVersionsAction(
   templateId: string,
 ): Promise<
   | { error: string }
-  | { versions: Array<{ id: string; name: string; createdAt: string; payload: unknown }> }
+  | {
+      versions: Array<{
+        id: string;
+        name: string;
+        description: string | null;
+        tags: string[];
+        folderId: string | null;
+        createdAt: string;
+        payload: unknown;
+      }>;
+    }
 > {
   const user = await requireAuth();
   const t = await getActionT("errors");
@@ -745,6 +756,9 @@ export async function listTemplateVersionsAction(
     .select({
       id: templateVersions.id,
       name: templateVersions.name,
+      description: templateVersions.description,
+      tags: templateVersions.tags,
+      folderId: templateVersions.folderId,
       createdAt: templateVersions.createdAt,
       payload: templateVersions.payload,
     })
@@ -755,6 +769,9 @@ export async function listTemplateVersionsAction(
     versions: rows.map((r) => ({
       id: r.id,
       name: r.name,
+      description: r.description,
+      tags: r.tags ?? [],
+      folderId: r.folderId,
       createdAt: r.createdAt.toISOString(),
       payload: r.payload,
     })),
@@ -794,6 +811,7 @@ export async function restoreTemplateVersionAction(
     name: tpl.name,
     description: tpl.description,
     tags: tpl.tags ?? [],
+    folderId: tpl.folderId,
     payload: tpl.payload,
   });
 
@@ -803,6 +821,7 @@ export async function restoreTemplateVersionAction(
       name: version.name,
       description: version.description,
       tags: version.tags ?? [],
+      folderId: version.folderId,
       payload: version.payload,
       updatedAt: new Date(),
     })
