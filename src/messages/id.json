@@ -496,7 +496,8 @@
       "deletedOk": "webhook terhapus: {count}",
       "movedOk": "webhook dipindah: {count}",
       "actionFailed": "Aksi bulk gagal"
-    }
+    },
+    "alertDownDetail": "Tidak merespons ({reason})"
   },
   "editor": {
     "title": "Editor Pesan",

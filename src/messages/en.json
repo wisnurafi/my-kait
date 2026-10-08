@@ -496,7 +496,8 @@
       "deletedOk": "Deleted {count} webhooks",
       "movedOk": "Moved {count} webhooks",
       "actionFailed": "Bulk action failed"
-    }
+    },
+    "alertDownDetail": "Not responding ({reason})"
   },
   "editor": {
     "title": "Message Editor",
