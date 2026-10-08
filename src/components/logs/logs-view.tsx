@@ -684,7 +684,7 @@ export function LogsView({
                   >
                     <Copy size={14} /> {t("detail.duplicate")}
                   </Button>
-                  {selectedLog.status === "failed" && (
+                  {(selectedLog.status === "failed" || selectedLog.status === "rate_limited") && (
                     <Button
                       variant="primary"
                       size="sm"
