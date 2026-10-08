@@ -9,7 +9,8 @@
  *     <DialogFooter>...</DialogFooter>
  *   </Dialog>
  */
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
@@ -27,6 +28,10 @@ export function Dialog({
   className?: string;
 }) {
   const t = useTranslations("common");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   // Lock body scroll + Escape to close
   useEffect(() => {
     if (!open) return;
@@ -42,7 +47,12 @@ export function Dialog({
     };
   }, [open, onClose]);
 
-  return (
+  // Render via portal ke document.body: tanpa ini, ancestor yang punya
+  // transform (mis. .stagger-in dengan animation fill forwards) menjadi
+  // containing block untuk position:fixed, sehingga modal terjebak
+  // mengikuti box container-nya, bukan viewport.
+  if (!mounted) return null;
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -82,7 +92,8 @@ export function Dialog({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 
