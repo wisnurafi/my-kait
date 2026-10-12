@@ -4,6 +4,8 @@
 
 My-Kait is a webhook studio for Discord: compose rich messages in a visual editor, preview them exactly as they'll appear, and send them through your webhooks — no bot required. Save reusable templates, schedule messages, monitor webhook health, and browse templates shared by the community.
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/wisnurafi/my-kait)
+
 ## Features
 
 - **Visual composer** — write plain text, embeds, or both, with a live Discord-style preview
