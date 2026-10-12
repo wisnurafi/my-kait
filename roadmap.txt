@@ -1,0 +1,106 @@
+My-Kait Roadmap / Structure Overview
+
+Status (2026-10-08)
+- The project is declared COMPLETE and in maintenance mode.
+- No new features are planned. The maintainer adds features only on explicit
+  request; expect bug fixes, security fixes, and small polish — not roadmaps.
+- Pending branches awaiting merge (as of 2026-10-12):
+  - fix/discord-provider-issuer   -> Auth.js Discord provider issuer fix
+  - fix/landing-revisi-2          -> landing page revision batch 2
+  - fix/landing-responsive        -> landing page responsive fixes
+- Deliberately out of scope: anything not explicitly requested. Keep it simple.
+
+Goal of this file
+- Keep this as a practical map of the codebase.
+- Show main folders and important files only (not every file).
+
+Root
+- package.json            -> scripts (dev, build, tsc, test, db:*), pnpm 12
+- README.md               -> setup and usage docs
+- CONTRIBUTING.md         -> contributor guide
+- SECURITY.md             -> security policy
+- LICENSE               -> MIT license (wisnurafi)
+- roadmap.txt             -> this file
+- .env.example            -> all env vars with explanations (copy to .env.local)
+- src/                    -> Next.js 16 App Router application
+
+src/
+- middleware.ts           -> locale routing (next-intl, `id` default, `en`)
+
+- app/
+  - page.tsx              -> root redirect -> /[locale]
+  - [locale]/
+    - page.tsx            -> public landing page
+    - gallery/            -> public template gallery (no login)
+    - t/[slug]/           -> public shared-template view (no lang/theme toggles)
+    - docs/               -> in-app REST API reference
+    - privacy/ terms/     -> legal pages (first-person indie-dev voice)
+    - admin/              -> moderation panel (single account, no public link,
+                             noindex, disallowed in robots.txt)
+    - (app)/              -> authenticated app (dashboard, editor, templates,
+                             webhooks, logs, scheduled, settings, API keys)
+  - api/
+    - auth/               -> Auth.js handlers (Discord OAuth)
+    - stats/              -> public aggregate stats (cached 5 min)
+    - v1/send/            -> REST API: send via API key (mk_live_..., 5 req/min)
+    - upload/             -> image uploads (Vercel Blob)
+    - cron/               -> dispatch-scheduled, health-check, cleanup
+                             (protected: Authorization: Bearer CRON_SECRET)
+
+- components/             -> UI, grouped by area
+  - landing/              -> public landing page
+  - editor/               -> message composer + Discord-style live preview
+  - templates/            -> library, folders, tags, version history
+  - webhooks/             -> webhook manager, health, ping history
+  - logs/                 -> message logs (resend/edit/delete, filters)
+  - dashboard/            -> delivery stats, per-webhook breakdown
+  - scheduled/            -> scheduled + recurring messages
+  - settings/             -> user settings, API keys UI
+  - api-keys/             -> API key management UI
+  - variables/            -> template variables UI
+  - admin/                -> moderation panel UI
+  - docs/                 -> API reference UI
+  - auth/                 -> auth screens
+  - ui/                   -> shared primitives
+
+- server/actions/         -> server actions (one file per domain):
+                            admin, admin-auth, api-keys, bulk, export, folders,
+                            i18n, messages, scheduled, stats, templates,
+                            variables, webhooks
+- server/
+  - admin-notify.ts       -> Discord notifications for admin events
+  - admin-password.ts      -> admin password hashing helper
+- lib/                    -> shared server logic:
+                            db.ts (Neon/Drizzle), schema.ts (tables),
+                            auth.ts (Auth.js), admin-session.ts,
+                            api-auth.ts (API key auth), crypto.ts (AES for
+                            webhook URLs), validations.ts (zod), ratelimit.ts
+                            (Upstash), discord.ts, webhook-health.ts,
+                            template-vars.ts, version-diff.ts, env.ts
+                            (fail-closed boot in production), logger.ts
+- drizzle/                -> SQL migrations (pnpm db:push)
+- messages/               -> i18n strings (en.json, id.json) — both REQUIRED
+- i18n/                   -> next-intl config
+
+scripts/
+- push-migration.ts       -> pnpm db:push (run BEFORE merging schema changes)
+- hash-admin-password.mjs -> generate ADMIN_PASSWORD_HASH
+
+Data & storage rules
+- Neon Postgres (Drizzle): all persistent state. Schema changes must be pushed
+  to production BEFORE the PR that introduced them is merged.
+- Webhook URLs: encrypted at rest (AES via WEBHOOK_ENCRYPTION_KEY, versioned).
+- API keys: mk_live_... shown once; only SHA-256 hash stored.
+- Share links: unguessable slugs; revokable from the template page.
+
+Notes
+- One branch per feature, Vercel preview before merge; maintainer merges himself.
+- pnpm tsc --noEmit is the verification gate (must pass before pushing).
+- "use server" files may only export async functions (Next build rule).
+- Server actions declare explicit return types for "error" in res narrowing.
+- Bilingual: leftover untranslated strings after a locale switch are a major bug —
+  audit-and-fix everything, not just the touched spot.
+- Copy voice: first-person indie-dev, concrete and honest; no generic AI phrasing.
+- Production refuses to boot without Upstash credentials and CRON_SECRET —
+  never bypass those guards.
+- Background jobs log an info-level heartbeat (a quiet job must not look dead).

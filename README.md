@@ -177,9 +177,17 @@ Admin pages send `noindex` and are disallowed in `public/robots.txt`.
 - Report abusive public templates from the share page.
 - Admin auth is a separate HMAC-signed cookie (independent from Discord OAuth), with rate-limited login and no public sign-up.
 
+Found a vulnerability? Please don't open a public issue — follow the [security policy](SECURITY.md) instead.
+
 ## Contributing
 
-Issues and pull requests are welcome. Keep it simple: one focused change per PR, `pnpm tsc --noEmit` must pass.
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first — it covers setup, the one-branch-per-feature workflow, and project conventions. Keep it simple: one focused change per PR, `pnpm tsc --noEmit` must pass.
+
+## Project docs
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — setup, conventions, and the PR checklist
+- [SECURITY.md](SECURITY.md) — security policy and how to report vulnerabilities
+- [roadmap.txt](roadmap.txt) — codebase map and project status
 
 ## License
 
